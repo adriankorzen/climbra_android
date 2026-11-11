@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Climbra mark (cyclingapp frontend public/icons/icon.svg): a mountain with a switchback climb and a summit flag -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <group android:pivotX="256" android:pivotY="256" android:scaleX="0.58" android:scaleY="0.58">
+        <path android:fillColor="#FFFFFF" android:pathData="M40,420L192,210L246,280L336,132L472,420Z" />
+        <path android:pathData="M276,420L414,368L288,326L388,278L310,242L360,206L334,178" android:strokeColor="#E2531F" android:strokeWidth="18" android:strokeLineCap="round" android:strokeLineJoin="round" />
+        <path android:pathData="M336,134V62" android:strokeColor="#FFFFFF" android:strokeWidth="10" android:strokeLineCap="round" />
+        <path android:fillColor="#FFFFFF" android:pathData="M340,62L390,80L340,98Z" />
+    </group>
+</vector>

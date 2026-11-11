@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash icon: the Climbra mark on its accent circle (the icon area is 240dp, visible inside a 160dp circle) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="VectorRaster"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <path android:fillColor="#E2531F" android:pathData="M256,86A170,170 0,1 1,256 426A170,170 0,1 1,256 86Z" />
+    <group android:pivotX="256" android:pivotY="256" android:scaleX="0.5" android:scaleY="0.5" android:translateY="-6">
+        <path android:fillColor="#FFFFFF" android:pathData="M40,420L192,210L246,280L336,132L472,420Z" />
+        <path android:pathData="M276,420L414,368L288,326L388,278L310,242L360,206L334,178" android:strokeColor="#E2531F" android:strokeWidth="18" android:strokeLineCap="round" android:strokeLineJoin="round" />
+        <path android:pathData="M336,134V62" android:strokeColor="#FFFFFF" android:strokeWidth="10" android:strokeLineCap="round" />
+        <path android:fillColor="#FFFFFF" android:pathData="M340,62L390,80L340,98Z" />
+    </group>
+</vector>

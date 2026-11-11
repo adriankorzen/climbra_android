@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window colors before Compose draws; the Compose theme is in ui/theme -->
+    <color name="climbra_accent">#E2531F</color>
+    <color name="window_background">#F4F5F7</color>
+</resources>

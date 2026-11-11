@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Climbra</string>
+
+    <!-- Navigation (web: nav.*) -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_activities">Activities</string>
+    <string name="nav_profile">Profile</string>
+    <string name="placeholder_coming_soon">Coming soon to the app. Until then, use climbra.app in the browser.</string>
+
+    <!-- Login (web: auth.login.*, auth.*) -->
+    <string name="login_title">Log in</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_show_password">Show password</string>
+    <string name="login_hide_password">Hide password</string>
+    <string name="login_submit">Log in</string>
+    <string name="login_or">or</string>
+    <string name="login_google">Continue with Google</string>
+    <string name="login_forgot">Forgot password?</string>
+    <string name="login_no_account">No account yet?</string>
+    <string name="login_register">Sign up</string>
+    <string name="login_expired">Your session has ended. Please log in again.</string>
+    <string name="login_required">Required</string>
+    <string name="login_google_failed">Logging in with Google did not work. Try again or log in with your email.</string>
+
+    <!-- Terms (web: auth.acceptTerms.*, auth.register.accept*) -->
+    <string name="terms_title">Accept the terms</string>
+    <string name="terms_intro">Before you start, please accept the terms of service and the privacy policy and consent to the processing of your training data.</string>
+    <string name="terms_changed">The terms of service or the privacy policy have changed. Please read the new version and accept it to keep using the app.</string>
+    <string name="terms_open_terms">Terms of service</string>
+    <string name="terms_open_privacy">Privacy policy</string>
+    <string name="terms_accept_terms">I accept the terms of service and the privacy policy</string>
+    <string name="terms_accept_health_data">I consent to the processing of my training data, including heart rate, which can reveal information about my health, and of health information I enter myself, to provide the service and – when I use the AI coach – to sending the computed metrics and the health information I enter to the AI providers named in the privacy policy.</string>
+    <string name="terms_submit">Continue</string>
+    <string name="terms_refuse">Don\'t agree?</string>
+
+    <!-- Account -->
+    <string name="logout">Log out</string>
+    <string name="profile_signed_in_as">Logged in as %1$s</string>
+
+    <!-- Start -->
+    <string name="start_unavailable_title">Climbra is not reachable</string>
+    <string name="start_unavailable_text">Check your internet connection and try again.</string>
+    <string name="retry">Retry</string>
+
+    <!-- Errors (web: apiErrors.*, errors.*) -->
+    <string name="error_unreachable">The server is not reachable</string>
+    <string name="error_request_failed">Request failed (%1$d)</string>
+    <string name="error_unexpected">Unexpected error</string>
+    <string name="api_error_bad_credentials">Wrong email or password.</string>
+    <string name="api_error_email_not_verified">Your email address is not confirmed yet. Check your inbox for the confirmation link.</string>
+    <string name="api_error_login_locked">Too many failed attempts. Try again later or reset your password.</string>
+    <string name="api_error_too_many_requests">Too many attempts. Please wait a moment and try again.</string>
+    <string name="api_error_terms_not_accepted">Accept the terms of service to continue.</string>
+    <string name="api_error_health_consent_required">Consent to the processing of training data to continue.</string>
+    <string name="api_error_unauthenticated">Your session has ended. Please log in again.</string>
+</resources>
