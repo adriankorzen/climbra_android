@@ -223,10 +223,10 @@ class LoginViewModelTest {
         asked.await()
         viewModel.onScreenPaused()
         viewModel.onScreenResumed()
-        advanceTimeBy(2.seconds)
+        // Answered within the grace. (Waiting for the backend lets runTest skip virtual time, so the grace is not
+        // measured with advanceTimeBy here: the answer must be in before the first wait.)
         answer.complete(GoogleCredentialResult.Token("id-token-abc"))
         viewModel.settled()
-        advanceTimeBy(2.seconds)
 
         assertTrue(session() is SessionState.LoggedIn)
     }

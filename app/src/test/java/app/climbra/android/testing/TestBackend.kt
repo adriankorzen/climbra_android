@@ -1,6 +1,7 @@
 package app.climbra.android.testing
 
 import app.climbra.android.data.api.AuthApi
+import app.climbra.android.data.api.RiderApi
 import app.climbra.android.data.net.ByteCipher
 import app.climbra.android.data.net.CookieStore
 import app.climbra.android.data.net.EncryptedFileCookieStore
@@ -37,7 +38,9 @@ class TestBackend(
     val store: CookieStore = EncryptedFileCookieStore(cookieFile, XorCipher)
     val cookies = PersistentCookieJar(store)
     val client = Network.okHttpClient(cookies, events)
-    val api: AuthApi = Network.retrofit(server.url("/").toString(), client).create(AuthApi::class.java)
+    private val retrofit = Network.retrofit(server.url("/").toString(), client)
+    val api: AuthApi = retrofit.create(AuthApi::class.java)
+    val riderApi: RiderApi = retrofit.create(RiderApi::class.java)
     val locales = FakeAppLocales()
 
     /** Requests in the order they arrived. */

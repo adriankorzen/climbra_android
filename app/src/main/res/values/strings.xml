@@ -55,4 +55,50 @@
     <string name="api_error_terms_not_accepted">Accept the terms of service to continue.</string>
     <string name="api_error_health_consent_required">Consent to the processing of training data to continue.</string>
     <string name="api_error_unauthenticated">Your session has ended. Please log in again.</string>
+
+    <!-- Dashboard (web: dashboard.*, columns.*, import.empty*, hrTss.*) -->
+    <string name="dashboard_load_failed">Cannot load the analyses.</string>
+    <string name="dashboard_kpis">Key figures</string>
+    <string name="dashboard_tss7">TSS 7 d</string>
+    <string name="dashboard_hours7">Time 7 d</string>
+    <string name="dashboard_distance7">Distance 7 d</string>
+    <string name="dashboard_rides7">Rides 7 d</string>
+    <string name="dashboard_ftp">FTP</string>
+    <string name="dashboard_ctl">CTL</string>
+    <string name="dashboard_atl">ATL</string>
+    <string name="dashboard_tsb">TSB</string>
+    <string name="dashboard_ctl_long">CTL fitness</string>
+    <string name="dashboard_atl_long">ATL fatigue</string>
+    <string name="dashboard_tsb_long">TSB form</string>
+    <string name="dashboard_form_transition">Transition</string>
+    <string name="dashboard_form_fresh">Fresh</string>
+    <string name="dashboard_form_neutral">Neutral</string>
+    <string name="dashboard_form_optimal">Productive</string>
+    <string name="dashboard_form_overload">High risk</string>
+    <string name="dashboard_pmc">Performance management</string>
+    <string name="dashboard_range">Range</string>
+    <string name="dashboard_days">%1$d d</string>
+    <string name="dashboard_weekly">Weekly load</string>
+    <plurals name="dashboard_weeks">
+        <item quantity="one">%1$d week</item>
+        <item quantity="other">%1$d weeks</item>
+    </plurals>
+    <string name="dashboard_hours">Hours</string>
+    <string name="dashboard_recent_rides">Recent rides</string>
+    <string name="dashboard_no_rides">No analysed rides yet.</string>
+    <string name="dashboard_empty_title">Start with your ride history</string>
+    <string name="dashboard_empty_hint">You have no rides yet. Import your recent rides from FIT or TCX files on climbra.app to see your training load and analyses.</string>
+    <string name="dashboard_open_web">Open climbra.app</string>
+    <string name="dashboard_no_rider_title">Create your rider profile</string>
+    <string name="dashboard_no_rider_hint">Your account has no rider profile yet. Create it on climbra.app, then come back here.</string>
+    <string name="activity_unnamed">Activity</string>
+    <string name="unit_watts">W</string>
+    <string name="unit_watts_per_kg">%1$s W/kg</string>
+    <string name="unit_km">km</string>
+    <string name="unit_hours">h</string>
+    <string name="ride_np">NP %1$s W</string>
+    <string name="ride_if">IF %1$s</string>
+    <string name="hr_tss_marker">HR</string>
+    <string name="hr_tss_tooltip">Training stress estimated from heart rate relative to your LTHR (hrTSS), used when the ride has no power TSS. Less precise than TSS from power.</string>
+    <string name="chart_tss" translatable="false">TSS</string>
 </resources>

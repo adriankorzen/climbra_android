@@ -3,6 +3,7 @@ package app.climbra.android.di
 import android.content.Context
 import app.climbra.android.AppConfig
 import app.climbra.android.data.api.AuthApi
+import app.climbra.android.data.api.RiderApi
 import app.climbra.android.data.net.EncryptedFileCookieStore
 import app.climbra.android.data.net.KeystoreCipher
 import app.climbra.android.data.net.Network
@@ -11,12 +12,14 @@ import app.climbra.android.data.net.SessionEvents
 import app.climbra.android.session.AppCompatLocales
 import app.climbra.android.session.AppLocales
 import app.climbra.android.session.SessionRepository
+import app.climbra.android.rider.RiderRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.io.File
+import java.time.Clock
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -72,4 +75,16 @@ object AppModule {
         locales: AppLocales,
         scope: CoroutineScope,
     ): SessionRepository = SessionRepository(api, cookies, events, locales, scope)
+
+    @Provides
+    @Singleton
+    fun riderApi(retrofit: Retrofit): RiderApi = retrofit.create(RiderApi::class.java)
+
+    @Provides
+    @Singleton
+    fun riderRepository(api: RiderApi): RiderRepository = RiderRepository(api)
+
+    @Provides
+    @Singleton
+    fun clock(): Clock = Clock.systemUTC()
 }

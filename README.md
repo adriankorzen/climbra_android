@@ -10,6 +10,7 @@ Built spec first: see [`specs/`](specs) and [`CLAUDE.md`](CLAUDE.md).
 | Spec | Feature |
 |------|---------|
 | [001](specs/001-app-foundation-and-login.md) | Login with email and password or Google, terms acceptance, logout, session kept between app starts, English / Polish (the account's language), bottom navigation with Dashboard, Activities and Profile (content in later specs) |
+| [002](specs/002-dashboard.md) | Dashboard: the last 7 days against the 7 before, FTP, fitness / fatigue / form (CTL, ATL, TSB), performance management chart (42–365 days), weekly load, the 7 latest rides. All figures come from the backend (cyclingapp spec 051) |
 
 Registration and password reset open the web pages in a Custom Tab.
 

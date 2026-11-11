@@ -16,11 +16,15 @@ analysis results on the device.
 ## Conventions
 
 - Chat with the user in Polish; everything in the repo (code, comments, docs, specs, commits) is in English.
+- **The app computes no training figures**: TSS, CTL / ATL / TSB, weekly and period totals come from the backend
+  (`GET /api/riders/{id}/training-load`, cyclingapp spec 051). A missing figure is a backend change (spec there),
+  never a computation here.
 - Kotlin, Jetpack Compose, Material 3. Package `app.climbra.android`, single `:app` module (split into modules
   only when a spec says so). Dependencies in `gradle/libs.versions.toml`.
 - No hard-coded UI strings: `res/values/strings.xml` (English) and `res/values-pl/strings.xml` (Polish) with
   identical keys (a unit test checks this). Format numbers, durations and dates through one formatting helper using
-  the current locale, mirroring `shared/fmt.ts` / `shared/format.ts` of the web frontend.
+  the current locale: `ui.format.Fmt` (`rememberFmt()` in composables), mirroring `shared/fmt.ts` / `shared/format.ts` of
+  the web frontend. Counted texts are `plurals`.
 
 ## Spec-driven development
 

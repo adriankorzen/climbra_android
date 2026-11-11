@@ -53,4 +53,52 @@
     <string name="api_error_terms_not_accepted">Zaakceptuj regulamin, aby kontynuować.</string>
     <string name="api_error_health_consent_required">Wyraź zgodę na przetwarzanie danych treningowych, aby kontynuować.</string>
     <string name="api_error_unauthenticated">Sesja wygasła. Zaloguj się ponownie.</string>
+
+    <!-- Dashboard (web: dashboard.*, columns.*, import.empty*, hrTss.*) -->
+    <string name="dashboard_load_failed">Nie można wczytać analiz.</string>
+    <string name="dashboard_kpis">Najważniejsze wskaźniki</string>
+    <string name="dashboard_tss7">TSS 7 dni</string>
+    <string name="dashboard_hours7">Czas 7 dni</string>
+    <string name="dashboard_distance7">Dystans 7 dni</string>
+    <string name="dashboard_rides7">Jazdy 7 dni</string>
+    <string name="dashboard_ftp">FTP</string>
+    <string name="dashboard_ctl">CTL</string>
+    <string name="dashboard_atl">ATL</string>
+    <string name="dashboard_tsb">TSB</string>
+    <string name="dashboard_ctl_long">CTL forma</string>
+    <string name="dashboard_atl_long">ATL zmęczenie</string>
+    <string name="dashboard_tsb_long">TSB świeżość</string>
+    <string name="dashboard_form_transition">Roztrenowanie</string>
+    <string name="dashboard_form_fresh">Świeżość</string>
+    <string name="dashboard_form_neutral">Neutralnie</string>
+    <string name="dashboard_form_optimal">Produktywnie</string>
+    <string name="dashboard_form_overload">Wysokie ryzyko</string>
+    <string name="dashboard_pmc">Zarządzanie formą</string>
+    <string name="dashboard_range">Zakres</string>
+    <string name="dashboard_days">%1$d dni</string>
+    <string name="dashboard_weekly">Obciążenie tygodniowe</string>
+    <!-- Abbreviated as on the web ("12 tyg."), the same for every number -->
+    <plurals name="dashboard_weeks">
+        <item quantity="one">%1$d tydz.</item>
+        <item quantity="few">%1$d tyg.</item>
+        <item quantity="many">%1$d tyg.</item>
+        <item quantity="other">%1$d tyg.</item>
+    </plurals>
+    <string name="dashboard_hours">Godziny</string>
+    <string name="dashboard_recent_rides">Ostatnie jazdy</string>
+    <string name="dashboard_no_rides">Brak przeanalizowanych jazd.</string>
+    <string name="dashboard_empty_title">Zacznij od historii jazd</string>
+    <string name="dashboard_empty_hint">Nie masz jeszcze żadnych jazd. Zaimportuj ostatnie treningi z plików FIT lub TCX na climbra.app, żeby zobaczyć obciążenie treningowe i analizy.</string>
+    <string name="dashboard_open_web">Otwórz climbra.app</string>
+    <string name="dashboard_no_rider_title">Utwórz profil kolarza</string>
+    <string name="dashboard_no_rider_hint">Twoje konto nie ma jeszcze profilu kolarza. Utwórz go na climbra.app, a potem wróć tutaj.</string>
+    <string name="activity_unnamed">Aktywność</string>
+    <string name="unit_watts">W</string>
+    <string name="unit_watts_per_kg">%1$s W/kg</string>
+    <string name="unit_km">km</string>
+    <string name="unit_hours">h</string>
+    <string name="ride_np">NP %1$s W</string>
+    <string name="ride_if">IF %1$s</string>
+    <string name="hr_tss_marker">HR</string>
+    <string name="hr_tss_tooltip">Obciążenie treningowe oszacowane z tętna względem Twojego LTHR (hrTSS), gdy jazda nie ma TSS z mocy. Mniej dokładne niż TSS z mocy.</string>
 </resources>

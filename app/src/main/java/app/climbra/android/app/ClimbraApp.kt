@@ -28,6 +28,7 @@ import app.climbra.android.AppConfig
 import app.climbra.android.R
 import app.climbra.android.auth.LoginRoute
 import app.climbra.android.auth.TermsRoute
+import app.climbra.android.dashboard.DashboardRoute
 import app.climbra.android.data.api.AccountResponse
 import app.climbra.android.profile.ProfileRoute
 import app.climbra.android.session.SessionRepository
@@ -66,7 +67,7 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
         terms = { changed -> TermsRoute(documentsChanged = changed, config = viewModel.config) },
         shell = { account ->
             Shell(
-                dashboard = { PlaceholderScreen(R.string.nav_dashboard) },
+                dashboard = { DashboardRoute(config = viewModel.config) },
                 activities = { PlaceholderScreen(R.string.nav_activities) },
                 profile = { ProfileRoute(email = account.email) },
             )
