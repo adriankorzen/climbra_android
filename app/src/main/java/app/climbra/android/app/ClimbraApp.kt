@@ -1,5 +1,6 @@
 package app.climbra.android.app
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -27,13 +29,14 @@ import androidx.lifecycle.viewModelScope
 import app.climbra.android.AppConfig
 import app.climbra.android.R
 import app.climbra.android.auth.LoginRoute
+import app.climbra.android.activities.ActivitiesRoute
+import app.climbra.android.activities.RideDetailRoute
 import app.climbra.android.auth.TermsRoute
 import app.climbra.android.dashboard.DashboardRoute
 import app.climbra.android.data.api.AccountResponse
 import app.climbra.android.profile.ProfileRoute
 import app.climbra.android.session.SessionRepository
 import app.climbra.android.session.SessionState
-import app.climbra.android.shell.PlaceholderScreen
 import app.climbra.android.shell.Shell
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -67,9 +70,19 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
         terms = { changed -> TermsRoute(documentsChanged = changed, config = viewModel.config) },
         shell = { account ->
             Shell(
-                dashboard = { DashboardRoute(config = viewModel.config) },
-                activities = { PlaceholderScreen(R.string.nav_activities) },
+                dashboard = { openRide -> DashboardRoute(config = viewModel.config, onOpenRide = openRide) },
+                activities = { openRide -> ActivitiesRoute(config = viewModel.config, onOpenRide = openRide) },
                 profile = { ProfileRoute(email = account.email) },
+                ride = { onBack ->
+                    val context = LocalContext.current
+                    RideDetailRoute(
+                        onBack = onBack,
+                        onDeleted = {
+                            Toast.makeText(context, R.string.activity_deleted, Toast.LENGTH_SHORT).show()
+                            onBack()
+                        },
+                    )
+                },
             )
         },
     )

@@ -16,8 +16,10 @@ analysis results on the device.
 ## Conventions
 
 - Chat with the user in Polish; everything in the repo (code, comments, docs, specs, commits) is in English.
-- **The app computes no training figures**: TSS, CTL / ATL / TSB, weekly and period totals come from the backend
-  (`GET /api/riders/{id}/training-load`, cyclingapp spec 051). A missing figure is a backend change (spec there),
+- **The app computes no training figures, joins or totals**: TSS, CTL / ATL / TSB, weekly and period totals, the
+  training log's rows and totals come from the backend
+  (`GET /api/riders/{id}/training-load`, `GET /api/riders/{id}/rides`, cyclingapp specs 051, 052). A missing figure is a
+  backend change (spec there),
   never a computation here.
 - Kotlin, Jetpack Compose, Material 3. Package `app.climbra.android`, single `:app` module (split into modules
   only when a spec says so). Dependencies in `gradle/libs.versions.toml`.
@@ -66,7 +68,9 @@ them under "Backend dependencies" by number.
 - MVVM: Compose screens → `@HiltViewModel` exposing `StateFlow<UiState>` → repositories → Retrofit services.
   Screens are split into a `…Route` (gets the ViewModel) and a stateless `…Screen` (state + callbacks) that tests render.
 - `SessionRepository.state` decides the top-level screen in `app.ClimbraContent` (login, terms, shell), so a session
-  end leaves no back stack. The shell (`shell.Shell`) is a `NavigationBar` with type-safe routes per tab.
+  end leaves no back stack. The shell (`shell.Shell`) is a `NavigationBar`; each tab is a nested graph with type-safe
+  routes (a ride opens on the stack of its tab, spec 003). After a change to rides (delete, reanalyse, link) call
+  `rider.DataChanges.changed()`: screens that show rides load again when shown.
 - Hilt for DI (`di.AppModule`), Retrofit + OkHttp + kotlinx.serialization, Navigation Compose. Vico for charts
   (from the first spec that needs one).
 - Packages by feature (`auth`, `profile`, `shell`, later `dashboard`, `activities`, …) plus `data/` (network, DTOs),

@@ -91,7 +91,7 @@ fun KpiTile(
                     hint,
                     style = MaterialTheme.typography.labelMedium,
                     color = tone ?: MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }

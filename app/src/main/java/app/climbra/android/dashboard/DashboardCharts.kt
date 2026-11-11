@@ -41,10 +41,15 @@ import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 
 private val CHART_HEIGHT = 240.dp
 
-/** Labels of the x axis by index, so the axis shows dates instead of positions. */
-private fun labels(values: List<String>) = CartesianValueFormatter { _, x, _ ->
-    values.getOrNull(x.toInt()) ?: " "
-}
+/**
+ * Labels of the x axis by index, so the axis shows dates instead of positions. Vico refuses blank labels (it throws),
+ * and while a range switch animates the axis can ask for positions the new data does not have: the nearest label is
+ * used then.
+ */
+internal fun labels(values: List<String>) = CartesianValueFormatter { _, x, _ -> label(values, x) }
+
+internal fun label(values: List<String>, x: Double): String =
+    if (values.isEmpty()) "–" else values[x.toInt().coerceIn(0, values.lastIndex)].ifBlank { "–" }
 
 @Composable
 private fun marker() = rememberDefaultCartesianMarker(

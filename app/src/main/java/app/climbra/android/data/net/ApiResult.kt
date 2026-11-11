@@ -35,15 +35,22 @@ sealed interface ApiResult<out T> {
 
 private const val LOG_TAG = "ClimbraApi"
 
+/**
+ * The error of an answer with [status], with the backend's code from its problem details [body]; also for calls that
+ * return the raw `Response` (a file download), which Retrofit does not throw for.
+ */
+fun httpError(json: Json, status: Int, body: String?): ApiError.Http {
+    val problem = body?.let { runCatching { json.decodeFromString(ProblemDetail.serializer(), it) }.getOrNull() }
+    return ApiError.Http(status, problem?.code)
+}
+
 /** Runs a Retrofit call and maps every failure to an [ApiError]. */
 suspend fun <T> apiCall(json: Json, call: suspend () -> T): ApiResult<T> = try {
     ApiResult.Success(call())
 } catch (e: CancellationException) {
     throw e
 } catch (e: HttpException) {
-    val body = e.response()?.errorBody()?.string()
-    val problem = body?.let { runCatching { json.decodeFromString(ProblemDetail.serializer(), it) }.getOrNull() }
-    ApiResult.Failure(ApiError.Http(e.code(), problem?.code))
+    ApiResult.Failure(httpError(json, e.code(), e.response()?.errorBody()?.string()))
 } catch (e: IOException) {
     Log.w(LOG_TAG, "Request failed: ${e.javaClass.simpleName}: ${e.message}")
     ApiResult.Failure(ApiError.Network)

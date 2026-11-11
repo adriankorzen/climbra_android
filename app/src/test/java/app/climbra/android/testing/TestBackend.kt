@@ -1,5 +1,6 @@
 package app.climbra.android.testing
 
+import app.climbra.android.data.api.ActivityApi
 import app.climbra.android.data.api.AuthApi
 import app.climbra.android.data.api.RiderApi
 import app.climbra.android.data.net.ByteCipher
@@ -41,6 +42,7 @@ class TestBackend(
     private val retrofit = Network.retrofit(server.url("/").toString(), client)
     val api: AuthApi = retrofit.create(AuthApi::class.java)
     val riderApi: RiderApi = retrofit.create(RiderApi::class.java)
+    val activityApi: ActivityApi = retrofit.create(ActivityApi::class.java)
     val locales = FakeAppLocales()
 
     /** Requests in the order they arrived. */
@@ -53,6 +55,11 @@ class TestBackend(
     /** Queues answers for `"POST /api/auth/login"`; the last one repeats. */
     fun on(route: String, vararg responses: MockResponse) {
         synchronized(routes) { routes.getOrPut(route) { ArrayDeque() }.addAll(responses) }
+    }
+
+    /** Answers [route] with [responses] from now on, instead of what was queued before. */
+    fun replace(route: String, vararg responses: MockResponse) {
+        synchronized(routes) { routes[route] = ArrayDeque(responses.toList()) }
     }
 
     fun requests(route: String) = requests.filter { "${it.method} ${it.url.encodedPath}" == route }

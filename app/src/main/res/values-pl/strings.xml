@@ -4,7 +4,6 @@
     <string name="nav_dashboard">Pulpit</string>
     <string name="nav_activities">Aktywności</string>
     <string name="nav_profile">Profil</string>
-    <string name="placeholder_coming_soon">Wkrótce w aplikacji. Do tego czasu korzystaj z climbra.app w przeglądarce.</string>
 
     <!-- Login (web: auth.login.*, auth.*) -->
     <string name="login_title">Logowanie</string>
@@ -101,4 +100,180 @@
     <string name="ride_if">IF %1$s</string>
     <string name="hr_tss_marker">HR</string>
     <string name="hr_tss_tooltip">Obciążenie treningowe oszacowane z tętna względem Twojego LTHR (hrTSS), gdy jazda nie ma TSS z mocy. Mniej dokładne niż TSS z mocy.</string>
+
+    <!-- Training log (web: activities.*, ranges.*) -->
+    <string name="activities_search">Szukaj po nazwie</string>
+    <string name="activities_clear_search">Wyczyść wyszukiwanie</string>
+    <string name="activities_totals">Suma okresu</string>
+    <string name="activities_rides">Jazdy</string>
+    <string name="activities_time">Czas</string>
+    <string name="activities_distance">Dystans</string>
+    <string name="activities_elevation">Przewyższenie</string>
+    <string name="activities_work">Praca</string>
+    <string name="activities_empty">Brak jazd w tym okresie.</string>
+    <string name="activities_empty_search">Żadna jazda z tego okresu nie pasuje do wyszukiwania.</string>
+    <string name="range_7d">7 dni</string>
+    <string name="range_28d">28 dni</string>
+    <string name="range_90d">90 dni</string>
+    <string name="range_year">Ten rok</string>
+    <string name="range_custom">Własny</string>
+    <string name="range_pick">Wybierz okres</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Anuluj</string>
+    <string name="back">Wstecz</string>
+    <string name="more_actions">Więcej działań</string>
+
+    <!-- Ride detail (web: activity.*, rideChart.*, source.*) -->
+    <string name="activity_not_found">Nie znaleziono aktywności.</string>
+    <string name="activity_load_failed">Nie można wczytać jazdy.</string>
+    <string name="activity_reanalyse">Przelicz</string>
+    <string name="activity_analysing">Analizowanie…</string>
+    <string name="activity_download_fit">Pobierz FIT</string>
+    <string name="activity_saved_to_downloads">Zapisano w Pobranych: %1$s</string>
+    <string name="activity_save_failed">Nie udało się zapisać pliku.</string>
+    <string name="activity_no_analysis">Analiza tej aktywności nie jest dostępna.</string>
+    <string name="activity_duration">Czas</string>
+    <string name="activity_avg_power">Śr. moc</string>
+    <string name="activity_max_value">maks. %1$s</string>
+    <string name="activity_hr">Śr. tętno</string>
+    <string name="activity_cadence">Kadencja</string>
+    <string name="activity_thresholds">Użyte progi</string>
+    <string name="activity_thresholds_hint">LTHR %1$s · maks. %2$s</string>
+    <string name="activity_thresholds_since">LTHR %1$s · maks. %2$s · od %3$s</string>
+    <string name="activity_no_power">Brak danych mocy w tej jeździe – metryki mocy i interwały są niedostępne.</string>
+    <string name="activity_ride_chart">Przebieg jazdy</string>
+    <string name="activity_no_recording">Zapis tej jazdy jest niedostępny.</string>
+    <string name="activity_power_zones">Strefy mocy</string>
+    <string name="activity_hr_zones">Strefy tętna</string>
+    <string name="activity_set_ftp">Ustaw FTP w profilu, aby zobaczyć strefy mocy.</string>
+    <string name="activity_no_power_data">Brak danych mocy.</string>
+    <string name="activity_set_lthr">Ustaw LTHR lub maks. tętno w profilu, aby zobaczyć strefy tętna.</string>
+    <string name="activity_hr_zones_from_max_hr">Strefy z maks. tętna – podaj LTHR, aby były dokładniejsze.</string>
+    <string name="activity_no_hr_data">Brak danych tętna.</string>
+    <string name="activity_intervals">Interwały</string>
+    <string name="activity_not_stored">Wynik doraźny – niezapisany</string>
+    <string name="activity_detection">Ustawienia wykrywania</string>
+    <string name="activity_target_watts">Cel (W)</string>
+    <string name="activity_threshold">Próg (% FTP)</string>
+    <string name="activity_min_duration">Min. czas (s)</string>
+    <string name="activity_max_gap">Maks. przerwa (s)</string>
+    <string name="activity_under_threshold">Próg underów (% FTP)</string>
+    <string name="activity_recalculate">Przelicz</string>
+    <string name="activity_reset">Resetuj</string>
+    <string name="activity_detection_invalid">Wpisz tylko liczby.</string>
+    <string name="activity_detection_hint">Puste pola = automatyczne wykrywanie. Min. czas i maks. przerwa działają razem z progiem. Próg underów działa zawsze. Wynik nie jest zapisywany.</string>
+    <string name="activity_auto">auto</string>
+    <string name="activity_blocks">Bloki</string>
+    <string name="activity_target">Cel</string>
+    <string name="activity_manual">ręcznie</string>
+    <string name="activity_median">mediana bloków</string>
+    <string name="activity_cv_duration">CV czasu</string>
+    <string name="activity_cv_power">CV mocy</string>
+    <string name="activity_drift">Dryf tętna</string>
+    <string name="activity_vo2_threshold">≥ %1$s bpm</string>
+    <string name="activity_hr_start_end">Tętno start → koniec</string>
+    <string name="activity_max_hr">Maks. tętno</string>
+    <string name="activity_no_intervals">Nie wykryto serii interwałów – wysiłki były zbyt nieregularne, by były planowanymi powtórzeniami (np. światła, podjazdy).</string>
+    <string name="activity_delete">Usuń jazdę</string>
+    <string name="activity_delete_title">Usunąć jazdę?</string>
+    <string name="activity_delete_confirm">Jazda „%1$s” z %2$s zostanie trwale usunięta razem z plikiem i analizą. Zaplanowany trening, z którym była połączona, wróci do niewykonanych. Rozmowy z trenerem o tej jeździe zostają, ale bez odnośnika do niej.</string>
+    <string name="activity_deleted">Jazda usunięta</string>
+    <string name="activity_over_under">Over-under</string>
+    <string name="activity_repeat_sets">Powtórzenia</string>
+    <string name="activity_repetition_count">Powtórzenia</string>
+    <string name="activity_work_power">Praca</string>
+    <string name="activity_recovery_power">Odpoczynek</string>
+    <string name="activity_interval_source">Interwały</string>
+    <string name="activity_source_laps">Z okrążeń</string>
+    <string name="activity_source_power">Z mocy</string>
+    <string name="activity_interval_source_hint">Z okrążeń: interwały wyznaczają okrążenia treningu strukturalnego lub kliknięcia przycisku lap; w treningu strukturalnym o tym, czy okrążenie jest interwałem, decyduje typ kroku (praca / odpoczynek). Z mocy: interwały są wykrywane z danych mocy. Wybór jest zapisywany dla tej jazdy.</string>
+    <string name="activity_sets">Serie</string>
+    <string name="activity_overs">Overy</string>
+    <string name="activity_unders">Undery</string>
+    <string name="activity_set">Seria %1$d</string>
+    <string name="activity_repetitions">Powt.</string>
+    <string name="activity_avg_np">Śr. / NP W</string>
+    <string name="activity_over_power">Over</string>
+    <string name="activity_under_power">Under</string>
+    <string name="activity_above_ftp">Nad FTP</string>
+    <string name="activity_over">Over</string>
+    <string name="activity_under">Under</string>
+    <string name="activity_percent_of_target" formatted="false">% celu</string>
+    <string name="ride_chart_power">Moc</string>
+    <string name="ride_chart_heart_rate">Tętno</string>
+    <string name="ride_chart_cadence">Kadencja</string>
+    <string name="ride_chart_speed">Prędkość</string>
+    <string name="ride_chart_altitude">Wysokość</string>
+    <string name="ride_chart_reset_zoom">Cała jazda</string>
+    <string name="ride_chart_label">Moc, tętno, kadencja i wysokość w czasie</string>
+    <string name="source_garmin">Garmin</string>
+    <string name="source_upload">Plik</string>
+
+    <!-- Planned workout card (web: adherence.*, enums.*) -->
+    <string name="adherence_planned_workout">Planowany trening</string>
+    <string name="adherence_unplanned_ride">Jazda poza planem</string>
+    <string name="adherence_link_to_workout">Powiąż z treningiem</string>
+    <string name="adherence_link">Powiąż</string>
+    <string name="adherence_planned">Plan</string>
+    <string name="adherence_ridden">Jazda</string>
+    <string name="adherence_intervals">Interwały</string>
+    <string name="adherence_match_auto">dopasowana automatycznie</string>
+    <string name="adherence_match_manual">powiązana przez Ciebie</string>
+    <string name="compliance_ok">Zgodnie z planem</string>
+    <string name="compliance_moderate">Odchylenie</string>
+    <string name="compliance_large">Duże odchylenie</string>
+
+    <!-- Errors of rides -->
+    <string name="api_error_activity_busy">Trwa zapytanie do trenera o tę jazdę. Usuń ją, gdy się zakończy.</string>
+    <string name="api_error_file_storage_unavailable">Pliki jazd są chwilowo niedostępne. Spróbuj ponownie za chwilę.</string>
+    <string name="api_error_file_processing_busy">Serwer przetwarza teraz dużo plików. Spróbuj ponownie za kilka sekund.</string>
+    <string name="api_error_workout_completed">Trening ma powiązaną jazdę. Najpierw ją odłącz.</string>
+
+    <!-- Sports and workout types (web: sport.*, enums.workoutType.*) -->
+    <string name="sport_cycling">Kolarstwo</string>
+    <string name="sport_road_biking">Szosa</string>
+    <string name="sport_road_cycling">Szosa</string>
+    <string name="sport_indoor_cycling">Trenażer</string>
+    <string name="sport_virtual_ride">Wirtualna</string>
+    <string name="sport_gravel_cycling">Gravel</string>
+    <string name="sport_mountain_biking">MTB</string>
+    <string name="sport_cyclocross">Przełaj</string>
+    <string name="sport_track_cycling">Tor</string>
+    <string name="sport_e_bike_fitness">E-bike</string>
+    <string name="sport_e_bike_mountain">Rower elektr. MTB</string>
+    <string name="sport_running">Bieg</string>
+    <string name="sport_walking">Spacer</string>
+    <string name="sport_hiking">Wędrówka</string>
+    <string name="sport_strength_training">Siłownia</string>
+    <string name="workout_type_endurance">Wytrzymałość</string>
+    <string name="workout_type_recovery">Regeneracja</string>
+    <string name="workout_type_tempo">Tempo</string>
+    <string name="workout_type_sweet_spot">Sweet spot</string>
+    <string name="workout_type_threshold">Próg</string>
+    <string name="workout_type_vo2max">VO2max</string>
+    <string name="workout_type_anaerobic">Beztlenowy</string>
+    <string name="workout_type_sprint">Sprint</string>
+    <string name="workout_type_mixed">Mieszany</string>
+    <string name="workout_type_race">Wyścig</string>
+    <string name="workout_type_test">Test</string>
+    <string name="workout_type_rest">Odpoczynek</string>
+
+    <!-- Zone names (web: zones.power.*, zones.hr.*, zones.hrMax.*) -->
+    <string name="zone_power_1">Regeneracja</string>
+    <string name="zone_power_2">Wytrzymałość</string>
+    <string name="zone_power_3">Tempo</string>
+    <string name="zone_power_4">Próg</string>
+    <string name="zone_power_5">VO2max</string>
+    <string name="zone_power_6">Beztlenowa</string>
+    <string name="zone_power_7">Nerwowo-mięśniowa</string>
+    <string name="zone_hr_1">Regeneracja</string>
+    <string name="zone_hr_2">Wytrzymałość</string>
+    <string name="zone_hr_3">Tempo</string>
+    <string name="zone_hr_4">Próg</string>
+    <string name="zone_hr_5">VO2max</string>
+    <string name="zone_hr_max_1">Rozgrzewka</string>
+    <string name="zone_hr_max_2">Łatwa</string>
+    <string name="zone_hr_max_3">Aerobowa</string>
+    <string name="zone_hr_max_4">Progowa</string>
+    <string name="zone_hr_max_5">Maksymalna</string>
 </resources>

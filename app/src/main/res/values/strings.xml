@@ -6,7 +6,6 @@
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_activities">Activities</string>
     <string name="nav_profile">Profile</string>
-    <string name="placeholder_coming_soon">Coming soon to the app. Until then, use climbra.app in the browser.</string>
 
     <!-- Login (web: auth.login.*, auth.*) -->
     <string name="login_title">Log in</string>
@@ -101,4 +100,185 @@
     <string name="hr_tss_marker">HR</string>
     <string name="hr_tss_tooltip">Training stress estimated from heart rate relative to your LTHR (hrTSS), used when the ride has no power TSS. Less precise than TSS from power.</string>
     <string name="chart_tss" translatable="false">TSS</string>
+
+    <!-- Training log (web: activities.*, ranges.*) -->
+    <string name="activities_search">Search by name</string>
+    <string name="activities_clear_search">Clear search</string>
+    <string name="activities_totals">Totals of the period</string>
+    <string name="activities_rides">Rides</string>
+    <string name="activities_time">Time</string>
+    <string name="activities_distance">Distance</string>
+    <string name="activities_elevation">Elevation</string>
+    <string name="activities_work">Work</string>
+    <string name="activities_empty">No rides in this period.</string>
+    <string name="activities_empty_search">No rides match the search in this period.</string>
+    <string name="range_7d">7 d</string>
+    <string name="range_28d">28 d</string>
+    <string name="range_90d">90 d</string>
+    <string name="range_year">This year</string>
+    <string name="range_custom">Custom</string>
+    <string name="range_pick">Choose the period</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="back">Back</string>
+    <string name="more_actions">More actions</string>
+
+    <!-- Ride detail (web: activity.*, rideChart.*, source.*) -->
+    <string name="activity_not_found">Activity not found.</string>
+    <string name="activity_load_failed">The ride cannot be loaded.</string>
+    <string name="activity_reanalyse">Re-analyse</string>
+    <string name="activity_analysing">Analysing…</string>
+    <string name="activity_download_fit">Download FIT</string>
+    <string name="activity_saved_to_downloads">Saved to Downloads: %1$s</string>
+    <string name="activity_save_failed">The file could not be saved.</string>
+    <string name="activity_no_analysis">Analysis is not available for this activity.</string>
+    <string name="activity_duration">Duration</string>
+    <string name="activity_avg_power">Avg power</string>
+    <string name="activity_max_value">max %1$s</string>
+    <string name="activity_hr">Avg HR</string>
+    <string name="activity_cadence">Cadence</string>
+    <string name="activity_thresholds">Thresholds used</string>
+    <string name="activity_thresholds_hint">LTHR %1$s · max %2$s</string>
+    <string name="activity_thresholds_since">LTHR %1$s · max %2$s · valid from %3$s</string>
+    <string name="activity_no_power">No power data in this ride – power metrics and intervals are not available.</string>
+    <string name="activity_ride_chart">Ride</string>
+    <string name="activity_no_recording">The recording of this ride is not available.</string>
+    <string name="activity_power_zones">Power zones</string>
+    <string name="activity_hr_zones">Heart rate zones</string>
+    <string name="activity_set_ftp">Set your FTP in the profile to see power zones.</string>
+    <string name="activity_no_power_data">No power data.</string>
+    <string name="activity_set_lthr">Set your LTHR or max heart rate in the profile to see heart rate zones.</string>
+    <string name="activity_hr_zones_from_max_hr">Zones from max heart rate – enter your LTHR for more accurate zones.</string>
+    <string name="activity_no_hr_data">No heart rate data.</string>
+    <string name="activity_intervals">Intervals</string>
+    <string name="activity_not_stored">Ad hoc result – not stored</string>
+    <string name="activity_detection">Detection settings</string>
+    <string name="activity_target_watts">Target (W)</string>
+    <string name="activity_threshold">Threshold (% FTP)</string>
+    <string name="activity_min_duration">Min duration (s)</string>
+    <string name="activity_max_gap">Max gap (s)</string>
+    <string name="activity_under_threshold">Under threshold (% FTP)</string>
+    <string name="activity_recalculate">Recalculate</string>
+    <string name="activity_reset">Reset</string>
+    <string name="activity_detection_invalid">Enter numbers only.</string>
+    <string name="activity_detection_hint">Leave fields empty for automatic detection. Min duration and max gap apply with a threshold; the under threshold always applies. The result is not stored.</string>
+    <string name="activity_auto">auto</string>
+    <string name="activity_blocks">Blocks</string>
+    <string name="activity_target">Target</string>
+    <string name="activity_manual">manual</string>
+    <string name="activity_median">median of blocks</string>
+    <string name="activity_cv_duration">CV duration</string>
+    <string name="activity_cv_power">CV power</string>
+    <string name="activity_drift">Cardiac drift</string>
+    <string name="activity_vo2max" translatable="false">VO2max</string>
+    <string name="activity_vo2_threshold">≥ %1$s bpm</string>
+    <string name="activity_hr_start_end">HR start → end</string>
+    <string name="activity_max_hr">Max HR</string>
+    <string name="activity_no_intervals">No structured interval set detected – the efforts were too irregular to be planned repeats (e.g. traffic lights or climbs).</string>
+    <string name="activity_delete">Delete ride</string>
+    <string name="activity_delete_title">Delete the ride?</string>
+    <string name="activity_delete_confirm">The ride “%1$s” from %2$s will be deleted permanently with its file and analysis. A planned workout it was linked to becomes not done again. Coach conversations about the ride stay, but without the link to it.</string>
+    <string name="activity_deleted">Ride deleted</string>
+    <string name="activity_over_under">Over-under</string>
+    <string name="activity_repeat_sets">Repeats</string>
+    <string name="activity_repetition_count">Repetitions</string>
+    <string name="activity_work_power">Work</string>
+    <string name="activity_recovery_power">Recovery</string>
+    <string name="activity_interval_source">Intervals</string>
+    <string name="activity_source_laps">From laps</string>
+    <string name="activity_source_power">From power</string>
+    <string name="activity_interval_source_hint">From laps: the laps of a structured workout or lap button presses mark the intervals; in a structured workout the step type (work / rest) decides which laps are intervals. From power: the intervals are detected from the power data. The choice is saved for this ride.</string>
+    <string name="activity_sets">Sets</string>
+    <string name="activity_overs">Overs</string>
+    <string name="activity_unders">Unders</string>
+    <string name="activity_set">Set %1$d</string>
+    <string name="activity_repetitions">Reps</string>
+    <string name="activity_avg_np">Avg / NP W</string>
+    <string name="activity_over_power">Over</string>
+    <string name="activity_under_power">Under</string>
+    <string name="activity_above_ftp">Above FTP</string>
+    <string name="activity_over">Over</string>
+    <string name="activity_under">Under</string>
+    <string name="activity_efficiency" translatable="false">W/bpm</string>
+    <string name="activity_percent_of_target" formatted="false">% target</string>
+    <string name="ride_chart_power">Power</string>
+    <string name="ride_chart_heart_rate">Heart rate</string>
+    <string name="ride_chart_cadence">Cadence</string>
+    <string name="ride_chart_speed">Speed</string>
+    <string name="ride_chart_altitude">Altitude</string>
+    <string name="ride_chart_reset_zoom">Whole ride</string>
+    <string name="ride_chart_label">Power, heart rate, cadence and altitude over time</string>
+    <string name="source_garmin">Garmin</string>
+    <string name="source_upload">File</string>
+    <string name="source_intervals" translatable="false">intervals.icu</string>
+
+    <!-- Planned workout card (web: adherence.*, enums.*) -->
+    <string name="adherence_planned_workout">Planned workout</string>
+    <string name="adherence_unplanned_ride">Unplanned ride</string>
+    <string name="adherence_link_to_workout">Link to a workout</string>
+    <string name="adherence_link">Link</string>
+    <string name="adherence_planned">Plan</string>
+    <string name="adherence_ridden">Ride</string>
+    <string name="adherence_tss" translatable="false">TSS</string>
+    <string name="adherence_if" translatable="false">IF</string>
+    <string name="adherence_intervals">Intervals</string>
+    <string name="adherence_match_auto">matched automatically</string>
+    <string name="adherence_match_manual">linked by you</string>
+    <string name="compliance_ok">As planned</string>
+    <string name="compliance_moderate">Deviation</string>
+    <string name="compliance_large">Large deviation</string>
+
+    <!-- Errors of rides -->
+    <string name="api_error_activity_busy">A coach request about this ride is running. Delete it when the request has finished.</string>
+    <string name="api_error_file_storage_unavailable">Ride files are temporarily unavailable. Try again shortly.</string>
+    <string name="api_error_file_processing_busy">The server is processing many files right now. Try again in a few seconds.</string>
+    <string name="api_error_workout_completed">The workout has a linked ride. Unlink it first.</string>
+
+    <!-- Sports and workout types (web: sport.*, enums.workoutType.*) -->
+    <string name="sport_cycling">Cycling</string>
+    <string name="sport_road_biking">Road</string>
+    <string name="sport_road_cycling">Road</string>
+    <string name="sport_indoor_cycling">Indoor</string>
+    <string name="sport_virtual_ride">Virtual</string>
+    <string name="sport_gravel_cycling">Gravel</string>
+    <string name="sport_mountain_biking">MTB</string>
+    <string name="sport_cyclocross">Cyclocross</string>
+    <string name="sport_track_cycling">Track</string>
+    <string name="sport_e_bike_fitness">E-bike</string>
+    <string name="sport_e_bike_mountain">E-MTB</string>
+    <string name="sport_running">Running</string>
+    <string name="sport_walking">Walking</string>
+    <string name="sport_hiking">Hiking</string>
+    <string name="sport_strength_training">Strength</string>
+    <string name="workout_type_endurance">Endurance</string>
+    <string name="workout_type_recovery">Recovery</string>
+    <string name="workout_type_tempo">Tempo</string>
+    <string name="workout_type_sweet_spot">Sweet spot</string>
+    <string name="workout_type_threshold">Threshold</string>
+    <string name="workout_type_vo2max">VO2max</string>
+    <string name="workout_type_anaerobic">Anaerobic</string>
+    <string name="workout_type_sprint">Sprint</string>
+    <string name="workout_type_mixed">Mixed</string>
+    <string name="workout_type_race">Race</string>
+    <string name="workout_type_test">Test</string>
+    <string name="workout_type_rest">Rest</string>
+
+    <!-- Zone names (web: zones.power.*, zones.hr.*, zones.hrMax.*) -->
+    <string name="zone_power_1">Active recovery</string>
+    <string name="zone_power_2">Endurance</string>
+    <string name="zone_power_3">Tempo</string>
+    <string name="zone_power_4">Threshold</string>
+    <string name="zone_power_5">VO2max</string>
+    <string name="zone_power_6">Anaerobic</string>
+    <string name="zone_power_7">Neuromuscular</string>
+    <string name="zone_hr_1">Active recovery</string>
+    <string name="zone_hr_2">Endurance</string>
+    <string name="zone_hr_3">Tempo</string>
+    <string name="zone_hr_4">Threshold</string>
+    <string name="zone_hr_5">VO2max</string>
+    <string name="zone_hr_max_1">Warm up</string>
+    <string name="zone_hr_max_2">Easy</string>
+    <string name="zone_hr_max_3">Aerobic</string>
+    <string name="zone_hr_max_4">Threshold</string>
+    <string name="zone_hr_max_5">Maximum</string>
 </resources>

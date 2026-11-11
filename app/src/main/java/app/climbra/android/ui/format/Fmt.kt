@@ -20,6 +20,9 @@ enum class DateStyle(internal val skeleton: String) {
     /** Sun, 25 Oct */
     WEEKDAY("EEE, d MMM"),
 
+    /** 25 Oct 2026 */
+    DAY_MONTH_YEAR("d MMM y"),
+
     /** 25 Oct */
     DAY_MONTH("d MMM"),
 }

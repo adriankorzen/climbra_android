@@ -1,5 +1,6 @@
 package app.climbra.android.dashboard
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -59,7 +60,7 @@ import app.climbra.android.ui.theme.MonoFamily
 import app.climbra.android.ui.theme.extendedColors
 
 @Composable
-fun DashboardRoute(config: AppConfig, viewModel: DashboardViewModel = hiltViewModel()) {
+fun DashboardRoute(config: AppConfig, onOpenRide: (Long) -> Unit, viewModel: DashboardViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onShown() }
@@ -69,6 +70,7 @@ fun DashboardRoute(config: AppConfig, viewModel: DashboardViewModel = hiltViewMo
         onRefresh = viewModel::refresh,
         onSelectRange = viewModel::selectRange,
         onOpenWeb = { openWebPage(context, config.webPage("")) },
+        onOpenRide = onOpenRide,
     )
 }
 
@@ -81,6 +83,7 @@ fun DashboardScreen(
     onRefresh: () -> Unit,
     onSelectRange: (Int) -> Unit,
     onOpenWeb: () -> Unit,
+    onOpenRide: (Long) -> Unit = {},
 ) {
     PullToRefreshBox(isRefreshing = state.refreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
         Column(
@@ -116,14 +119,20 @@ fun DashboardScreen(
                     onOpenWeb = onOpenWeb,
                     tag = "dashboard-no-rider",
                 )
-                state.rider != null || state.failed -> Content(state, fmt, onSelectRange, onOpenWeb)
+                state.rider != null || state.failed -> Content(state, fmt, onSelectRange, onOpenWeb, onOpenRide)
             }
         }
     }
 }
 
 @Composable
-private fun Content(state: DashboardUiState, fmt: Fmt, onSelectRange: (Int) -> Unit, onOpenWeb: () -> Unit) {
+private fun Content(
+    state: DashboardUiState,
+    fmt: Fmt,
+    onSelectRange: (Int) -> Unit,
+    onOpenWeb: () -> Unit,
+    onOpenRide: (Long) -> Unit,
+) {
     if (state.noRidesAtAll) {
         Hint(
             title = stringResource(R.string.dashboard_empty_title),
@@ -145,7 +154,7 @@ private fun Content(state: DashboardUiState, fmt: Fmt, onSelectRange: (Int) -> U
                 PmcCard(state, fmt, onSelectRange)
                 WeeklyCard(state, fmt)
             }
-            RecentRides(state, fmt)
+            RecentRides(state, fmt, onOpenRide)
         }
     }
 }
@@ -338,7 +347,7 @@ private fun WeeklyCard(state: DashboardUiState, fmt: Fmt, modifier: Modifier = M
 }
 
 @Composable
-private fun RecentRides(state: DashboardUiState, fmt: Fmt) {
+private fun RecentRides(state: DashboardUiState, fmt: Fmt, onOpenRide: (Long) -> Unit) {
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp)) {
             CardTitle(stringResource(R.string.dashboard_recent_rides))
@@ -352,17 +361,21 @@ private fun RecentRides(state: DashboardUiState, fmt: Fmt) {
             }
             state.rides.forEachIndexed { index, ride ->
                 if (index > 0) HorizontalDivider()
-                RideRow(ride, fmt)
+                RideRow(ride, fmt, onOpenRide)
             }
         }
     }
 }
 
 @Composable
-private fun RideRow(ride: AnalysisSummary, fmt: Fmt) {
+private fun RideRow(ride: AnalysisSummary, fmt: Fmt, onOpenRide: (Long) -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp).testTag("ride-${ride.activityId}"),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenRide(ride.activityId) }
+            .padding(vertical = 10.dp)
+            .testTag("ride-${ride.activityId}"),
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
