@@ -1,6 +1,7 @@
 package app.climbra.android.auth.google
 
 import android.content.Context
+import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
@@ -47,14 +48,20 @@ class CredentialManagerGoogleSource(
                 GoogleCredentialResult.Failed
             }
         } catch (e: GetCredentialCancellationException) {
+            Log.i(LOG_TAG, "Google credential cancelled: ${e.type}: ${e.errorMessage}")
             GoogleCredentialResult.Cancelled
         } catch (e: NoCredentialException) {
             // No Google account and adding one was not finished
             GoogleCredentialResult.Failed
         } catch (e: GetCredentialException) {
+            Log.w(LOG_TAG, "Google credential failed: ${e.type}: ${e.errorMessage}")
             GoogleCredentialResult.Failed
         } catch (e: GoogleIdTokenParsingException) {
             GoogleCredentialResult.Failed
         }
+    }
+
+    private companion object {
+        const val LOG_TAG = "ClimbraGoogle"
     }
 }

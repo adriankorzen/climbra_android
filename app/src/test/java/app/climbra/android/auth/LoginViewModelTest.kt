@@ -10,10 +10,15 @@ import app.climbra.android.testing.TestBackend.Companion.account
 import app.climbra.android.testing.TestBackend.Companion.json
 import app.climbra.android.testing.TestBackend.Companion.problem
 import app.climbra.android.ui.common.UiText
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -180,5 +185,66 @@ class LoginViewModelTest {
 
         viewModel.loginWithGoogle { GoogleCredentialResult.Failed }
         assertEquals(UiText(R.string.login_google_failed), viewModel.settled().error)
+    }
+
+    // AC6: the system's Google UI closed without ever answering
+    @Test
+    fun aCredentialRequestThatNeverAnswersIsGivenUpAfterTheScreenIsBack() = test { viewModel, session ->
+        backend.on("GET /api/auth/google/nonce", json("""{"nonce":"nonce-123"}"""))
+
+        val asked = CompletableDeferred<Unit>()
+        viewModel.loginWithGoogle {
+            asked.complete(Unit)
+            awaitCancellation()
+        }
+        asked.await()
+        viewModel.onScreenPaused()
+        viewModel.onScreenResumed()
+        assertTrue(viewModel.state.value.submitting)
+
+        val state = viewModel.settled()
+        assertTrue("given up only after the grace", currentTime >= 3.seconds.inWholeMilliseconds)
+        assertNull(state.error)
+        assertFalse(session() is SessionState.LoggedIn)
+    }
+
+    // AC6
+    @Test
+    fun anAnswerWithinTheGraceAfterTheScreenIsBackStillLogsIn() = test { viewModel, session ->
+        backend.on("GET /api/auth/google/nonce", json("""{"nonce":"nonce-123"}"""))
+        backend.on("POST /api/auth/google/id-token", json(account()))
+        val answer = CompletableDeferred<GoogleCredentialResult>()
+
+        val asked = CompletableDeferred<Unit>()
+        viewModel.loginWithGoogle {
+            asked.complete(Unit)
+            answer.await()
+        }
+        asked.await()
+        viewModel.onScreenPaused()
+        viewModel.onScreenResumed()
+        advanceTimeBy(2.seconds)
+        answer.complete(GoogleCredentialResult.Token("id-token-abc"))
+        viewModel.settled()
+        advanceTimeBy(2.seconds)
+
+        assertTrue(session() is SessionState.LoggedIn)
+    }
+
+    // AC6: resuming without having left (the first ON_RESUME) gives up nothing
+    @Test
+    fun aResumeWithoutPauseKeepsTheRequest() = test { viewModel, _ ->
+        backend.on("GET /api/auth/google/nonce", json("""{"nonce":"nonce-123"}"""))
+
+        val asked = CompletableDeferred<Unit>()
+        viewModel.loginWithGoogle {
+            asked.complete(Unit)
+            awaitCancellation()
+        }
+        asked.await()
+        viewModel.onScreenResumed()
+        advanceTimeBy(10.seconds)
+
+        assertTrue(viewModel.state.value.submitting)
     }
 }

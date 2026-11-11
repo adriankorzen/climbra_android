@@ -74,12 +74,19 @@ in to an existing account — including accounts created with Google, which have
 
 ### Google login
 
-- Credential Manager `GetGoogleIdOption` (server client id = the backend's Google web client id, from
-  `BuildConfig.GOOGLE_SERVER_CLIENT_ID`), nonce fetched per attempt from `GET /api/auth/google/nonce`. Shows the
-  account picker; on success the app sends the ID token to `POST /api/auth/google/id-token`, which starts the same
-  session as the web Google login and returns `AccountResponse`. `401 GOOGLE_FAILED` shows a translated message.
-- Cancelling the picker returns to the login screen without an error message. No Google account on the device →
-  Credential Manager's "add account" flow.
+- Credential Manager's "Sign in with Google" button flow (`GetSignInWithGoogleOption`; server client id = the
+  backend's Google web client id, from `BuildConfig.GOOGLE_SERVER_CLIENT_ID`), nonce fetched per attempt from
+  `GET /api/auth/google/nonce`. Shows the account picker; on success the app sends the ID token to
+  `POST /api/auth/google/id-token`, which starts the same session as the web Google login and returns
+  `AccountResponse`. `401 GOOGLE_FAILED` and errors Credential Manager reports as errors (e.g. a wrong client id)
+  show the translated Google message.
+- Cancelling the picker returns to the login screen without an error message. Google Play services also report some
+  failures as a cancellation (status 16, e.g. no Android OAuth client for the package and signing key, which logs
+  `UNREGISTERED_ON_API_CONSOLE`); those cannot be told apart and show no message either. Every outcome is logged with
+  the tag `ClimbraGoogle`.
+- No Google account on the device → the "add account" flow of Google Play services. That flow can close without
+  Credential Manager ever answering; so a request still open 3 seconds after the login screen is back in front
+  (paused under the system UI, then resumed) is given up as cancelled, and the buttons work again.
 - A first Google login creates the account on the backend (without accepted terms) → terms screen.
 
 ### Terms screen
@@ -183,5 +190,5 @@ DTOs ignore unknown JSON fields, so new backend fields do not break the app.
   `MockWebServer` (`testing/TestBackend`); the Keystore cipher is replaced by a reversible one.
 - Screens (AC6, AC7, AC8, AC11): Compose UI tests on Robolectric (SDK 35; SDK 36 fails in Robolectric 4.17).
 - AC10: `StringResourcesTest`. All run with `./gradlew testDebugUnitTest`, no emulator needed.
-- Checked by hand on the API 37 emulator against the local backend: login, Polish UI after login, session kept
-  after a process restart, logout back to the device language.
+- Checked by hand on the API 37 emulator: email login against the local backend (Polish UI after login, session kept
+  after a process restart, logout back to the device language) and Google login against production (spec 050).

@@ -46,6 +46,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.climbra.android.AppConfig
 import app.climbra.android.R
@@ -58,6 +60,8 @@ fun LoginRoute(expired: Boolean, config: AppConfig, viewModel: LoginViewModel = 
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val google = remember(context) { CredentialManagerGoogleSource(context, config.googleServerClientId) }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { viewModel.onScreenPaused() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onScreenResumed() }
     LoginScreen(
         state = state,
         expired = expired,

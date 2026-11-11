@@ -12,10 +12,18 @@ import app.climbra.android.ui.common.UiText
 import app.climbra.android.ui.common.toUiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 data class LoginUiState(
@@ -41,6 +49,9 @@ class LoginViewModel @Inject constructor(
 
     private val mutableState = MutableStateFlow(LoginUiState())
     val state: StateFlow<LoginUiState> = mutableState.asStateFlow()
+
+    private var credentialRequest: Deferred<GoogleCredentialResult>? = null
+    private var leftForCredentialUi = false
 
     init {
         if (config.googleLoginEnabled) {
@@ -78,12 +89,46 @@ class LoginViewModel @Inject constructor(
         run {
             when (val nonce = session.googleNonce()) {
                 is ApiResult.Failure -> nonce.error
-                is ApiResult.Success -> when (val credential = source.idToken(nonce.value)) {
+                is ApiResult.Success -> when (val credential = awaitCredential(source, nonce.value)) {
                     is GoogleCredentialResult.Token -> session.loginWithGoogle(credential.idToken)
                     GoogleCredentialResult.Cancelled -> null
                     GoogleCredentialResult.Failed -> GOOGLE_FAILED
                 }
             }
+        }
+    }
+
+    /**
+     * Waits for the system's Google UI. It can close without ever answering (seen when adding an account fails), so
+     * a request still open [RESULT_GRACE] after the screen is back is given up as cancelled.
+     */
+    private suspend fun awaitCredential(source: GoogleCredentialSource, nonce: String): GoogleCredentialResult =
+        coroutineScope {
+            // Known before it starts, so a pause while the system UI opens is seen
+            val request = async(start = CoroutineStart.LAZY) { source.idToken(nonce) }
+            credentialRequest = request
+            try {
+                request.await()
+            } catch (e: CancellationException) {
+                if (request.isCancelled && isActive) GoogleCredentialResult.Cancelled else throw e
+            } finally {
+                credentialRequest = null
+                leftForCredentialUi = false
+            }
+        }
+
+    /** The screen went to the background, e.g. under the system's account picker. */
+    fun onScreenPaused() {
+        if (credentialRequest != null) leftForCredentialUi = true
+    }
+
+    /** The screen is back: the picker has closed, so its answer is due. */
+    fun onScreenResumed() {
+        val request = credentialRequest ?: return
+        if (!leftForCredentialUi) return
+        viewModelScope.launch {
+            delay(RESULT_GRACE)
+            if (credentialRequest === request && request.isActive) request.cancel()
         }
     }
 
@@ -96,6 +141,9 @@ class LoginViewModel @Inject constructor(
     }
 
     private companion object {
+        /** How long an answer of the Google UI may take after the screen is back. */
+        val RESULT_GRACE = 3.seconds
+
         /** The credential could not be obtained on the device; shown like the backend's `401 GOOGLE_FAILED`. */
         val GOOGLE_FAILED = ApiError.Http(status = 401, code = "GOOGLE_FAILED")
     }
