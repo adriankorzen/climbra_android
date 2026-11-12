@@ -32,7 +32,10 @@ Everything the web detail page shows and does, except the AI coach:
   date they are effective from).
 - "No power" note for rides without power.
 - Ride chart: power, heart rate, cadence, speed and altitude on one time axis with toggles per series (only series
-  the ride has), detected work blocks shaded and unders / recoveries lighter, zoom by pinch and a reset; tapping an
+  the ride has), a time axis below, the power axis (W) on the left and the heart rate axis (bpm) on the right while
+  those series are shown (the others without an axis, as on the web), detected work blocks shaded and unders /
+  recoveries lighter, zoom by pinch, drag to move, a range slider under the chart for both ends of the shown part
+  (as the web's slider) and a reset; tapping an
   interval zooms the chart to it.
 - Power zones and heart rate zones (time and percent per zone, as the web's `zone-bars`; the note when HR zones come
   from max HR; the hints "set your FTP / LTHR" or "no power / HR data").
@@ -98,7 +101,7 @@ Everything the web detail page shows and does, except the AI coach:
   row while the next page loads.
 - Ride detail: a destination on the back stack of the tab it is opened from. Each tab is a nested navigation graph
   (`DashboardGraph`, `ActivitiesGraph`, `ProfileGraph`) with its own ride route (`DashboardRideRoute(id)`,
-  `ActivitiesRideRoute(id)`), so the tab stays selected and keeps the ride when switching tabs. Top app bar with back,
+  `ActivitiesRideRoute(id)`), so the tab stays selected while the ride is open. Tapping a tab in the bottom bar, the selected one or another, always shows that tab's page (the dashboard, the training log with its scroll and filters kept), never a ride left open on its stack. Top app bar with back,
   an overflow menu (Reanalyse, Download FIT, Delete); a scrolling column: header, key figure tiles (`KpiTile` of
   spec 002, 2 / 4 columns, hints on up to two lines), planned workout card, ride chart card with series `FilterChip`s,
   zone cards (horizontal bars in the zone colors of `extendedColors`), the intervals card with the interval source
@@ -107,8 +110,12 @@ Everything the web detail page shows and does, except the AI coach:
 - Zone names are the app's translations by zone number and kind (the web's `zones.power.*`, `zones.hr.*`,
   `zones.hrMax.*`), the backend's English name only for an unknown number.
 - Ride chart drawn on a Compose `Canvas` (not Vico: Vico has no vertical shaded ranges for the blocks and one shared
-  scale per axis side): each series on its own scale (power and cadence from 0, altitude from its minimum), blocks
-  shaded and unders / recoveries lighter, pinch to zoom, drag to pan, tap for the values at a time, "Whole ride" to
+  scale per axis side): each series on its own scale (from 0 up to a round value with about five labels, altitude
+  from its minimum to its maximum), labels in the series' color, time labels every round step (`m:ss`, `h:mm` for
+  rides of an hour or more once the step is a minute or longer), blocks
+  shaded and unders / recoveries lighter, pinch to zoom, drag to pan (each gesture step starts from the window as it
+  is), a Material 3 `RangeSlider` under the chart in step with the gestures (whole seconds, at least 30 s shown), tap
+  for the values at a time, "Whole ride" to
   reset.
 - Deleting closes the detail with a toast "Ride deleted".
 - Material Symbols: `search`, `close`, `calendar_month`, `download`, `delete`, `refresh`, `more_vert`, `arrow_back`,
@@ -129,11 +136,13 @@ Everything the web detail page shows and does, except the AI coach:
       list, and starts again from page 0 when the period or search changes (after 300 ms of typing).
 - [x] AC2: The presets and a custom range set `from` / `to`; the totals card shows the response's totals.
 - [x] AC3: Rows show the backend's values formatted, IF colored by zone, the hrTSS marker; tapping opens the detail;
-      the dashboard's recent rides open it too.
+      the dashboard's recent rides open it too; tapping a tab shows its page, not a ride opened from it.
 - [x] AC4: Empty states: no ride at all (`hasRides` false) with the import hint; no ride matching the period or search.
 - [x] AC5: The detail shows header, key figures, the thresholds with their date, zones with their hints, intervals with
       summary, sets and blocks in ride order, and the "no power" note for rides without power.
-- [x] AC6: The ride chart shows only the series the recording has, toggles them, shades the blocks, and zooms to an
+- [x] AC6: The ride chart shows only the series the recording has, toggles them, has a time axis and the power / heart
+      rate value axes with round labels, shades the blocks, zooms by pinch (steps add up), drag and the range slider,
+      and zooms to an
       interval tapped in the lists; without a recording it says so.
 - [x] AC7: Ad hoc detection sends only the filled fields (percents as fractions), shows the result with "not stored",
       and reset returns to the stored analysis without a request.

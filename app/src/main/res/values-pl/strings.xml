@@ -205,6 +205,7 @@
     <string name="ride_chart_altitude">Wysokość</string>
     <string name="ride_chart_reset_zoom">Cała jazda</string>
     <string name="ride_chart_label">Moc, tętno, kadencja i wysokość w czasie</string>
+    <string name="ride_chart_range">Pokazany fragment jazdy</string>
     <string name="source_garmin">Garmin</string>
     <string name="source_upload">Plik</string>
 

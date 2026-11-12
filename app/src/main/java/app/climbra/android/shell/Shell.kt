@@ -75,24 +75,26 @@ data object ProfileRoute
 enum class TopLevelDestination(
     val graph: Any,
     val graphClass: KClass<*>,
+    val startRoute: Any,
     @StringRes val label: Int,
     @DrawableRes val icon: Int,
     @DrawableRes val selectedIcon: Int,
 ) {
-    DASHBOARD(DashboardGraph, DashboardGraph::class, R.string.nav_dashboard, R.drawable.ic_dashboard, R.drawable.ic_dashboard_fill1),
+    DASHBOARD(DashboardGraph, DashboardGraph::class, DashboardRoute, R.string.nav_dashboard, R.drawable.ic_dashboard, R.drawable.ic_dashboard_fill1),
     ACTIVITIES(
-        ActivitiesGraph, ActivitiesGraph::class, R.string.nav_activities,
+        ActivitiesGraph, ActivitiesGraph::class, ActivitiesRoute, R.string.nav_activities,
         R.drawable.ic_directions_bike, R.drawable.ic_directions_bike_fill1,
     ),
     CALENDAR(
-        CalendarGraph, CalendarGraph::class, R.string.nav_calendar,
+        CalendarGraph, CalendarGraph::class, CalendarRoute, R.string.nav_calendar,
         R.drawable.ic_calendar_month, R.drawable.ic_calendar_month_fill1,
     ),
-    PROFILE(ProfileGraph, ProfileGraph::class, R.string.nav_profile, R.drawable.ic_person, R.drawable.ic_person_fill1),
+    PROFILE(ProfileGraph, ProfileGraph::class, ProfileRoute, R.string.nav_profile, R.drawable.ic_person, R.drawable.ic_person_fill1),
 }
 
 /**
- * The app after login; each tab keeps its own back stack and state when switching (spec 001 AC11). The ride detail
+ * The app after login; each tab keeps its state when switching (spec 001 AC11), and tapping a tab shows its start
+ * screen, not a ride or workout opened from it (spec 003). The ride detail
  * is a destination on the Dashboard, Activities and Calendar stacks; [ride] reads its id from the route, and its
  * `openCalendar` switches to the calendar tab (spec 005), which the caller has told which week to show.
  */
@@ -128,10 +130,7 @@ fun Shell(
     ) { padding ->
         val back: () -> Unit = { navController.popBackStack() }
         // The week itself, not a workout or ride left open on the calendar's stack
-        val openCalendar: () -> Unit = {
-            navController.openTab(TopLevelDestination.CALENDAR)
-            navController.popBackStack(CalendarRoute, inclusive = false)
-        }
+        val openCalendar: () -> Unit = { navController.openTab(TopLevelDestination.CALENDAR) }
         NavHost(
             navController = navController,
             startDestination = DashboardGraph,
@@ -170,8 +169,15 @@ fun Shell(
     }
 }
 
-private fun NavController.openTab(item: TopLevelDestination) = navigate(item.graph) {
-    popUpTo(graph.findStartDestination().id) { saveState = true }
-    launchSingleTop = true
-    restoreState = true
+/**
+ * Shows the tab's start screen with its state restored (list scroll, filters), never a ride or workout left open on
+ * its stack: tapping a tab, selected or not, leads to that tab's page.
+ */
+private fun NavController.openTab(item: TopLevelDestination) {
+    navigate(item.graph) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+    popBackStack(item.startRoute, inclusive = false)
 }

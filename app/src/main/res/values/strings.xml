@@ -207,6 +207,7 @@
     <string name="ride_chart_altitude">Altitude</string>
     <string name="ride_chart_reset_zoom">Whole ride</string>
     <string name="ride_chart_label">Power, heart rate, cadence and altitude over time</string>
+    <string name="ride_chart_range">Shown part of the ride</string>
     <string name="source_garmin">Garmin</string>
     <string name="source_upload">File</string>
     <string name="source_intervals" translatable="false">intervals.icu</string>

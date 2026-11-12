@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,6 +26,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,6 +37,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -48,8 +53,12 @@ import app.climbra.android.data.api.Recording
 import app.climbra.android.ui.format.Fmt
 import app.climbra.android.ui.theme.MonoFamily
 import app.climbra.android.ui.theme.extendedColors
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.log10
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
 
 /** Series of the ride chart, as the web's `RideSeries`. */
 enum class RideSeries(val label: Int, val unit: String) {
@@ -90,11 +99,80 @@ fun ChartWindow.clampedTo(duration: Double): ChartWindow {
     return ChartWindow(start, start + length)
 }
 
+/**
+ * The window after one step of a pinch / drag: zoomed by [zoom] around the point at [focus] (0–1 of the plot width)
+ * and moved by [pan] (a fraction of the plot width, positive to the right, so earlier parts come into view).
+ */
+fun ChartWindow.transformed(focus: Float, zoom: Float, pan: Float, duration: Double): ChartWindow {
+    val second = start + length * focus
+    val newLength = length / zoom
+    val newStart = second - (second - start) / zoom - pan * newLength
+    return ChartWindow(newStart, newStart + newLength).clampedTo(duration)
+}
+
+/** The window set by the range slider's thumbs, whole seconds, at least [ChartWindow.MIN_SECONDS] long. */
+fun windowFromRange(start: Float, end: Float, duration: Double): ChartWindow {
+    val from = kotlin.math.round(start.toDouble())
+    val to = min(kotlin.math.round(end.toDouble()), duration)
+    return if (to - from >= min(ChartWindow.MIN_SECONDS, duration)) ChartWindow(from, to).clampedTo(duration)
+    else ChartWindow(from, from + ChartWindow.MIN_SECONDS).clampedTo(duration)
+}
+
 /** A window around an interval with a margin of a fifth of its length on both sides. */
 fun windowAround(block: IntervalBlock, duration: Double): ChartWindow {
     val margin = max((block.endSecond - block.startSecond) * 0.2, 10.0)
     return ChartWindow(block.startSecond - margin, block.endSecond + margin).clampedTo(duration)
 }
+
+/** The value range a series is drawn on, and the step of its axis labels. */
+@Immutable
+data class AxisScale(val low: Double, val high: Double, val step: Double) {
+    /** Label values from [low] to [high], every [step]. */
+    val ticks: List<Double>
+        get() = generateSequence(low) { it + step }.takeWhile { it <= high + step * 1e-6 }.toList()
+}
+
+/** A round step (1, 2, 2.5 or 5 times a power of ten) of at least [raw]. */
+internal fun niceStep(raw: Double): Double {
+    if (raw <= 0 || raw.isNaN()) return 1.0
+    val magnitude = 10.0.pow(floor(log10(raw)))
+    return listOf(1.0, 2.0, 2.5, 5.0, 10.0).map { it * magnitude }.first { it >= raw * (1 - 1e-9) }
+}
+
+/**
+ * The scale of a series: from 0 up to a round value above the maximum with about five labels; altitude from its
+ * minimum to its maximum (it has no axis, as on the web).
+ */
+fun seriesScale(series: RideSeries, values: List<Double>): AxisScale {
+    val max = values.max()
+    if (series == RideSeries.ALTITUDE) {
+        val min = values.min()
+        val high = if (max > min) max else min + 1
+        return AxisScale(min, high, high - min)
+    }
+    val step = niceStep(max(max, 1.0) / 5)
+    return AxisScale(0.0, max(ceil(max / step), 1.0) * step, step)
+}
+
+/** Steps of the time axis, in seconds. */
+private val TIME_STEPS = listOf(5, 10, 15, 30, 60, 120, 300, 600, 900, 1200, 1800, 3600, 7200, 14400)
+
+/** Label times of the visible [window]: the smallest round step that gives at most [maxLabels] labels. */
+fun timeTicks(window: ChartWindow, maxLabels: Int): List<Double> {
+    val step = TIME_STEPS.firstOrNull { window.length / it <= max(maxLabels, 1) } ?: TIME_STEPS.last()
+    val first = ceil(window.start / step) * step
+    return generateSequence(first) { it + step }.takeWhile { it <= window.end }.toList()
+}
+
+/** A time label: `m:ss` (or `h:mm:ss`) while the labels are under a minute apart or the ride is shorter than an hour. */
+internal fun timeLabel(fmt: Fmt, second: Double, step: Double, duration: Double): String =
+    if (step >= 60 && duration >= 3600) fmt.hm(second) else fmt.duration(second)
+
+private val LEFT_AXIS = 36.dp
+private val RIGHT_AXIS = 32.dp
+private val BOTTOM_AXIS = 18.dp
+private val NO_AXIS = 4.dp
+private val TIME_LABEL_SPACING = 64.dp
 
 @Composable
 private fun seriesColor(series: RideSeries): Color = when (series) {
@@ -132,6 +210,11 @@ fun RideChart(
     val gapColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
     val grid = MaterialTheme.extendedColors.chartGrid
     val label = stringResource(R.string.ride_chart_label)
+    val rangeLabel = stringResource(R.string.ride_chart_range)
+    // Read by the gestures, which outlive recompositions; a pinch step updates it before the next frame
+    val windowRef = remember { mutableStateOf(window) }
+    windowRef.value = window
+    val currentOnWindowChange by rememberUpdatedState(onWindowChange)
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
@@ -150,6 +233,20 @@ fun RideChart(
                 )
             }
         }
+        val scales = remember(recording) {
+            available.associateWith { series -> seriesScale(series, recording.values(series).filterNotNull()) }
+        }
+        // As the web: the power axis on the left, the heart rate one on the right, the other series without an axis
+        val leftAxis = RideSeries.POWER.takeIf { it in shown }
+        val rightAxis = RideSeries.HEART_RATE.takeIf { it in shown }
+        val leftGutter = if (leftAxis != null) LEFT_AXIS else NO_AXIS
+        val rightGutter = if (rightAxis != null) RIGHT_AXIS else NO_AXIS
+        val axisColor = MaterialTheme.extendedColors.chartAxis
+        val labelStyle = MaterialTheme.typography.labelSmall.copy(
+            fontFamily = MonoFamily,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val measurer = rememberTextMeasurer()
         Box {
             Canvas(
                 modifier = Modifier
@@ -157,60 +254,103 @@ fun RideChart(
                     .height(220.dp)
                     .testTag("ride-chart")
                     .semantics { contentDescription = label }
-                    .pointerInput(duration) {
+                    .pointerInput(duration, leftGutter, rightGutter) {
+                        // The gesture outlives recompositions: every step starts from the window as it is now
                         detectTransformGestures { centroid, pan, zoom, _ ->
-                            val current = window
-                            val focus = current.start + current.length * (centroid.x / size.width)
-                            val length = current.length / zoom
-                            val shift = -pan.x / size.width * length
-                            val start = focus - (focus - current.start) / zoom + shift
-                            onWindowChange(ChartWindow(start, start + length).clampedTo(duration))
+                            val plotLeft = leftGutter.toPx()
+                            val plotWidth = (size.width - plotLeft - rightGutter.toPx()).coerceAtLeast(1f)
+                            val focus = ((centroid.x - plotLeft) / plotWidth).coerceIn(0f, 1f)
+                            val next = windowRef.value.transformed(focus, zoom, pan.x / plotWidth, duration)
+                            windowRef.value = next
+                            currentOnWindowChange(next)
                         }
                     }
-                    .pointerInput(times, window) {
+                    .pointerInput(times, leftGutter, rightGutter) {
                         detectTapGestures { offset ->
-                            val second = window.start + window.length * (offset.x / size.width)
+                            val plotLeft = leftGutter.toPx()
+                            val plotWidth = (size.width - plotLeft - rightGutter.toPx()).coerceAtLeast(1f)
+                            val shownWindow = windowRef.value
+                            val second = shownWindow.start + shownWindow.length * ((offset.x - plotLeft) / plotWidth)
                             probe = times.indices.minByOrNull { kotlin.math.abs(times[it] - second) }
                         }
                     },
             ) {
-                fun x(second: Double) = ((second - window.start) / window.length * size.width).toFloat()
-                // Intervals behind the lines
-                gaps.forEach { drawRect(gapColor, Offset(x(it.startSecond.toDouble()), 0f), Size(x(it.endSecond.toDouble()) - x(it.startSecond.toDouble()), size.height)) }
-                blocks.forEach { drawRect(blockColor, Offset(x(it.startSecond.toDouble()), 0f), Size(x(it.endSecond.toDouble()) - x(it.startSecond.toDouble()), size.height)) }
-                for (line in 1..3) {
-                    val y = size.height * line / 4
-                    drawLine(grid, Offset(0f, y), Offset(size.width, y), strokeWidth = 1f)
+                val left = leftGutter.toPx()
+                val right = size.width - rightGutter.toPx()
+                val bottom = size.height - BOTTOM_AXIS.toPx()
+                val width = (right - left).coerceAtLeast(1f)
+                fun x(second: Double) = (left + (second - window.start) / window.length * width).toFloat()
+                fun y(value: Double, scale: AxisScale) = (bottom * (1 - (value - scale.low) / (scale.high - scale.low))).toFloat()
+                fun span(block: IntervalBlock, color: Color) {
+                    val start = x(block.startSecond.toDouble()).coerceIn(left, right)
+                    val end = x(block.endSecond.toDouble()).coerceIn(left, right)
+                    if (end > start) drawRect(color, Offset(start, 0f), Size(end - start, bottom))
                 }
-                shown.forEach { series ->
-                    val values = recording.values(series)
-                    val present = values.filterNotNull()
-                    if (present.isEmpty()) return@forEach
-                    val low = if (series == RideSeries.ALTITUDE) present.min() else 0.0
-                    val high = present.max().takeIf { it > low } ?: (low + 1)
-                    val path = Path()
-                    var drawing = false
-                    times.forEachIndexed { index, second ->
-                        val value = values.getOrNull(index)
-                        if (value == null || second < window.start - recording.resolutionSeconds || second > window.end) {
-                            drawing = false
-                            return@forEachIndexed
+                // Intervals behind the lines
+                gaps.forEach { span(it, gapColor) }
+                blocks.forEach { span(it, blockColor) }
+                // Grid lines on the labels of the left axis, quarters without it
+                val gridLines = leftAxis?.let { axis -> scales.getValue(axis).let { s -> s.ticks.map { y(it, s) } } }
+                    ?: (1..3).map { bottom * it / 4 }
+                gridLines.filter { it > 0.5f && it < bottom - 0.5f }
+                    .forEach { drawLine(grid, Offset(left, it), Offset(right, it), strokeWidth = 1f) }
+                drawLine(axisColor, Offset(left, bottom), Offset(right, bottom), strokeWidth = 1f)
+                clipRect(left = left, top = 0f, right = right, bottom = bottom) {
+                    shown.forEach { series ->
+                        val values = recording.values(series)
+                        val scale = scales[series] ?: return@forEach
+                        val path = Path()
+                        var drawing = false
+                        times.forEachIndexed { index, second ->
+                            val value = values.getOrNull(index)
+                            if (value == null || second < window.start - recording.resolutionSeconds ||
+                                second > window.end + recording.resolutionSeconds
+                            ) {
+                                drawing = false
+                                return@forEachIndexed
+                            }
+                            val point = Offset(x(second.toDouble()), y(value, scale))
+                            if (drawing) path.lineTo(point.x, point.y) else path.moveTo(point.x, point.y)
+                            drawing = true
                         }
-                        val point = Offset(x(second.toDouble()), (size.height * (1 - (value - low) / (high - low))).toFloat())
-                        if (drawing) path.lineTo(point.x, point.y) else path.moveTo(point.x, point.y)
-                        drawing = true
+                        drawPath(path, colors.getValue(series), style = Stroke(width = if (series == RideSeries.POWER) 1.5f else 2f))
                     }
-                    drawPath(path, colors.getValue(series), style = Stroke(width = if (series == RideSeries.POWER) 1.5f else 2f))
+                }
+                // Value axes: labels in the series' color, centred on their value
+                fun valueLabels(series: RideSeries?, atLeft: Boolean) {
+                    val scale = series?.let { scales.getValue(it) } ?: return
+                    val style = labelStyle.copy(color = colors.getValue(series))
+                    scale.ticks.forEach { value ->
+                        val text = measurer.measure(fmt.num(value), style)
+                        val top = (y(value, scale) - text.size.height / 2f).coerceIn(0f, bottom - text.size.height)
+                        val gap = 4.dp.toPx()
+                        val textX = if (atLeft) left - gap - text.size.width else right + gap
+                        drawText(text, topLeft = Offset(textX, top))
+                    }
+                }
+                valueLabels(leftAxis, atLeft = true)
+                valueLabels(rightAxis, atLeft = false)
+                // Time axis
+                val ticks = timeTicks(window, (width / TIME_LABEL_SPACING.toPx()).toInt())
+                val step = if (ticks.size > 1) ticks[1] - ticks[0] else window.length
+                ticks.forEach { second ->
+                    val text = measurer.measure(timeLabel(fmt, second, step, duration), labelStyle)
+                    val center = x(second)
+                    drawLine(axisColor, Offset(center, bottom), Offset(center, bottom + 3.dp.toPx()), strokeWidth = 1f)
+                    val textX = (center - text.size.width / 2f).coerceIn(left, size.width - text.size.width)
+                    drawText(text, topLeft = Offset(textX, bottom + 3.dp.toPx()))
                 }
                 probe?.let { index ->
                     val px = x(times[index].toDouble())
-                    drawLine(
-                        grid.copy(alpha = 1f),
-                        Offset(px, 0f),
-                        Offset(px, size.height),
-                        strokeWidth = 2f,
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f)),
-                    )
+                    if (px in left..right) {
+                        drawLine(
+                            grid.copy(alpha = 1f),
+                            Offset(px, 0f),
+                            Offset(px, bottom),
+                            strokeWidth = 2f,
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f)),
+                        )
+                    }
                 }
             }
             probe?.let { index ->
@@ -232,6 +372,20 @@ fun RideChart(
                     }
                 }
             }
+        }
+        if (duration > ChartWindow.MIN_SECONDS) {
+            // The web's slider under the chart: both ends of the shown part, in step with pinch and drag
+            RangeSlider(
+                value = window.start.toFloat()..window.end.toFloat(),
+                onValueChange = { range -> onWindowChange(windowFromRange(range.start, range.endInclusive, duration)) },
+                valueRange = 0f..duration.toFloat(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = leftGutter, end = rightGutter)
+                    .height(32.dp)
+                    .testTag("ride-chart-range")
+                    .semantics { contentDescription = rangeLabel },
+            )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(

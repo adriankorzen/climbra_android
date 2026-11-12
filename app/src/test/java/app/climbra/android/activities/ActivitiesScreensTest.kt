@@ -9,6 +9,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
@@ -18,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -278,6 +281,24 @@ class ActivitiesScreensTest {
         compose.onNodeWithTag("ride-chart-reset").assertExists()
     }
 
+
+    // AC6
+    @Test
+    fun theRangeSliderNarrowsTheChartToTheChosenPart() {
+        showDetail { detail }
+
+        compose.onNodeWithTag("ride-chart-range").performScrollTo()
+        val thumbs = compose.onAllNodes(
+            hasAnyAncestor(hasTestTag("ride-chart-range")) and SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress),
+        )
+        thumbs[0].performSemanticsAction(SemanticsActions.SetProgress) { it(300f) }
+        thumbs[1].performSemanticsAction(SemanticsActions.SetProgress) { it(1500f) }
+
+        inside("ride-chart-window", "5:00 – 25:00").assertExists()
+        compose.onNodeWithTag("ride-chart-reset").performScrollTo().performClick()
+        inside("ride-chart-window", "0:00 – 45:00").assertExists()
+    }
+
     // AC6
     @Test
     fun withoutARecordingThePageSaysSo() {
@@ -364,13 +385,35 @@ class ActivitiesScreensTest {
         compose.onNodeWithTag("ride-screen").assertIsDisplayed()
         compose.onNodeWithTag("nav-activities").assertIsSelected()
 
-        // Another tab and back: the ride is still open on the Activities stack
+        compose.onNodeWithTag("ride-screen").performClick()
+        compose.onNodeWithTag("open-activities").assertIsDisplayed()
+    }
+
+    // AC3: tapping a tab shows its page, not a ride left open on its stack
+    @Test
+    fun tappingATabShowsItsPageNotTheRideOpenedFromIt() {
+        content {
+            Shell(
+                dashboard = { open -> OpenButton("dashboard", open) },
+                activities = { open -> OpenButton("activities", open) },
+                profile = { Text("profile") },
+                ride = { back, _ -> Button(onClick = back, modifier = Modifier.testTag("ride-screen")) { Text("ride") } },
+            )
+        }
+
+        // The selected tab again
+        compose.onNodeWithTag("open-dashboard").performClick()
+        compose.onNodeWithTag("ride-screen").assertIsDisplayed()
+        compose.onNodeWithTag("nav-dashboard").performClick()
+        compose.onNodeWithTag("open-dashboard").assertIsDisplayed()
+
+        // Another tab and back
+        compose.onNodeWithTag("nav-activities").performClick()
+        compose.onNodeWithTag("open-activities").performClick()
+        compose.onNodeWithTag("ride-screen").assertIsDisplayed()
         compose.onNodeWithTag("nav-dashboard").performClick()
         compose.onNodeWithTag("open-dashboard").assertIsDisplayed()
         compose.onNodeWithTag("nav-activities").performClick()
-        compose.onNodeWithTag("ride-screen").assertIsDisplayed()
-
-        compose.onNodeWithTag("ride-screen").performClick()
         compose.onNodeWithTag("open-activities").assertIsDisplayed()
     }
 

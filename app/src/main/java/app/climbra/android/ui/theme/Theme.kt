@@ -9,6 +9,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.dp
+import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
+import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 
 private val LocalExtendedColors = staticCompositionLocalOf { LightExtendedColors }
 
@@ -29,8 +31,10 @@ fun ClimbraTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composabl
             colorScheme = if (darkTheme) DarkColors else LightColors,
             typography = ClimbraTypography,
             shapes = ClimbraShapes,
-            content = content,
-        )
+        ) {
+            // Vico's default theme follows the system dark mode, not the app's choice: charts take the M3 colors
+            ProvideVicoTheme(rememberM3VicoTheme(), content)
+        }
     }
 }
 
