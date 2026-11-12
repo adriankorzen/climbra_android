@@ -180,6 +180,11 @@ data class GarminConnection(
     val sent: Int = 0,
     /** Of them, those that differ from the plan. */
     val stale: Int = 0,
+    /** Sendable workouts of the 2 weeks of an import, without a connection too (spec 005). */
+    val sendable: Int = 0,
+    /** The first and last day of the 2 weeks of an import. */
+    val from: String? = null,
+    val to: String? = null,
 )
 
 /** A status the app does not know yet reads as [NOT_CONNECTED]. */

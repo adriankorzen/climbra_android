@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -349,6 +353,7 @@ fun PlannedWorkoutCard(
     linkError: app.climbra.android.data.net.ApiError?,
     fmt: Fmt,
     onLink: (Long) -> Unit,
+    onOpenCalendar: (String) -> Unit = {},
 ) {
     if (planned != null) {
         SectionCard(stringResource(R.string.adherence_planned_workout), tag = "planned-workout") {
@@ -374,6 +379,11 @@ fun PlannedWorkoutCard(
                 comparison.intervals?.let {
                     ComparisonRow(stringResource(R.string.adherence_intervals), fmt.num(it.plannedRepetitions), fmt.num(it.detectedBlocks), fmt.pct(it.ratio), complianceColor(it.level))
                 }
+            }
+            TextButton(onClick = { onOpenCalendar(planned.date) }, modifier = Modifier.testTag("open-calendar")) {
+                Icon(painterResource(R.drawable.ic_calendar_month), null, Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.calendar_show_in_calendar))
             }
         }
     } else if (candidates.isNotEmpty()) {

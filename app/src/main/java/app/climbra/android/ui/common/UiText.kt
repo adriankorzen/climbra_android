@@ -42,6 +42,15 @@ val TRANSLATED_ERROR_CODES: Map<String, Int> = mapOf(
     "DELETE_CONFIRMATION_INVALID" to R.string.api_error_delete_confirmation_invalid,
     "ADMIN_ACCOUNT_UNDELETABLE" to R.string.api_error_admin_account_undeletable,
     "ACCOUNT_BUSY" to R.string.api_error_account_busy,
+    "GARMIN_NOT_CONFIGURED" to R.string.api_error_garmin_not_configured,
+    "GARMIN_NOT_CONNECTED" to R.string.api_error_garmin_not_connected,
+    "GARMIN_NO_PERMISSION" to R.string.api_error_garmin_no_permission,
+    "GARMIN_RECONNECT_NEEDED" to R.string.api_error_garmin_reconnect_needed,
+    "GARMIN_NO_FTP" to R.string.api_error_garmin_no_ftp,
+    "GARMIN_SEND_RUNNING" to R.string.api_error_garmin_send_running,
+    "GARMIN_WORKOUT_NOT_SENDABLE" to R.string.api_error_garmin_workout_not_sendable,
+    "GARMIN_RATE_LIMITED" to R.string.api_error_garmin_rate_limited,
+    "GARMIN_UNAVAILABLE" to R.string.api_error_garmin_unavailable,
 )
 
 fun ApiError.toUiText(): UiText = when (this) {

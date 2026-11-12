@@ -303,17 +303,3 @@ data class IntervalSourceRequest(val useLaps: Boolean)
 
 @Serializable
 data class LinkRideRequest(val activityId: Long)
-
-/** Only the planned workouts of `plan.CalendarResponse`. */
-@Serializable
-data class CalendarResponse(val plannedWorkouts: List<CalendarWorkout> = emptyList())
-
-@Serializable
-data class CalendarWorkout(
-    val id: Long,
-    val date: String,
-    val title: String,
-    val type: String? = null,
-    /** `REST`, `COMPLETED` and others (cyclingapp spec 009). */
-    val status: String? = null,
-)

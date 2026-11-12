@@ -6,6 +6,8 @@ import app.climbra.android.activities.FileSaver
 import app.climbra.android.activities.MediaStoreFileSaver
 import app.climbra.android.data.api.ActivityApi
 import app.climbra.android.data.api.AuthApi
+import app.climbra.android.data.api.CalendarApi
+import app.climbra.android.calendar.CalendarRequests
 import app.climbra.android.data.api.ProfileApi
 import app.climbra.android.data.api.RiderApi
 import app.climbra.android.data.net.EncryptedFileCookieStore
@@ -114,4 +116,12 @@ object AppModule {
     @Provides
     @Singleton
     fun themeSettings(@ApplicationContext context: Context): ThemeSettings = DataStoreThemeSettings(context)
+
+    @Provides
+    @Singleton
+    fun calendarApi(retrofit: Retrofit): CalendarApi = retrofit.create(CalendarApi::class.java)
+
+    @Provides
+    @Singleton
+    fun calendarRequests(): CalendarRequests = CalendarRequests()
 }

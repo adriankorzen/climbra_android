@@ -32,6 +32,10 @@ import app.climbra.android.auth.LoginRoute
 import app.climbra.android.activities.ActivitiesRoute
 import app.climbra.android.activities.RideDetailRoute
 import app.climbra.android.auth.TermsRoute
+import app.climbra.android.calendar.CalendarRequests
+import app.climbra.android.calendar.CalendarRoute
+import app.climbra.android.calendar.WorkoutDetailRoute
+import java.time.LocalDate
 import app.climbra.android.dashboard.DashboardRoute
 import app.climbra.android.data.api.AccountResponse
 import app.climbra.android.profile.ProfileRoute
@@ -47,6 +51,7 @@ import kotlinx.coroutines.launch
 class AppViewModel @Inject constructor(
     private val session: SessionRepository,
     val config: AppConfig,
+    private val calendarRequests: CalendarRequests,
 ) : ViewModel() {
 
     val state: StateFlow<SessionState> = session.state
@@ -57,6 +62,11 @@ class AppViewModel @Inject constructor(
 
     fun retry() {
         viewModelScope.launch { session.start() }
+    }
+
+    /** The calendar shows the week of [date] (an ISO date) when opened next (spec 005). */
+    fun showCalendarWeek(date: String) {
+        runCatching { LocalDate.parse(date.take(10)) }.getOrNull()?.let(calendarRequests::show)
     }
 }
 
@@ -75,13 +85,27 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                 dashboard = { openRide -> DashboardRoute(config = viewModel.config, onOpenRide = openRide) },
                 activities = { openRide -> ActivitiesRoute(config = viewModel.config, onOpenRide = openRide) },
                 profile = { ProfileRoute(config = viewModel.config) },
-                ride = { onBack ->
+                calendar = { openRide, openWorkout ->
+                    CalendarRoute(
+                        config = viewModel.config,
+                        onOpenRide = openRide,
+                        onOpenWorkout = { openWorkout(it.id, it.date) },
+                    )
+                },
+                workout = { onBack, openRide ->
+                    WorkoutDetailRoute(config = viewModel.config, onBack = onBack, onOpenRide = openRide)
+                },
+                ride = { onBack, openCalendar ->
                     val context = LocalContext.current
                     RideDetailRoute(
                         onBack = onBack,
                         onDeleted = {
                             Toast.makeText(context, R.string.activity_deleted, Toast.LENGTH_SHORT).show()
                             onBack()
+                        },
+                        onOpenCalendar = { date ->
+                            viewModel.showCalendarWeek(date)
+                            openCalendar()
                         },
                     )
                 },

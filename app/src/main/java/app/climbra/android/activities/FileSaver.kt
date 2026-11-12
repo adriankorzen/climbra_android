@@ -6,6 +6,12 @@ import android.provider.MediaStore
 import java.io.IOException
 import java.io.InputStream
 
+/** The file name of a `Content-Disposition` header, [fallback] without one. */
+fun fileNameOf(disposition: String?, fallback: String): String =
+    disposition?.let { Regex("filename=\"?([^\";]+)\"?").find(it)?.groupValues?.get(1) }
+        ?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
+        ?: fallback
+
 /** Stores a downloaded file for the user; an interface so tests need no MediaStore. */
 fun interface FileSaver {
     /** @throws IOException when the file cannot be written */

@@ -55,7 +55,12 @@ import app.climbra.android.ui.format.rememberFmt
 import app.climbra.android.ui.theme.extendedColors
 
 @Composable
-fun RideDetailRoute(onBack: () -> Unit, onDeleted: () -> Unit, viewModel: RideDetailViewModel = hiltViewModel()) {
+fun RideDetailRoute(
+    onBack: () -> Unit,
+    onDeleted: () -> Unit,
+    onOpenCalendar: (String) -> Unit = {},
+    viewModel: RideDetailViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.deleted) {
         if (state.deleted) onDeleted()
@@ -74,6 +79,7 @@ fun RideDetailRoute(onBack: () -> Unit, onDeleted: () -> Unit, viewModel: RideDe
         onResetDetection = viewModel::resetDetection,
         onLink = viewModel::link,
         onMessageShown = viewModel::messageShown,
+        onOpenCalendar = onOpenCalendar,
     )
 }
 
@@ -94,6 +100,8 @@ fun RideDetailScreen(
     onResetDetection: () -> Unit,
     onLink: (Long) -> Unit,
     onMessageShown: () -> Unit,
+    /** The calendar at the week of the planned workout's ISO date (spec 005). */
+    onOpenCalendar: (String) -> Unit = {},
 ) {
     var menu by remember { mutableStateOf(false) }
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
@@ -177,7 +185,7 @@ fun RideDetailScreen(
                     ErrorBanner(stringResource(R.string.activity_load_failed), Modifier.testTag("ride-error"))
                     OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                 }
-                activity != null -> RideContent(state, fmt, onIntervalSource, onFormChange, onApplyDetection, onResetDetection, onLink)
+                activity != null -> RideContent(state, fmt, onIntervalSource, onFormChange, onApplyDetection, onResetDetection, onLink, onOpenCalendar)
             }
         }
     }
@@ -211,6 +219,7 @@ private fun RideContent(
     onApplyDetection: () -> Unit,
     onResetDetection: () -> Unit,
     onLink: (Long) -> Unit,
+    onOpenCalendar: (String) -> Unit,
 ) {
     val activity = state.activity!!
     val start = activity.startTimeLocal ?: activity.startTime
@@ -225,7 +234,7 @@ private fun RideContent(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.testTag("ride-subtitle"),
     )
-    PlannedWorkoutCard(activity.plannedWorkout, state.candidates, state.linking, state.linkError, fmt, onLink)
+    PlannedWorkoutCard(activity.plannedWorkout, state.candidates, state.linking, state.linkError, fmt, onLink, onOpenCalendar)
     val result = state.analysis
     if (state.analysisFailed && result == null) {
         ErrorBanner(stringResource(R.string.activity_no_analysis), Modifier.testTag("ride-no-analysis"))

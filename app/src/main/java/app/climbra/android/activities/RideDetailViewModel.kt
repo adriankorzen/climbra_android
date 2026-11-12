@@ -274,10 +274,7 @@ class RideDetailViewModel @Inject constructor(
 
     fun messageShown() = mutableState.update { it.copy(message = null) }
 
-    private fun fileName(disposition: String?): String =
-        disposition?.let { Regex("filename=\"?([^\";]+)\"?").find(it)?.groupValues?.get(1) }
-            ?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
-            ?: "climbra-ride-$id.fit"
+    private fun fileName(disposition: String?): String = fileNameOf(disposition, "climbra-ride-$id.fit")
 
     private suspend fun <T> call(request: suspend () -> T) = apiCall(Network.json, request)
 

@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -51,6 +52,20 @@ data object ActivitiesRoute
 data class ActivitiesRideRoute(val id: Long)
 
 @Serializable
+data object CalendarGraph
+
+@Serializable
+data object CalendarRoute
+
+/** A planned workout of the calendar (spec 005); [date] is its ISO date. */
+@Serializable
+data class CalendarWorkoutRoute(val id: Long, val date: String)
+
+/** A ride opened from the calendar (spec 005). */
+@Serializable
+data class CalendarRideRoute(val id: Long)
+
+@Serializable
 data object ProfileGraph
 
 @Serializable
@@ -69,19 +84,26 @@ enum class TopLevelDestination(
         ActivitiesGraph, ActivitiesGraph::class, R.string.nav_activities,
         R.drawable.ic_directions_bike, R.drawable.ic_directions_bike_fill1,
     ),
+    CALENDAR(
+        CalendarGraph, CalendarGraph::class, R.string.nav_calendar,
+        R.drawable.ic_calendar_month, R.drawable.ic_calendar_month_fill1,
+    ),
     PROFILE(ProfileGraph, ProfileGraph::class, R.string.nav_profile, R.drawable.ic_person, R.drawable.ic_person_fill1),
 }
 
 /**
  * The app after login; each tab keeps its own back stack and state when switching (spec 001 AC11). The ride detail
- * is a destination on the Dashboard and Activities stacks; [ride] reads its id from the route.
+ * is a destination on the Dashboard, Activities and Calendar stacks; [ride] reads its id from the route, and its
+ * `openCalendar` switches to the calendar tab (spec 005), which the caller has told which week to show.
  */
 @Composable
 fun Shell(
     dashboard: @Composable (openRide: (Long) -> Unit) -> Unit,
     activities: @Composable (openRide: (Long) -> Unit) -> Unit,
     profile: @Composable () -> Unit,
-    ride: @Composable (onBack: () -> Unit) -> Unit = {},
+    calendar: @Composable (openRide: (Long) -> Unit, openWorkout: (id: Long, date: String) -> Unit) -> Unit = { _, _ -> },
+    workout: @Composable (onBack: () -> Unit, openRide: (Long) -> Unit) -> Unit = { _, _ -> },
+    ride: @Composable (onBack: () -> Unit, openCalendar: () -> Unit) -> Unit = { _, _ -> },
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -93,13 +115,7 @@ fun Shell(
                     val selected = destination?.hierarchy?.any { it.hasRoute(item.graphClass) } == true
                     NavigationBarItem(
                         selected = selected,
-                        onClick = {
-                            navController.navigate(item.graph) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
+                        onClick = { navController.openTab(item) },
                         icon = {
                             Icon(painterResource(if (selected) item.selectedIcon else item.icon), contentDescription = null)
                         },
@@ -111,6 +127,11 @@ fun Shell(
         },
     ) { padding ->
         val back: () -> Unit = { navController.popBackStack() }
+        // The week itself, not a workout or ride left open on the calendar's stack
+        val openCalendar: () -> Unit = {
+            navController.openTab(TopLevelDestination.CALENDAR)
+            navController.popBackStack(CalendarRoute, inclusive = false)
+        }
         NavHost(
             navController = navController,
             startDestination = DashboardGraph,
@@ -120,17 +141,37 @@ fun Shell(
                 composable<DashboardRoute> {
                     Box(Modifier.fillMaxSize()) { dashboard { id -> navController.navigate(DashboardRideRoute(id)) } }
                 }
-                composable<DashboardRideRoute> { Box(Modifier.fillMaxSize()) { ride(back) } }
+                composable<DashboardRideRoute> { Box(Modifier.fillMaxSize()) { ride(back, openCalendar) } }
             }
             navigation<ActivitiesGraph>(startDestination = ActivitiesRoute) {
                 composable<ActivitiesRoute> {
                     Box(Modifier.fillMaxSize()) { activities { id -> navController.navigate(ActivitiesRideRoute(id)) } }
                 }
-                composable<ActivitiesRideRoute> { Box(Modifier.fillMaxSize()) { ride(back) } }
+                composable<ActivitiesRideRoute> { Box(Modifier.fillMaxSize()) { ride(back, openCalendar) } }
+            }
+            navigation<CalendarGraph>(startDestination = CalendarRoute) {
+                composable<CalendarRoute> {
+                    Box(Modifier.fillMaxSize()) {
+                        calendar(
+                            { id -> navController.navigate(CalendarRideRoute(id)) },
+                            { id, date -> navController.navigate(CalendarWorkoutRoute(id, date)) },
+                        )
+                    }
+                }
+                composable<CalendarWorkoutRoute> {
+                    Box(Modifier.fillMaxSize()) { workout(back) { id -> navController.navigate(CalendarRideRoute(id)) } }
+                }
+                composable<CalendarRideRoute> { Box(Modifier.fillMaxSize()) { ride(back, openCalendar) } }
             }
             navigation<ProfileGraph>(startDestination = ProfileRoute) {
                 composable<ProfileRoute> { Box(Modifier.fillMaxSize()) { profile() } }
             }
         }
     }
+}
+
+private fun NavController.openTab(item: TopLevelDestination) = navigate(item.graph) {
+    popUpTo(graph.findStartDestination().id) { saveState = true }
+    launchSingleTop = true
+    restoreState = true
 }

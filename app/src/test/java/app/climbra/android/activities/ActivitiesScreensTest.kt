@@ -330,7 +330,7 @@ class ActivitiesScreensTest {
         inside("comparison-level", "Deviation").assertExists()
         inside("planned-workout", "79%").assertExists()
 
-        state = detail.copy(candidates = listOf(CalendarWorkout(31, "2026-11-08", "FTP 2x20", "THRESHOLD", "MISSED")))
+        state = detail.copy(candidates = listOf(CalendarWorkout(id = 31, date = "2026-11-08", title = "FTP 2x20", type = "THRESHOLD", status = "MISSED")))
         compose.onNodeWithTag("unplanned-ride").assertExists()
         compose.onNodeWithTag("link-workout").performClick()
         compose.onNodeWithTag("link-option-31").performClick()
@@ -355,7 +355,7 @@ class ActivitiesScreensTest {
                 dashboard = { open -> OpenButton("dashboard", open) },
                 activities = { open -> OpenButton("activities", open) },
                 profile = { Text("profile") },
-                ride = { back -> Button(onClick = back, modifier = Modifier.testTag("ride-screen")) { Text("ride") } },
+                ride = { back, _ -> Button(onClick = back, modifier = Modifier.testTag("ride-screen")) { Text("ride") } },
             )
         }
 
