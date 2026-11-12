@@ -1,6 +1,7 @@
 package app.climbra.android.dashboard
 
 import app.climbra.android.data.api.FormRange
+import app.climbra.android.rider.DataChanges
 import app.climbra.android.rider.RiderRepository
 import app.climbra.android.testing.TestBackend
 import app.climbra.android.testing.TestBackend.Companion.json
@@ -49,8 +50,10 @@ class DashboardViewModelTest {
         backend.close()
     }
 
+    private val changes = DataChanges()
+
     private fun viewModel(deviceZone: String = "Europe/Warsaw") =
-        DashboardViewModel(RiderRepository(backend.riderApi) { deviceZone }, backend.riderApi, clock)
+        DashboardViewModel(RiderRepository(backend.riderApi) { deviceZone }, backend.riderApi, clock, changes)
 
     private suspend fun DashboardViewModel.settled() = state.first { !it.loading && !it.refreshing }
 
@@ -124,7 +127,7 @@ class DashboardViewModelTest {
                 other.on("GET /api/riders/5/training-load", json(trainingLoad(form.name)))
                 other.on("GET /api/riders/5/analyses", json("[${ride(1, "2026-11-06")}]"))
                 runTest(dispatcher) {
-                    val viewModel = DashboardViewModel(RiderRepository(other.riderApi) { "Europe/Warsaw" }, other.riderApi, clock)
+                    val viewModel = DashboardViewModel(RiderRepository(other.riderApi) { "Europe/Warsaw" }, other.riderApi, clock, DataChanges())
                     assertEquals(form, viewModel.settled().load!!.fitness.form)
                 }
             }
@@ -243,6 +246,22 @@ class DashboardViewModelTest {
         clock.now += Duration.ofMinutes(2)
         viewModel.onShown()
         viewModel.settled()
+        assertEquals(2, backend.requests("GET /api/riders/5/training-load").size)
+    }
+
+    // Spec 004: a change elsewhere (a new rider or new thresholds in the profile) is shown when the tab is
+    @Test
+    fun showingTheTabAfterAChangeElsewhereReloads() = runTest(dispatcher) {
+        withRides()
+        val viewModel = viewModel()
+        viewModel.settled()
+
+        changes.changed()
+        viewModel.onShown()
+        viewModel.settled()
+        assertEquals(2, backend.requests("GET /api/riders/5/training-load").size)
+
+        viewModel.onShown()
         assertEquals(2, backend.requests("GET /api/riders/5/training-load").size)
     }
 

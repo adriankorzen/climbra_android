@@ -6,6 +6,7 @@ import app.climbra.android.activities.FileSaver
 import app.climbra.android.activities.MediaStoreFileSaver
 import app.climbra.android.data.api.ActivityApi
 import app.climbra.android.data.api.AuthApi
+import app.climbra.android.data.api.ProfileApi
 import app.climbra.android.data.api.RiderApi
 import app.climbra.android.data.net.EncryptedFileCookieStore
 import app.climbra.android.data.net.KeystoreCipher
@@ -17,6 +18,8 @@ import app.climbra.android.session.AppLocales
 import app.climbra.android.session.SessionRepository
 import app.climbra.android.rider.DataChanges
 import app.climbra.android.rider.RiderRepository
+import app.climbra.android.ui.theme.DataStoreThemeSettings
+import app.climbra.android.ui.theme.ThemeSettings
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -103,4 +106,12 @@ object AppModule {
     @Provides
     @Singleton
     fun fileSaver(@ApplicationContext context: Context): FileSaver = MediaStoreFileSaver(context)
+
+    @Provides
+    @Singleton
+    fun profileApi(retrofit: Retrofit): ProfileApi = retrofit.create(ProfileApi::class.java)
+
+    @Provides
+    @Singleton
+    fun themeSettings(@ApplicationContext context: Context): ThemeSettings = DataStoreThemeSettings(context)
 }

@@ -1,15 +1,23 @@
 package app.climbra.android.ui.common
 
-import androidx.annotation.StringRes
+import android.annotation.SuppressLint
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import app.climbra.android.R
 import app.climbra.android.data.net.ApiError
 
-/** A translated message with its arguments, resolved in the UI in the current language. */
-data class UiText(@StringRes val res: Int, val args: List<Any> = emptyList()) {
+/**
+ * A translated message with its arguments, resolved in the UI in the current language; with [quantity], [res] is a
+ * plurals resource.
+ */
+data class UiText(val res: Int, val args: List<Any> = emptyList(), val quantity: Int? = null) {
+    // A string, or with a quantity a plurals resource
+    @SuppressLint("ResourceType")
     @Composable
-    fun resolve(): String = stringResource(res, *args.toTypedArray())
+    fun resolve(): String =
+        if (quantity != null) pluralStringResource(res, quantity, *args.toTypedArray())
+        else stringResource(res, *args.toTypedArray())
 }
 
 /** Backend error codes with a translated message, like `TRANSLATED_ERROR_CODES` of the web app. */
@@ -26,6 +34,14 @@ val TRANSLATED_ERROR_CODES: Map<String, Int> = mapOf(
     "FILE_STORAGE_UNAVAILABLE" to R.string.api_error_file_storage_unavailable,
     "FILE_PROCESSING_BUSY" to R.string.api_error_file_processing_busy,
     "WORKOUT_COMPLETED" to R.string.api_error_workout_completed,
+    "PASSWORD_TOO_SHORT" to R.string.api_error_password_too_short,
+    "PASSWORD_TOO_LONG" to R.string.api_error_password_too_long,
+    "PASSWORD_EQUALS_EMAIL" to R.string.api_error_password_equals_email,
+    "WRONG_PASSWORD" to R.string.api_error_wrong_password,
+    "NO_PASSWORD" to R.string.api_error_no_password,
+    "DELETE_CONFIRMATION_INVALID" to R.string.api_error_delete_confirmation_invalid,
+    "ADMIN_ACCOUNT_UNDELETABLE" to R.string.api_error_admin_account_undeletable,
+    "ACCOUNT_BUSY" to R.string.api_error_account_busy,
 )
 
 fun ApiError.toUiText(): UiText = when (this) {

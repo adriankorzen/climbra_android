@@ -34,7 +34,6 @@
 
     <!-- Account -->
     <string name="logout">Wyloguj</string>
-    <string name="profile_signed_in_as">Zalogowano jako %1$s</string>
 
     <!-- Start -->
     <string name="start_unavailable_title">Climbra jest niedostępna</string>
@@ -276,4 +275,154 @@
     <string name="zone_hr_max_3">Aerobowa</string>
     <string name="zone_hr_max_4">Progowa</string>
     <string name="zone_hr_max_5">Maksymalna</string>
+
+    <!-- Common actions -->
+    <string name="save">Zapisz</string>
+    <string name="add">Dodaj</string>
+    <string name="edit">Edytuj</string>
+    <string name="delete">Usuń</string>
+
+    <!-- Profile (spec 004; web: profile.*) -->
+    <string name="profile_load_failed">Nie można wczytać profilu.</string>
+    <string name="profile_create_title">Utwórz profil</string>
+    <string name="profile_create_hint">Najpierw utwórz profil kolarza, potem zaimportuj jazdy.</string>
+    <string name="profile_rider">Kolarz</string>
+    <string name="profile_name">Imię</string>
+    <string name="profile_weight">Waga (kg)</string>
+    <string name="profile_resting_hr">Tętno spoczynkowe (bpm)</string>
+    <string name="profile_max_hr">Maks. tętno</string>
+    <string name="profile_create">Utwórz profil</string>
+    <string name="profile_rider_invalid">Podaj imię i wagę od 20 do 250 kg (tętno spoczynkowe 25–120 bpm).</string>
+    <string name="profile_saved">Profil zapisany</string>
+    <string name="profile_created">Profil utworzony</string>
+    <string name="profile_preferences">Ustawienia</string>
+    <string name="profile_language">Język</string>
+    <string name="profile_theme">Motyw</string>
+    <string name="language_en">English</string>
+    <string name="language_pl">Polski</string>
+    <string name="theme_system">Systemowy</string>
+    <string name="theme_light">Jasny</string>
+    <string name="theme_dark">Ciemny</string>
+    <string name="profile_history">Historia progów</string>
+    <string name="profile_thresholds_failed">Nie można wczytać historii progów.</string>
+    <string name="profile_add_threshold">Nowe progi</string>
+    <string name="profile_edit_threshold">Edycja progów</string>
+    <string name="profile_valid_from">Obowiązuje od</string>
+    <string name="profile_threshold_hint">Np. po teście FTP. Jazdy z ostatnich 42 dni przeliczają się od razu, starsze po otwarciu; puste pola zachowują poprzednią wartość.</string>
+    <string name="profile_threshold_invalid">Sprawdź wartości: FTP 30–2500 W, LTHR 60–230 bpm, maks. tętno 80–240 bpm, dzień najpóźniej dzisiejszy.</string>
+    <string name="profile_threshold_conflict">Progi obowiązujące od tego dnia już istnieją.</string>
+    <string name="profile_lthr_optional">LTHR nie jest wymagane. Jeśli go nie znasz, podaj maks. tętno – strefy tętna wyliczymy wtedy z maks. tętna. LTHR daje dokładniejsze strefy i jest potrzebne do obciążenia z tętna (hrTSS) dla jazd bez mocy.</string>
+    <string name="profile_current">aktualne</string>
+    <string name="profile_no_thresholds">Brak progów – dodaj FTP, LTHR i maks. tętno.</string>
+    <string name="profile_confirm_delete">Usunąć progi obowiązujące od %1$s?</string>
+    <plurals name="profile_thresholds_saved">
+        <item quantity="one">Progi zapisane – przeliczone jazdy: %1$d</item>
+        <item quantity="few">Progi zapisane – przeliczone jazdy: %1$d</item>
+        <item quantity="many">Progi zapisane – przeliczone jazdy: %1$d</item>
+        <item quantity="other">Progi zapisane – przeliczone jazdy: %1$d</item>
+    </plurals>
+    <plurals name="profile_threshold_deleted">
+        <item quantity="one">Wpis usunięty – przeliczone jazdy: %1$d</item>
+        <item quantity="few">Wpis usunięty – przeliczone jazdy: %1$d</item>
+        <item quantity="many">Wpis usunięty – przeliczone jazdy: %1$d</item>
+        <item quantity="other">Wpis usunięty – przeliczone jazdy: %1$d</item>
+    </plurals>
+    <string name="profile_ftp_trend">FTP w czasie</string>
+    <string name="profile_power_zones">Strefy mocy</string>
+    <string name="profile_hr_zones">Strefy tętna</string>
+    <string name="profile_zones_failed">Nie można wczytać stref.</string>
+    <string name="profile_add_ftp">Dodaj FTP, aby zobaczyć strefy mocy.</string>
+    <string name="profile_add_lthr">Dodaj LTHR lub maks. tętno, aby zobaczyć strefy tętna.</string>
+
+    <!-- intervals.icu (web: intervals.*) -->
+    <string name="profile_intervals_failed">Nie można wczytać połączenia z intervals.icu.</string>
+    <string name="intervals_intro">Połącz konto intervals.icu, aby importować jazdy jednym dotknięciem – z dowolnego urządzenia (Garmin, Wahoo, Zwift, COROS…).</string>
+    <string name="intervals_how_to">Klucz API i identyfikator sportowca znajdziesz w intervals.icu → Settings → Developer Settings. Identyfikator jest opcjonalny – bez niego używamy właściciela klucza.</string>
+    <string name="intervals_athlete_id">Identyfikator sportowca (opcjonalnie)</string>
+    <string name="intervals_api_key">Klucz API</string>
+    <string name="intervals_connect">Połącz</string>
+    <string name="intervals_connecting">Łączenie…</string>
+    <string name="intervals_connected">Połączono z intervals.icu: %1$s</string>
+    <string name="intervals_rejected">intervals.icu odrzuciło klucz API lub identyfikator sportowca.</string>
+    <string name="intervals_not_configured">Integracja z intervals.icu nie jest skonfigurowana na serwerze.</string>
+    <string name="intervals_athlete">Sportowiec</string>
+    <string name="intervals_last_sync">Ostatnia synchronizacja</string>
+    <string name="intervals_never">jeszcze nie</string>
+    <string name="intervals_sync_now">Synchronizuj teraz</string>
+    <string name="intervals_syncing">Synchronizacja…</string>
+    <string name="intervals_sync_started">Synchronizacja intervals.icu rozpoczęta</string>
+    <string name="intervals_sync_done">Synchronizacja intervals.icu zakończona – zaimportowane jazdy: %1$d</string>
+    <string name="intervals_sync_done_unavailable">Synchronizacja intervals.icu zakończona – zaimportowane jazdy: %1$d, niedostępne: %2$d</string>
+    <string name="intervals_sync_failed">Synchronizacja intervals.icu nie powiodła się: %1$s</string>
+    <string name="intervals_disconnect">Rozłącz</string>
+    <string name="intervals_confirm_disconnect">Rozłączyć intervals.icu? Zaimportowane jazdy zostaną.</string>
+    <string name="intervals_disconnected">Rozłączono intervals.icu</string>
+    <string name="intervals_sources_note">Jazd pochodzących ze Stravy nie da się zaimportować (intervals.icu nie udostępnia ich przez API), a jazdy z Garmin Connect mogą wkrótce stać się niedostępne.</string>
+    <string name="intervals_thresholds_title">Progi w intervals.icu</string>
+    <string name="intervals_current_values">Aktualne</string>
+    <string name="intervals_indoor">indoor</string>
+    <string name="intervals_add_to_history">Dodaj do historii progów</string>
+    <string name="intervals_same_thresholds">Progi w intervals.icu są takie same jak aktualne.</string>
+    <string name="intervals_thresholds_failed">Nie udało się pobrać progów z intervals.icu.</string>
+
+    <!-- Garmin Connect (web: garmin.section.*, garmin.status.*) -->
+    <string name="profile_garmin_failed">Nie można wczytać połączenia z Garmin Connect.</string>
+    <string name="garmin_intro">Wysyłaj zaplanowane treningi do kalendarza Garmin Connect z kalendarza na climbra.app. Cele mocy są wysyłane w watach według Twojego aktualnego FTP. Jazdy nie są importowane z Garmin Connect.</string>
+    <string name="garmin_connected_at">Połączono</string>
+    <string name="garmin_on_garmin">Nadchodzące treningi w Garmin Connect</string>
+    <string name="garmin_outdated">Treningi w Garmin Connect różnią się od planu. Wyślij je ponownie, aby je zaktualizować.</string>
+    <string name="garmin_connect_web">Połącz na climbra.app</string>
+    <string name="garmin_disconnect">Odłącz</string>
+    <string name="garmin_confirm_disconnect">Odłączyć Garmin Connect? Nadchodzące treningi wysłane z Climbry zostaną stamtąd usunięte, a przeszłe zostaną.</string>
+    <string name="garmin_disconnected">Odłączono Garmin Connect</string>
+    <string name="garmin_status_no_permission">Import treningów dla Climbry jest wyłączony w Garmin Connect. Połącz ponownie i zezwól na niego.</string>
+    <string name="garmin_status_needs_reconnect">Połączenie z Garmin Connect wygasło. Połącz ponownie.</string>
+
+    <!-- Account (web: auth.account.*, auth.delete.*, coachQuota.*) -->
+    <string name="account_title">Konto</string>
+    <string name="account_google_linked">Połączone z Google</string>
+    <string name="quota_title">Kredyty AI</string>
+    <string name="profile_quota_failed">Nie można wczytać kredytów AI.</string>
+    <string name="quota_plan_label">Plan</string>
+    <string name="quota_plan_free">Darmowy</string>
+    <string name="quota_plan_subscription">Subskrypcja</string>
+    <string name="quota_subscription_active">odnowienie %1$s</string>
+    <string name="quota_subscription_canceled">anulowana, aktywna do %1$s</string>
+    <string name="quota_monthly_label">Miesięczne kredyty</string>
+    <string name="quota_monthly">%1$s z %2$s · odnowienie %3$s</string>
+    <string name="quota_bonus_label">Kredyty bonusowe</string>
+    <string name="quota_bonus_item">%1$s · wygasają %2$s</string>
+    <string name="quota_balance_label">Razem do wykorzystania</string>
+    <string name="quota_unlimited_short">bez limitu</string>
+    <string name="account_change_password">Zmiana hasła</string>
+    <string name="password_current">Obecne hasło</string>
+    <string name="password_new">Nowe hasło</string>
+    <string name="password_repeat">Powtórz hasło</string>
+    <string name="password_hint">Co najmniej 10 znaków</string>
+    <string name="password_required">Pole wymagane</string>
+    <string name="password_too_short">Co najmniej 10 znaków</string>
+    <string name="password_too_long">Za długie: najwyżej 72 bajty (polskie litery liczą się podwójnie)</string>
+    <string name="password_mismatch">Hasła się różnią</string>
+    <string name="password_equals_email">Hasło nie może być adresem e-mail</string>
+    <string name="password_submit">Zmień hasło</string>
+    <string name="password_changed">Hasło zostało zmienione. Pozostałe sesje zostały wylogowane.</string>
+    <string name="account_no_password">Konto nie ma hasła – logujesz się przez Google. Aby je ustawić, użyj resetu hasła.</string>
+    <string name="account_documents">Dokumenty</string>
+    <string name="delete_account_title">Usuń konto</string>
+    <string name="delete_account_intro">Usunięcie konta trwale usuwa profil, jazdy z plikami FIT, analizy, plany, rozmowy z trenerem AI i połączenie z intervals.icu.</string>
+    <string name="delete_account_open">Usuń konto…</string>
+    <string name="delete_account_warning">Tej operacji nie można cofnąć. Usuniemy konto i wszystkie Twoje dane; z kopii zapasowych znikną najpóźniej po 14 dniach. Jeśli chcesz zachować pliki, pobierz je wcześniej.</string>
+    <string name="delete_account_password">Potwierdź hasłem</string>
+    <string name="delete_account_email">Aby potwierdzić, wpisz adres e-mail konta (%1$s)</string>
+    <string name="delete_account_submit">Usuń konto na zawsze</string>
+    <string name="delete_account_admin_note">Konta administratora nie można usunąć.</string>
+    <string name="account_deleted">Konto zostało usunięte.</string>
+    <string name="api_error_password_too_short">Hasło musi mieć co najmniej 10 znaków.</string>
+    <string name="api_error_password_too_long">Hasło jest za długie (najwyżej 72 bajty).</string>
+    <string name="api_error_password_equals_email">Hasło nie może być adresem e-mail.</string>
+    <string name="api_error_wrong_password">Obecne hasło jest nieprawidłowe.</string>
+    <string name="api_error_no_password">Konto nie ma jeszcze hasła. Ustaw je przez reset hasła.</string>
+    <string name="api_error_delete_confirmation_invalid">Hasło lub adres e-mail jest nieprawidłowy.</string>
+    <string name="api_error_admin_account_undeletable">Konta administratora nie można usunąć.</string>
+    <string name="api_error_account_busy">Trwa import jazd albo zapytanie do trenera AI. Spróbuj ponownie, gdy się zakończy.</string>
 </resources>

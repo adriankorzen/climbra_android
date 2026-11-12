@@ -12,6 +12,7 @@ Built spec first: see [`specs/`](specs) and [`CLAUDE.md`](CLAUDE.md).
 | [001](specs/001-app-foundation-and-login.md) | Login with email and password or Google, terms acceptance, logout, session kept between app starts, English / Polish (the account's language), bottom navigation with Dashboard, Activities and Profile (content in later specs) |
 | [002](specs/002-dashboard.md) | Dashboard: the last 7 days against the 7 before, FTP, fitness / fatigue / form (CTL, ATL, TSB), performance management chart (42–365 days), weekly load, the 7 latest rides. All figures come from the backend (cyclingapp spec 051) |
 | [003](specs/003-activities.md) | Training log: rides of a period (7 / 28 / 90 days, this year, custom) with search, the period's totals and paging (cyclingapp spec 052). Ride detail as on the web except the AI coach: figures, thresholds, ride chart, power and HR zones, intervals, interval source, ad hoc detection, reanalyse, FIT download, delete, the planned workout and linking an unplanned ride |
+| [004](specs/004-profile.md) | Profile: rider data (and creating the rider), threshold history with add / edit / delete, W/kg and the re-analysed rides from the backend (cyclingapp spec 053), FTP trend, power and HR zones, intervals.icu (connect, sync, its thresholds as a proposal), Garmin Connect status and disconnect (connecting on the web), language and theme (system / light / dark), account: AI credits, password change, legal documents, account deletion |
 
 Registration and password reset open the web pages in a Custom Tab.
 

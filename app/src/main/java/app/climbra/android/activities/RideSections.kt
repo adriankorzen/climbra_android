@@ -435,11 +435,15 @@ private val HR_MAX_ZONE_NAMES = listOf(
 
 /** The translated name of a zone by its number; the backend's English name for a number the app does not know. */
 @Composable
-fun zoneName(kind: ZoneKind, zone: ZoneTime): String {
+fun zoneName(kind: ZoneKind, zone: ZoneTime): String = zoneName(kind, zone.number, zone.name)
+
+/** [name] is the backend's English name, for a [number] the app does not know. */
+@Composable
+fun zoneName(kind: ZoneKind, number: Int, name: String): String {
     val names = when (kind) {
         ZoneKind.POWER -> POWER_ZONE_NAMES
         ZoneKind.HEART_RATE -> HR_ZONE_NAMES
         ZoneKind.HEART_RATE_MAX -> HR_MAX_ZONE_NAMES
     }
-    return names.getOrNull(zone.number - 1)?.let { stringResource(it) } ?: zone.name
+    return names.getOrNull(number - 1)?.let { stringResource(it) } ?: name
 }

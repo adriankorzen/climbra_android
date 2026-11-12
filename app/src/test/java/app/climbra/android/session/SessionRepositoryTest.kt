@@ -213,4 +213,66 @@ class SessionRepositoryTest {
         assertEquals(SessionState.LoggedOut(expired = false), session.state.value)
         assertNull(sessionCookie())
     }
+
+    // Spec 004 AC10
+    @Test
+    fun changingTheLanguageStoresItOnTheAccountAndSwitchesTheApp() = test { session ->
+        backend.on("POST /api/auth/login", json(account(language = "pl"), 200, SESSION_COOKIE))
+        backend.on("PUT /api/account/language", noContent())
+        session.login("anna@example.com", "correct-horse-1")
+
+        assertNull(session.changeLanguage("en"))
+
+        assertEquals("""{"language":"en"}""", backend.requests("PUT /api/account/language").single().body?.utf8())
+        assertEquals("en", (session.state.value as SessionState.LoggedIn).account.language)
+        assertEquals("account:en", backend.locales.calls.last())
+    }
+
+    // Spec 004 AC10
+    @Test
+    fun aFailedLanguageChangeKeepsTheLanguage() = test { session ->
+        backend.on("POST /api/auth/login", json(account(language = "pl"), 200, SESSION_COOKIE))
+        backend.on("PUT /api/account/language", problem(500, null))
+        session.login("anna@example.com", "correct-horse-1")
+
+        assertEquals(ApiError.Http(500, null), session.changeLanguage("en"))
+
+        assertEquals("pl", (session.state.value as SessionState.LoggedIn).account.language)
+        assertEquals("account:pl", backend.locales.calls.last())
+    }
+
+    // Spec 004 AC13
+    @Test
+    fun changingThePasswordSendsBothPasswords() = test { session ->
+        backend.on("POST /api/auth/login", json(account(), 200, SESSION_COOKIE))
+        backend.on("PUT /api/account/password", noContent(), problem(400, "WRONG_PASSWORD"))
+        session.login("anna@example.com", "correct-horse-1")
+
+        assertNull(session.changePassword("correct-horse-1", "battery-staple-2"))
+        assertEquals(ApiError.Http(400, "WRONG_PASSWORD"), session.changePassword("wrong", "battery-staple-2"))
+
+        assertEquals(
+            """{"currentPassword":"correct-horse-1","newPassword":"battery-staple-2"}""",
+            backend.requests("PUT /api/account/password").first().body?.utf8(),
+        )
+        assertTrue(session.state.value is SessionState.LoggedIn)
+    }
+
+    // Spec 004 AC14
+    @Test
+    fun deletingTheAccountEndsTheSession() = test { session ->
+        backend.on("POST /api/auth/login", json(account(), 200, SESSION_COOKIE))
+        backend.on("DELETE /api/account", problem(400, "DELETE_CONFIRMATION_INVALID"), noContent())
+        session.login("anna@example.com", "correct-horse-1")
+
+        assertEquals(ApiError.Http(400, "DELETE_CONFIRMATION_INVALID"), session.deleteAccount("wrong", null))
+        assertTrue(session.state.value is SessionState.LoggedIn)
+
+        assertNull(session.deleteAccount("correct-horse-1", null))
+
+        assertEquals("""{"password":"correct-horse-1"}""", backend.requests("DELETE /api/account").last().body?.utf8())
+        assertEquals(SessionState.LoggedOut(accountDeleted = true), session.state.value)
+        assertNull(sessionCookie())
+        assertEquals("device", backend.locales.calls.last())
+    }
 }

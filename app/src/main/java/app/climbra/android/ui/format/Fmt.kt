@@ -5,7 +5,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import java.math.RoundingMode
 import java.text.NumberFormat
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Locale
@@ -103,6 +105,21 @@ class Fmt(val locale: Locale) {
         }
         val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, style.skeleton)
         return DateTimeFormatter.ofPattern(pattern, locale).format(date)
+    }
+
+    /**
+     * [value] is an ISO instant (`2026-10-26T09:00:00Z`), shown in the device's [zone]: `26 Oct 2026, 10:00`, or the
+     * day alone without [withTime] — the web's `fmt.dateTime` and `fmt.date(…, 'medium')` of an instant.
+     */
+    fun instant(value: String?, withTime: Boolean = true, zone: ZoneId = ZoneId.systemDefault()): String {
+        val instant = try {
+            Instant.parse(value ?: return DASH)
+        } catch (e: DateTimeParseException) {
+            return DASH
+        }
+        val skeleton = if (withTime) "d MMM y jj:mm" else DateStyle.DAY_MONTH_YEAR.skeleton
+        val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, skeleton)
+        return DateTimeFormatter.ofPattern(pattern, locale).format(instant.atZone(zone))
     }
 
     companion object {

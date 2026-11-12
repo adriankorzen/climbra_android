@@ -77,4 +77,14 @@ class FmtTest {
         assertEquals("11 lis", polish.date("2026-11-11", DateStyle.DAY_MONTH))
         assertEquals("Nov 11", english.date("2026-11-11", DateStyle.DAY_MONTH))
     }
+
+    // Spec 004: instants (last sync, credit renewal) in the device's zone
+    @Test
+    fun instantsAreShownInTheDevicesZone() {
+        val warsaw = java.time.ZoneId.of("Europe/Warsaw")
+        assertEquals("26 paź 2026, 10:00", polish.instant("2026-10-26T09:00:00Z", zone = warsaw).plain())
+        assertEquals("1 gru 2026", polish.instant("2026-11-30T23:30:00Z", withTime = false, zone = warsaw))
+        assertEquals("–", polish.instant(null))
+        assertEquals("–", polish.instant("yesterday"))
+    }
 }

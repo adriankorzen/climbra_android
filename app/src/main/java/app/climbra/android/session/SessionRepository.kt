@@ -4,8 +4,11 @@ import app.climbra.android.data.api.AcceptTermsRequest
 import app.climbra.android.data.api.AccountResponse
 import app.climbra.android.data.api.AuthApi
 import app.climbra.android.data.api.AuthProviders
+import app.climbra.android.data.api.DeleteAccountRequest
 import app.climbra.android.data.api.GoogleIdTokenRequest
+import app.climbra.android.data.api.LanguageRequest
 import app.climbra.android.data.api.LoginRequest
+import app.climbra.android.data.api.PasswordChangeRequest
 import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.PersistentCookieJar
@@ -26,8 +29,11 @@ sealed interface SessionState {
     /** The backend could not be reached at start; the stored session is kept. */
     data class Unavailable(val error: ApiError) : SessionState
 
-    /** @param expired the session ended while the app was used */
-    data class LoggedOut(val expired: Boolean = false) : SessionState
+    /**
+     * @param expired the session ended while the app was used
+     * @param accountDeleted the account was just deleted (spec 004)
+     */
+    data class LoggedOut(val expired: Boolean = false, val accountDeleted: Boolean = false) : SessionState
 
     data class NeedsTerms(val account: AccountResponse) : SessionState
 
@@ -101,6 +107,35 @@ class SessionRepository(
     suspend fun logout() {
         call { api.logout() }
         endSession(expired = false)
+    }
+
+    /** The account's other sessions end on the backend, this one stays (spec 004). @return the error, `null` when done */
+    suspend fun changePassword(currentPassword: String, newPassword: String): ApiError? =
+        (call { api.changePassword(PasswordChangeRequest(currentPassword, newPassword)) } as? ApiResult.Failure)?.error
+
+    /** Stores [language] (`pl` / `en`) on the account and switches the app to it (spec 004). */
+    suspend fun changeLanguage(language: String): ApiError? {
+        when (val result = call { api.changeLanguage(LanguageRequest(language)) }) {
+            is ApiResult.Failure -> return result.error
+            is ApiResult.Success -> Unit
+        }
+        (state.value as? SessionState.LoggedIn)?.let { signedIn(it.account.copy(language = language)) }
+        return null
+    }
+
+    /**
+     * Deletes the account, confirmed with its [password] or, without one, its [email] (spec 004); the session ends
+     * here as it did on the backend.
+     */
+    suspend fun deleteAccount(password: String?, email: String?): ApiError? {
+        when (val result = call { api.deleteAccount(DeleteAccountRequest(password, email)) }) {
+            is ApiResult.Failure -> return result.error
+            is ApiResult.Success -> Unit
+        }
+        cookies.clear()
+        locales.useDeviceLanguage()
+        mutableState.value = SessionState.LoggedOut(accountDeleted = true)
+        return null
     }
 
     private suspend fun signIn(request: suspend () -> AccountResponse): ApiError? =

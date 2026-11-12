@@ -147,7 +147,7 @@ class ScreensTest {
             ClimbraContent(
                 state = state,
                 onRetry = { retries++ },
-                login = { expired -> Text(if (expired) "login expired" else "login") },
+                login = { loggedOut -> Text(if (loggedOut.expired) "login expired" else "login") },
                 terms = { Text("terms") },
                 shell = { Text("shell of ${it.email}") },
             )

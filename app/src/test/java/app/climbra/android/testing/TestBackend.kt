@@ -2,6 +2,7 @@ package app.climbra.android.testing
 
 import app.climbra.android.data.api.ActivityApi
 import app.climbra.android.data.api.AuthApi
+import app.climbra.android.data.api.ProfileApi
 import app.climbra.android.data.api.RiderApi
 import app.climbra.android.data.net.ByteCipher
 import app.climbra.android.data.net.CookieStore
@@ -43,6 +44,7 @@ class TestBackend(
     val api: AuthApi = retrofit.create(AuthApi::class.java)
     val riderApi: RiderApi = retrofit.create(RiderApi::class.java)
     val activityApi: ActivityApi = retrofit.create(ActivityApi::class.java)
+    val profileApi: ProfileApi = retrofit.create(ProfileApi::class.java)
     val locales = FakeAppLocales()
 
     /** Requests in the order they arrived. */
@@ -107,9 +109,11 @@ class TestBackend(
             language: String = "pl",
             termsAccepted: Boolean = true,
             legalVersion: String? = "2026-10-01",
+            hasPassword: Boolean = true,
+            role: String = "USER",
         ) = """
-            {"id":7,"email":"$email","role":"USER","language":"$language","riderId":3,"hasPassword":true,
-             "googleLinked":false,"termsAccepted":$termsAccepted,
+            {"id":7,"email":"$email","role":"$role","language":"$language","riderId":3,"hasPassword":$hasPassword,
+             "googleLinked":${!hasPassword},"termsAccepted":$termsAccepted,
              "legalVersion":${legalVersion?.let { "\"$it\"" } ?: "null"},"currentLegalVersion":"2026-10-01",
              "somethingNew":42}
         """.trimIndent()

@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -56,7 +57,12 @@ import app.climbra.android.ui.common.ErrorBanner
 import app.climbra.android.ui.common.openWebPage
 
 @Composable
-fun LoginRoute(expired: Boolean, config: AppConfig, viewModel: LoginViewModel = hiltViewModel()) {
+fun LoginRoute(
+    expired: Boolean,
+    config: AppConfig,
+    accountDeleted: Boolean = false,
+    viewModel: LoginViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val google = remember(context) { CredentialManagerGoogleSource(context, config.googleServerClientId) }
@@ -72,6 +78,7 @@ fun LoginRoute(expired: Boolean, config: AppConfig, viewModel: LoginViewModel = 
         onGoogle = { viewModel.loginWithGoogle(google) },
         onRegister = { openWebPage(context, config.webPage("register")) },
         onForgotPassword = { openWebPage(context, config.webPage("forgot-password")) },
+        accountDeleted = accountDeleted,
     )
 }
 
@@ -87,6 +94,8 @@ fun LoginScreen(
     onGoogle: () -> Unit,
     onRegister: () -> Unit,
     onForgotPassword: () -> Unit,
+    /** The account was just deleted (spec 004): a note above the form. */
+    accountDeleted: Boolean = false,
 ) {
     Scaffold { padding ->
         Column(
@@ -114,6 +123,20 @@ fun LoginScreen(
                 val message = state.error?.resolve() ?: if (expired) stringResource(R.string.login_expired) else null
                 if (message != null) {
                     ErrorBanner(message, modifier = Modifier.testTag("login-error"))
+                    Spacer(Modifier.height(16.dp))
+                } else if (accountDeleted) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier.fillMaxWidth().testTag("login-account-deleted"),
+                    ) {
+                        Text(
+                            stringResource(R.string.account_deleted),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(12.dp),
+                        )
+                    }
                     Spacer(Modifier.height(16.dp))
                 }
                 OutlinedTextField(

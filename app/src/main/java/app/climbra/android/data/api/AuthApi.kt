@@ -3,7 +3,9 @@ package app.climbra.android.data.api
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.POST
+import retrofit2.http.PUT
 
 /** Login, session and terms endpoints of the backend (`account.AuthController`, `account.AccountController`). */
 interface AuthApi {
@@ -31,7 +33,29 @@ interface AuthApi {
     /** `204`; the account is read again with [me]. */
     @POST("api/account/accept-terms")
     suspend fun acceptTerms(@Body request: AcceptTermsRequest)
+
+    /** `204`; the backend ends the account's other sessions (cyclingapp spec 006). */
+    @PUT("api/account/password")
+    suspend fun changePassword(@Body request: PasswordChangeRequest)
+
+    /** `204`; cyclingapp spec 044. */
+    @PUT("api/account/language")
+    suspend fun changeLanguage(@Body request: LanguageRequest)
+
+    /** `204`; ends the session too (cyclingapp spec 014). */
+    @HTTP(method = "DELETE", path = "api/account", hasBody = true)
+    suspend fun deleteAccount(@Body request: DeleteAccountRequest)
 }
+
+@Serializable
+data class PasswordChangeRequest(val currentPassword: String, val newPassword: String)
+
+@Serializable
+data class LanguageRequest(val language: String)
+
+/** The password, or the email typed again by an account without a password. */
+@Serializable
+data class DeleteAccountRequest(val password: String? = null, val email: String? = null)
 
 /** Mirrors `account.AccountResponse`. */
 @Serializable

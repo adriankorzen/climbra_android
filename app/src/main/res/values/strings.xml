@@ -36,7 +36,6 @@
 
     <!-- Account -->
     <string name="logout">Log out</string>
-    <string name="profile_signed_in_as">Logged in as %1$s</string>
 
     <!-- Start -->
     <string name="start_unavailable_title">Climbra is not reachable</string>
@@ -281,4 +280,150 @@
     <string name="zone_hr_max_3">Aerobic</string>
     <string name="zone_hr_max_4">Threshold</string>
     <string name="zone_hr_max_5">Maximum</string>
+
+    <!-- Common actions -->
+    <string name="save">Save</string>
+    <string name="add">Add</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+
+    <!-- Profile (spec 004; web: profile.*) -->
+    <string name="profile_load_failed">Cannot load the profile.</string>
+    <string name="profile_create_title">Create your profile</string>
+    <string name="profile_create_hint">Create your rider profile first, then import your rides.</string>
+    <string name="profile_rider">Rider</string>
+    <string name="profile_name">Name</string>
+    <string name="profile_weight">Weight (kg)</string>
+    <string name="profile_resting_hr">Resting HR (bpm)</string>
+    <string name="profile_max_hr">Max HR</string>
+    <string name="profile_create">Create profile</string>
+    <string name="profile_rider_invalid">Fill in a name and a weight between 20 and 250 kg (resting HR 25–120 bpm).</string>
+    <string name="profile_saved">Profile saved</string>
+    <string name="profile_created">Profile created</string>
+    <string name="profile_preferences">Preferences</string>
+    <string name="profile_language">Language</string>
+    <string name="profile_theme">Theme</string>
+    <string name="language_en">English</string>
+    <string name="language_pl">Polski</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="profile_history">Threshold history</string>
+    <string name="profile_thresholds_failed">Cannot load the threshold history.</string>
+    <string name="profile_add_threshold">New thresholds</string>
+    <string name="profile_edit_threshold">Edit thresholds</string>
+    <string name="profile_valid_from">Valid from</string>
+    <string name="profile_threshold_hint">E.g. after an FTP test. Rides of the last 42 days are recalculated at once, older ones when opened; empty fields keep their previous value.</string>
+    <string name="profile_threshold_invalid">Check the values: FTP 30–2500 W, LTHR 60–230 bpm, max HR 80–240 bpm, a day until today.</string>
+    <string name="profile_threshold_conflict">There already are thresholds valid from this day.</string>
+    <string name="profile_lthr_optional">LTHR is optional. If you don\'t know it, enter your max heart rate – heart rate zones are then derived from it. LTHR gives more accurate zones and is needed for training stress from heart rate (hrTSS) on rides without power.</string>
+    <string name="profile_current">current</string>
+    <string name="profile_no_thresholds">No thresholds yet – add your FTP, LTHR and max HR.</string>
+    <string name="profile_confirm_delete">Delete the thresholds valid from %1$s?</string>
+    <plurals name="profile_thresholds_saved">
+        <item quantity="one">Thresholds saved – re-analysed rides: %1$d</item>
+        <item quantity="other">Thresholds saved – re-analysed rides: %1$d</item>
+    </plurals>
+    <plurals name="profile_threshold_deleted">
+        <item quantity="one">Entry deleted – re-analysed rides: %1$d</item>
+        <item quantity="other">Entry deleted – re-analysed rides: %1$d</item>
+    </plurals>
+    <string name="profile_ftp_trend">FTP over time</string>
+    <string name="profile_power_zones">Power zones</string>
+    <string name="profile_hr_zones">Heart rate zones</string>
+    <string name="profile_zones_failed">Cannot load the zones.</string>
+    <string name="profile_add_ftp">Add your FTP to see power zones.</string>
+    <string name="profile_add_lthr">Add your LTHR or max heart rate to see heart rate zones.</string>
+
+    <!-- intervals.icu (web: intervals.*) -->
+    <string name="profile_intervals_failed">Cannot load the intervals.icu connection.</string>
+    <string name="intervals_intro">Connect your intervals.icu account to import rides with one tap – from any device (Garmin, Wahoo, Zwift, COROS…).</string>
+    <string name="intervals_how_to">You find the API key and the athlete id in intervals.icu → Settings → Developer Settings. The athlete id is optional – without it, the owner of the key is used.</string>
+    <string name="intervals_athlete_id">Athlete id (optional)</string>
+    <string name="intervals_api_key">API key</string>
+    <string name="intervals_connect">Connect</string>
+    <string name="intervals_connecting">Connecting…</string>
+    <string name="intervals_connected">Connected to intervals.icu: %1$s</string>
+    <string name="intervals_rejected">intervals.icu rejected the API key or the athlete id.</string>
+    <string name="intervals_not_configured">The intervals.icu integration is not configured on the server.</string>
+    <string name="intervals_athlete">Athlete</string>
+    <string name="intervals_last_sync">Last sync</string>
+    <string name="intervals_never">not yet</string>
+    <string name="intervals_sync_now">Sync now</string>
+    <string name="intervals_syncing">Syncing…</string>
+    <string name="intervals_sync_started">intervals.icu sync started</string>
+    <string name="intervals_sync_done">intervals.icu sync finished – imported rides: %1$d</string>
+    <string name="intervals_sync_done_unavailable">intervals.icu sync finished – imported rides: %1$d, not available: %2$d</string>
+    <string name="intervals_sync_failed">The intervals.icu sync failed: %1$s</string>
+    <string name="intervals_disconnect">Disconnect</string>
+    <string name="intervals_confirm_disconnect">Disconnect intervals.icu? Imported rides stay.</string>
+    <string name="intervals_disconnected">intervals.icu disconnected</string>
+    <string name="intervals_sources_note">Rides that came from Strava cannot be imported (intervals.icu does not provide them through its API), and rides from Garmin Connect may soon become unavailable.</string>
+    <string name="intervals_thresholds_title">Thresholds in intervals.icu</string>
+    <string name="intervals_current_values">Current</string>
+    <string name="intervals_indoor">indoor</string>
+    <string name="intervals_add_to_history">Add to threshold history</string>
+    <string name="intervals_same_thresholds">The thresholds in intervals.icu are the same as the current ones.</string>
+    <string name="intervals_thresholds_failed">Could not load the thresholds from intervals.icu.</string>
+
+    <!-- Garmin Connect (web: garmin.section.*, garmin.status.*) -->
+    <string name="profile_garmin_failed">Cannot load the Garmin Connect connection.</string>
+    <string name="garmin_intro">Send your planned workouts to the Garmin Connect calendar from the calendar on climbra.app. Power targets are sent in watts of your current FTP. Rides are not imported from Garmin Connect.</string>
+    <string name="garmin_connected_at">Connected</string>
+    <string name="garmin_on_garmin">Upcoming workouts in Garmin Connect</string>
+    <string name="garmin_outdated">Workouts in Garmin Connect differ from the plan. Send them again to update them.</string>
+    <string name="garmin_connect_web">Connect on climbra.app</string>
+    <string name="garmin_disconnect">Disconnect</string>
+    <string name="garmin_confirm_disconnect">Disconnect Garmin Connect? Upcoming workouts sent from Climbra will be removed from it; past ones stay.</string>
+    <string name="garmin_disconnected">Garmin Connect disconnected</string>
+    <string name="garmin_status_no_permission">Workout import is switched off for Climbra in Garmin Connect. Connect again and allow it.</string>
+    <string name="garmin_status_needs_reconnect">The connection with Garmin Connect has ended. Connect again.</string>
+
+    <!-- Account (web: auth.account.*, auth.delete.*, coachQuota.*) -->
+    <string name="account_title">Account</string>
+    <string name="account_google_linked">Linked with Google</string>
+    <string name="quota_title">AI credits</string>
+    <string name="profile_quota_failed">Cannot load the AI credits.</string>
+    <string name="quota_plan_label">Plan</string>
+    <string name="quota_plan_free">Free</string>
+    <string name="quota_plan_subscription">Subscription</string>
+    <string name="quota_subscription_active">renews on %1$s</string>
+    <string name="quota_subscription_canceled">cancelled, active until %1$s</string>
+    <string name="quota_monthly_label">Monthly credits</string>
+    <string name="quota_monthly">%1$s of %2$s · renews on %3$s</string>
+    <string name="quota_bonus_label">Bonus credits</string>
+    <string name="quota_bonus_item">%1$s · expire on %2$s</string>
+    <string name="quota_balance_label">Available in total</string>
+    <string name="quota_unlimited_short">unlimited</string>
+    <string name="account_change_password">Change password</string>
+    <string name="password_current">Current password</string>
+    <string name="password_new">New password</string>
+    <string name="password_repeat">Repeat password</string>
+    <string name="password_hint">At least 10 characters</string>
+    <string name="password_required">Required</string>
+    <string name="password_too_short">At least 10 characters</string>
+    <string name="password_too_long">Too long: at most 72 bytes (accented letters count double)</string>
+    <string name="password_mismatch">The passwords are different</string>
+    <string name="password_equals_email">The password must not be your email address</string>
+    <string name="password_submit">Change password</string>
+    <string name="password_changed">Password changed. Your other sessions have been logged out.</string>
+    <string name="account_no_password">Your account has no password, you log in with Google. To set one, use the password reset.</string>
+    <string name="account_documents">Documents</string>
+    <string name="delete_account_title">Delete account</string>
+    <string name="delete_account_intro">Deleting the account permanently removes the profile, rides with their FIT files, analyses, plans, AI coach conversations and the intervals.icu connection.</string>
+    <string name="delete_account_open">Delete account…</string>
+    <string name="delete_account_warning">This cannot be undone. We delete the account and all your data; it disappears from the backups within 14 days. If you want to keep your files, download them first.</string>
+    <string name="delete_account_password">Confirm with your password</string>
+    <string name="delete_account_email">To confirm, type the account\'s email address (%1$s)</string>
+    <string name="delete_account_submit">Delete account forever</string>
+    <string name="delete_account_admin_note">The admin account can\'t be deleted.</string>
+    <string name="account_deleted">The account was deleted.</string>
+    <string name="api_error_password_too_short">The password must have at least 10 characters.</string>
+    <string name="api_error_password_too_long">The password is too long (at most 72 bytes).</string>
+    <string name="api_error_password_equals_email">The password must not be your email address.</string>
+    <string name="api_error_wrong_password">The current password is wrong.</string>
+    <string name="api_error_no_password">Your account has no password yet. Set one with the password reset.</string>
+    <string name="api_error_delete_confirmation_invalid">The password or email address is wrong.</string>
+    <string name="api_error_admin_account_undeletable">The admin account can\'t be deleted.</string>
+    <string name="api_error_account_busy">A ride import or an AI coach request is running. Try again when it has finished.</string>
 </resources>

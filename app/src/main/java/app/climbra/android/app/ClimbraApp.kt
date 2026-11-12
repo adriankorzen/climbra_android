@@ -66,13 +66,15 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
     ClimbraContent(
         state = state,
         onRetry = viewModel::retry,
-        login = { expired -> LoginRoute(expired = expired, config = viewModel.config) },
+        login = { loggedOut ->
+            LoginRoute(expired = loggedOut.expired, config = viewModel.config, accountDeleted = loggedOut.accountDeleted)
+        },
         terms = { changed -> TermsRoute(documentsChanged = changed, config = viewModel.config) },
         shell = { account ->
             Shell(
                 dashboard = { openRide -> DashboardRoute(config = viewModel.config, onOpenRide = openRide) },
                 activities = { openRide -> ActivitiesRoute(config = viewModel.config, onOpenRide = openRide) },
-                profile = { ProfileRoute(email = account.email) },
+                profile = { ProfileRoute(config = viewModel.config) },
                 ride = { onBack ->
                     val context = LocalContext.current
                     RideDetailRoute(
@@ -96,7 +98,7 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
 fun ClimbraContent(
     state: SessionState,
     onRetry: () -> Unit,
-    login: @Composable (expired: Boolean) -> Unit,
+    login: @Composable (loggedOut: SessionState.LoggedOut) -> Unit,
     terms: @Composable (documentsChanged: Boolean) -> Unit,
     shell: @Composable (account: AccountResponse) -> Unit,
 ) {
@@ -105,7 +107,7 @@ fun ClimbraContent(
             // The system splash screen stays up meanwhile (MainActivity)
             SessionState.Loading -> Box(Modifier.fillMaxSize().testTag("start-loading"))
             is SessionState.Unavailable -> StartUnavailable(onRetry)
-            is SessionState.LoggedOut -> login(state.expired)
+            is SessionState.LoggedOut -> login(state)
             is SessionState.NeedsTerms -> terms(state.account.legalDocumentsChanged)
             is SessionState.LoggedIn -> shell(state.account)
         }

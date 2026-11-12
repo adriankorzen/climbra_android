@@ -9,6 +9,7 @@ import app.climbra.android.data.api.TrainingLoadResponse
 import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
+import app.climbra.android.rider.DataChanges
 import app.climbra.android.rider.RiderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
@@ -59,6 +60,7 @@ class DashboardViewModel @Inject constructor(
     private val riders: RiderRepository,
     private val api: RiderApi,
     private val clock: Clock,
+    private val changes: DataChanges,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(DashboardUiState())
@@ -66,6 +68,7 @@ class DashboardViewModel @Inject constructor(
 
     private var loadJob: Job? = null
     private var loadedAt: Instant? = null
+    private var loadedVersion = changes.version.value
 
     init {
         load()
@@ -74,10 +77,13 @@ class DashboardViewModel @Inject constructor(
     /** Pull to refresh and Retry. */
     fun refresh() = load()
 
-    /** The tab is shown again: figures older than [STALE_AFTER] are loaded again. */
+    /**
+     * The tab is shown again: figures older than [STALE_AFTER], or from before a change of the rider, the thresholds
+     * or the rides elsewhere ([DataChanges], e.g. the profile, spec 004), are loaded again.
+     */
     fun onShown() {
         val loaded = loadedAt ?: return
-        if (Duration.between(loaded, clock.instant()) > STALE_AFTER) {
+        if (Duration.between(loaded, clock.instant()) > STALE_AFTER || changes.version.value != loadedVersion) {
             load()
         }
     }
@@ -93,6 +99,7 @@ class DashboardViewModel @Inject constructor(
         if (loadJob?.isActive == true) return
         mutableState.update { it.copy(refreshing = !it.loading, failed = false) }
         loadJob = viewModelScope.launch {
+            loadedVersion = changes.version.value
             val result = fetch()
             loadedAt = clock.instant()
             mutableState.update { result(it).copy(loading = false, refreshing = false) }

@@ -53,7 +53,7 @@ class DashboardScreenTest {
         fitness = Fitness(ctl = 36.2, atl = 46.9, tsb = tsb, ctlChange = 0.06, atlChange = null, form = form),
     )
 
-    private val rider = Rider(id = 5, name = "Anna", currentThresholds = ThresholdEntry(260), ftpWattsPerKg = 3.611)
+    private val rider = Rider(id = 5, name = "Anna", currentThresholds = ThresholdEntry(ftpWatts = 260), ftpWattsPerKg = 3.611)
 
     private fun ride(id: Long, day: String, heartRate: Boolean = false) = AnalysisSummary(
         activityId = id,

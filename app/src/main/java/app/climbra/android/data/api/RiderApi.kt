@@ -39,14 +39,32 @@ interface RiderApi {
 data class Rider(
     val id: Long,
     val name: String = "",
+    val weightKg: Double? = null,
+    val restingHeartRateBpm: Int? = null,
+    /** The thresholds valid today, `null` without any. */
     val currentThresholds: ThresholdEntry? = null,
     val ftpWattsPerKg: Double? = null,
     /** IANA id of the rider's time zone, which decides what "today" is on the backend. */
     val timeZone: String? = null,
 )
 
+/** Mirrors `rider.ThresholdResponse`: one entry of the threshold history. */
 @Serializable
-data class ThresholdEntry(val ftpWatts: Int? = null)
+data class ThresholdEntry(
+    val id: Long = 0,
+    /** ISO day the entry is valid from. */
+    val effectiveFrom: String = "",
+    val ftpWatts: Int? = null,
+    val lthrBpm: Int? = null,
+    val maxHeartRateBpm: Int? = null,
+    /** The entry's own FTP relative to the current weight (cyclingapp spec 053). */
+    val ftpWattsPerKg: Double? = null,
+    /** The entry's values with omitted ones carried over from older entries (cyclingapp spec 053). */
+    val resolved: ThresholdValues = ThresholdValues(),
+)
+
+@Serializable
+data class ThresholdValues(val ftpWatts: Int? = null, val lthrBpm: Int? = null, val maxHeartRateBpm: Int? = null)
 
 @Serializable
 data class TimeZoneRequest(val timeZone: String)
