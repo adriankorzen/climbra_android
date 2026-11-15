@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.browser)
     implementation(libs.androidx.credentials)
@@ -109,6 +110,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.vico.compose.m3)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.markdown.renderer.m3)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

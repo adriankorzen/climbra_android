@@ -45,6 +45,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.climbra.android.R
+import app.climbra.android.coach.AskCoachSheet
+import app.climbra.android.coach.AskCoachState
+import app.climbra.android.coach.AskCoachViewModel
+import app.climbra.android.coach.RideCoachActions
+import app.climbra.android.coach.RideCoachButton
+import app.climbra.android.coach.RideCoachCard
 import app.climbra.android.dashboard.KpiTile
 import app.climbra.android.data.api.AnalysisResponse
 import app.climbra.android.ui.common.ErrorBanner
@@ -59,9 +65,20 @@ fun RideDetailRoute(
     onBack: () -> Unit,
     onDeleted: () -> Unit,
     onOpenCalendar: (String) -> Unit = {},
+    /** A coach conversation, on the Coach tab (spec 006). */
+    onOpenConversation: (Long) -> Unit = {},
+    onOpenTerms: () -> Unit = {},
     viewModel: RideDetailViewModel = hiltViewModel(),
+    coachViewModel: AskCoachViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val coach by coachViewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(coach.open) {
+        coach.open?.let {
+            coachViewModel.opened()
+            onOpenConversation(it)
+        }
+    }
     LaunchedEffect(state.deleted) {
         if (state.deleted) onDeleted()
     }
@@ -80,10 +97,19 @@ fun RideDetailRoute(
         onLink = viewModel::link,
         onMessageShown = viewModel::messageShown,
         onOpenCalendar = onOpenCalendar,
+        coach = coach,
+        coachActions = RideCoachActions(
+            onAsk = coachViewModel::openSheet,
+            onCloseSheet = coachViewModel::closeSheet,
+            onChange = coachViewModel::update,
+            onStart = { coachViewModel.start(free = state.activity?.freeReviewAvailable == true) },
+            onOpenConversation = onOpenConversation,
+            onOpenTerms = onOpenTerms,
+        ),
     )
 }
 
-/** The web's `activity-detail-page` without the AI coach (spec 003). */
+/** The web's `activity-detail-page` (spec 003), with its AI coach parts (spec 006). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RideDetailScreen(
@@ -102,6 +128,8 @@ fun RideDetailScreen(
     onMessageShown: () -> Unit,
     /** The calendar at the week of the planned workout's ISO date (spec 005). */
     onOpenCalendar: (String) -> Unit = {},
+    coach: AskCoachState = AskCoachState(),
+    coachActions: RideCoachActions = RideCoachActions(),
 ) {
     var menu by remember { mutableStateOf(false) }
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
@@ -118,6 +146,7 @@ fun RideDetailScreen(
             onMessageShown()
         }
     }
+
     val activity = state.activity
     val title = activity?.name ?: stringResource(R.string.activity_unnamed)
     Scaffold(
@@ -185,9 +214,16 @@ fun RideDetailScreen(
                     ErrorBanner(stringResource(R.string.activity_load_failed), Modifier.testTag("ride-error"))
                     OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                 }
-                activity != null -> RideContent(state, fmt, onIntervalSource, onFormChange, onApplyDetection, onResetDetection, onLink, onOpenCalendar)
+                activity != null -> {
+                    RideContent(state, fmt, coach, coachActions, onIntervalSource, onFormChange, onApplyDetection, onResetDetection, onLink, onOpenCalendar)
+                    RideCoachCard(coach, fmt, coachActions)
+                    Spacer(Modifier.height(24.dp))
+                }
             }
         }
+    }
+    if (coach.sheetOpen && activity != null) {
+        AskCoachSheet(coach, activity.freeReviewAvailable, fmt, coachActions)
     }
     if (confirmingDelete && activity != null) {
         AlertDialog(
@@ -214,6 +250,8 @@ fun RideDetailScreen(
 private fun RideContent(
     state: RideDetailUiState,
     fmt: Fmt,
+    coach: AskCoachState,
+    coachActions: RideCoachActions,
     onIntervalSource: (Boolean) -> Unit,
     onFormChange: (DetectionForm) -> Unit,
     onApplyDetection: () -> Unit,
@@ -234,6 +272,7 @@ private fun RideContent(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.testTag("ride-subtitle"),
     )
+    RideCoachButton(coach, coachActions)
     PlannedWorkoutCard(activity.plannedWorkout, state.candidates, state.linking, state.linkError, fmt, onLink, onOpenCalendar)
     val result = state.analysis
     if (state.analysisFailed && result == null) {
@@ -336,7 +375,6 @@ private fun RideContent(
             }
         }
     }
-    Spacer(Modifier.height(24.dp))
 }
 
 @Composable

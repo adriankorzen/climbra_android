@@ -87,4 +87,29 @@ class FmtTest {
         assertEquals("–", polish.instant(null))
         assertEquals("–", polish.instant("yesterday"))
     }
+
+    // Spec 006: "3 min ago" of the conversation list, as the web's formatRelative
+    @Test
+    fun relativeTimesFollowTheWeb() {
+        val now = java.time.Instant.parse("2026-11-12T10:00:00Z")
+        val utc = java.time.ZoneOffset.UTC
+        assertEquals("now", english.relative("2026-11-12T10:00:00Z", now, utc))
+        assertEquals("3 minutes ago", english.relative("2026-11-12T09:57:00Z", now, utc))
+        assertEquals("2 hours ago", english.relative("2026-11-12T08:00:00Z", now, utc))
+        assertEquals("yesterday", english.relative("2026-11-11T09:00:00Z", now, utc))
+        assertEquals("wczoraj", polish.relative("2026-11-11T09:00:00Z", now, utc))
+        assertEquals("3 minuty temu", polish.relative("2026-11-12T09:57:00Z", now, utc))
+        // After 30 days the date
+        assertEquals("1 paź 2026", polish.relative("2026-10-01T10:00:00Z", now, utc))
+        assertEquals("–", english.relative(null, now))
+    }
+
+    // Spec 006: a message's time, with its day when not today
+    @Test
+    fun messageTimesAreTheTimeOfTodayElseWithTheDay() {
+        val now = java.time.Instant.parse("2026-11-12T10:00:00Z")
+        val utc = java.time.ZoneOffset.UTC
+        assertEquals("09:05", polish.timeOrDate("2026-11-12T09:05:00Z", now, utc))
+        assertEquals("11 lis 2026, 09:05", polish.timeOrDate("2026-11-11T09:05:00Z", now, utc).plain())
+    }
 }

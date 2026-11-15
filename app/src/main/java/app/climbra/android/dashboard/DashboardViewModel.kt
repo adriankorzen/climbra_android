@@ -2,7 +2,10 @@ package app.climbra.android.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.climbra.android.coach.CoachActivity
 import app.climbra.android.data.api.AnalysisSummary
+import app.climbra.android.data.api.CoachApi
+import app.climbra.android.data.api.CoachConversationSummary
 import app.climbra.android.data.api.Rider
 import app.climbra.android.data.api.RiderApi
 import app.climbra.android.data.api.TrainingLoadResponse
@@ -22,6 +25,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -45,6 +49,8 @@ data class DashboardUiState(
     val noRidesAtAll: Boolean = false,
     /** One of [PMC_RANGES]. */
     val range: Int = DEFAULT_RANGE,
+    /** The 3 newest coach conversations (spec 006), `null` until loaded. */
+    val conversations: List<CoachConversationSummary>? = null,
 ) {
     /** The tail of the returned days that the chart shows. */
     val visibleDays get() = load?.days.orEmpty().takeLast(range)
@@ -61,6 +67,8 @@ class DashboardViewModel @Inject constructor(
     private val api: RiderApi,
     private val clock: Clock,
     private val changes: DataChanges,
+    private val coachApi: CoachApi,
+    coachActivity: CoachActivity,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(DashboardUiState())
@@ -72,6 +80,14 @@ class DashboardViewModel @Inject constructor(
 
     init {
         load()
+        // A coach request accepted or ended, a conversation deleted: the coach card loads again
+        viewModelScope.launch { coachActivity.changes.drop(1).collect { state.value.rider?.let { loadConversations(it.id) } } }
+    }
+
+    private fun loadConversations(riderId: Long) = viewModelScope.launch {
+        (call { coachApi.conversations(riderId) } as? ApiResult.Success)?.let { result ->
+            mutableState.update { it.copy(conversations = result.value.take(COACH_CONVERSATIONS)) }
+        }
     }
 
     /** Pull to refresh and Retry. */
@@ -112,10 +128,11 @@ class DashboardViewModel @Inject constructor(
             is ApiResult.Failure -> return { it.copy(failed = true) }
             is ApiResult.Success -> result.value ?: return { DashboardUiState(noRider = true, range = it.range) }
         }
-        val (load, rides) = coroutineScope {
+        val (load, rides, conversations) = coroutineScope {
             val load = async { call { api.trainingLoad(rider.id, PMC_RANGES.last(), WEEKS) } }
             val rides = async { call { api.latestAnalyses(rider.id, RECENT_RIDES) } }
-            load.await() to rides.await()
+            val conversations = async { call { coachApi.conversations(rider.id) } }
+            Triple(load.await(), rides.await(), conversations.await())
         }
         val recent = (rides as? ApiResult.Success)?.value?.sortedByDescending { it.startTime }
         // Only a history without analysed rides needs the list of all rides
@@ -128,6 +145,7 @@ class DashboardViewModel @Inject constructor(
                 load = (load as? ApiResult.Success)?.value ?: previous.load,
                 rides = recent ?: previous.rides,
                 noRidesAtAll = noRidesAtAll,
+                conversations = (conversations as? ApiResult.Success)?.value?.take(COACH_CONVERSATIONS) ?: previous.conversations,
                 failed = load is ApiResult.Failure || rides is ApiResult.Failure,
             )
         }
@@ -138,6 +156,7 @@ class DashboardViewModel @Inject constructor(
     companion object {
         const val WEEKS = 12
         const val RECENT_RIDES = 7
+        const val COACH_CONVERSATIONS = 3
         val STALE_AFTER: Duration = Duration.ofMinutes(5)
     }
 }

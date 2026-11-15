@@ -75,6 +75,7 @@ class ProfileViewModelTest {
         changes,
         themes,
         clock,
+        backend.quotas(session, scope),
     ).apply { zone = { ZoneId.of("Europe/Warsaw") } }
 
     /** Nothing loading or running (the backend answers on OkHttp's threads, so states are awaited). */

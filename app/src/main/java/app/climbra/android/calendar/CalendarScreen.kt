@@ -96,6 +96,9 @@ fun CalendarRoute(
     config: AppConfig,
     onOpenRide: (Long) -> Unit,
     onOpenWorkout: (CalendarWorkout) -> Unit,
+    /** A coach conversation and the training block form, on the Coach tab (spec 006). */
+    onOpenConversation: (Long) -> Unit = {},
+    onNewTrainingBlock: () -> Unit = {},
     viewModel: CalendarViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -121,6 +124,8 @@ fun CalendarRoute(
             onImportGarmin = viewModel::sendPlanToGarmin,
             onCloseGarminDialog = viewModel::closeGarminDialog,
             onMessageShown = viewModel::messageShown,
+            onOpenConversation = onOpenConversation,
+            onNewTrainingBlock = onNewTrainingBlock,
         ),
     )
 }
@@ -144,6 +149,8 @@ data class CalendarActions(
     val onImportGarmin: () -> Unit = {},
     val onCloseGarminDialog: () -> Unit = {},
     val onMessageShown: () -> Unit = {},
+    val onOpenConversation: (Long) -> Unit = {},
+    val onNewTrainingBlock: () -> Unit = {},
 )
 
 /** The web calendar's phone layout (spec 005): one week as a list of days, swiped or stepped through. */
@@ -283,7 +290,7 @@ private fun WeekPage(state: CalendarUiState, fmt: Fmt, actions: CalendarActions)
                 PlanCard(plan, data.plannedWorkouts, state.week, fmt, actions)
             }
             if (state.plans.isEmpty()) {
-                item(key = "no-plan") { NoPlan(onOpenWeb = { actions.onOpenWeb("coach/new/training-block") }) }
+                item(key = "no-plan") { NoPlan(onCreateBlock = actions.onNewTrainingBlock) }
             }
             item(key = "summary") { WeekSummary(state.figures, fmt) }
             items(state.days, key = { "day-${it.date}" }) { day -> DayRow(day, fmt, actions) }
@@ -331,6 +338,13 @@ private fun PlanCard(plan: TrainingPlan, workouts: List<CalendarWorkout>, week: 
                             Text(stringResource(R.string.adherence_dismiss))
                         }
                     }
+                }
+            }
+            plan.conversationId?.let { conversation ->
+                TextButton(onClick = { actions.onOpenConversation(conversation) }, modifier = Modifier.testTag("plan-conversation-${plan.id}")) {
+                    Icon(painterResource(R.drawable.ic_forum), null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.calendar_open_conversation))
                 }
             }
             TextButton(onClick = { actions.onAskRemove(plan) }, modifier = Modifier.testTag("remove-plan-${plan.id}")) {
@@ -470,11 +484,15 @@ private fun RideRow(ride: CalendarRide, fmt: Fmt, linked: Boolean, onOpen: () ->
 }
 
 @Composable
-private fun NoPlan(onOpenWeb: () -> Unit) {
+private fun NoPlan(onCreateBlock: () -> Unit) {
     OutlinedCard(Modifier.fillMaxWidth().testTag("no-plan")) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.calendar_no_plan), style = MaterialTheme.typography.bodyMedium)
-            OpenOnWeb(onOpenWeb)
+            TextButton(onClick = onCreateBlock, modifier = Modifier.testTag("create-block")) {
+                Icon(painterResource(R.drawable.ic_auto_awesome), null, Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.calendar_create_block))
+            }
         }
     }
 }

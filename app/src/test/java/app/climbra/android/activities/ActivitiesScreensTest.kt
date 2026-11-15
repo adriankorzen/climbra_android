@@ -373,10 +373,10 @@ class ActivitiesScreensTest {
     fun aRideOpensOnTheTabsStackAndBackReturns() {
         content {
             Shell(
-                dashboard = { open -> OpenButton("dashboard", open) },
-                activities = { open -> OpenButton("activities", open) },
+                dashboard = { nav -> OpenButton("dashboard", nav::openRide) },
+                activities = { nav -> OpenButton("activities", nav::openRide) },
                 profile = { Text("profile") },
-                ride = { back, _ -> Button(onClick = back, modifier = Modifier.testTag("ride-screen")) { Text("ride") } },
+                ride = { nav -> Button(onClick = nav::back, modifier = Modifier.testTag("ride-screen")) { Text("ride") } },
             )
         }
 
@@ -394,10 +394,10 @@ class ActivitiesScreensTest {
     fun tappingATabShowsItsPageNotTheRideOpenedFromIt() {
         content {
             Shell(
-                dashboard = { open -> OpenButton("dashboard", open) },
-                activities = { open -> OpenButton("activities", open) },
+                dashboard = { nav -> OpenButton("dashboard", nav::openRide) },
+                activities = { nav -> OpenButton("activities", nav::openRide) },
                 profile = { Text("profile") },
-                ride = { back, _ -> Button(onClick = back, modifier = Modifier.testTag("ride-screen")) { Text("ride") } },
+                ride = { nav -> Button(onClick = nav::back, modifier = Modifier.testTag("ride-screen")) { Text("ride") } },
             )
         }
 

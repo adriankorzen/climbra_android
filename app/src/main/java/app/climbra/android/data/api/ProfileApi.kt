@@ -10,8 +10,8 @@ import retrofit2.http.Path
 
 /**
  * The profile (spec 004): rider data, threshold history, zones, the intervals.icu and Garmin Connect connections and
- * the AI credits (`rider.*`, `intervals.IntervalsController`, `garminconnect.GarminConnectController`,
- * `coach.CoachQuotaController` of the backend).
+ * (`rider.*`, `intervals.IntervalsController`, `garminconnect.GarminConnectController` of the backend); the AI
+ * credits are in [CoachApi].
  */
 interface ProfileApi {
 
@@ -70,9 +70,6 @@ interface ProfileApi {
 
     @DELETE("api/riders/{id}/garmin-connection")
     suspend fun disconnectGarmin(@Path("id") riderId: Long)
-
-    @GET("api/account/coach-quota")
-    suspend fun coachQuota(): CoachQuota
 }
 
 /** Mirrors `rider.RiderRequest`; [timeZone] only when creating the rider (cyclingapp spec 049). */
@@ -190,29 +187,3 @@ data class GarminConnection(
 /** A status the app does not know yet reads as [NOT_CONNECTED]. */
 @Serializable
 enum class GarminStatus { NOT_CONNECTED, CONNECTED, NO_PERMISSION, NEEDS_RECONNECT }
-
-/** Mirrors `coach.CoachQuotaResponse` as far as the profile shows it (cyclingapp specs 013, 029). */
-@Serializable
-data class CoachQuota(
-    /** `FREE` or `SUBSCRIPTION`. */
-    val plan: String = "FREE",
-    val limit: Int = 0,
-    val used: Int = 0,
-    /** The whole balance, monthly and bonus credits. */
-    val remaining: Int = 0,
-    val unlimited: Boolean = false,
-    val monthly: MonthlyCredits? = null,
-    /** Earliest expiry first. */
-    val bonus: List<BonusCredits> = emptyList(),
-    val subscription: CreditSubscription? = null,
-)
-
-@Serializable
-data class MonthlyCredits(val limit: Int = 0, val used: Int = 0, val remaining: Int = 0, val resetsAt: String? = null)
-
-@Serializable
-data class BonusCredits(val remaining: Int = 0, val expiresAt: String? = null)
-
-/** [status] is `ACTIVE` or `CANCELED`. */
-@Serializable
-data class CreditSubscription(val status: String = "ACTIVE", val currentPeriodEnd: String? = null)

@@ -49,6 +49,13 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.climbra.android.AppConfig
 import app.climbra.android.R
+import app.climbra.android.coach.CoachNavigation
+import app.climbra.android.coach.ConversationTypeBadge
+import app.climbra.android.coach.rememberNow
+import app.climbra.android.data.api.CoachConversationSummary
+import java.time.Instant
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.TextButton
 import app.climbra.android.data.api.AnalysisSummary
 import app.climbra.android.data.api.FormRange
 import app.climbra.android.ui.common.ErrorBanner
@@ -60,7 +67,13 @@ import app.climbra.android.ui.theme.MonoFamily
 import app.climbra.android.ui.theme.extendedColors
 
 @Composable
-fun DashboardRoute(config: AppConfig, onOpenRide: (Long) -> Unit, viewModel: DashboardViewModel = hiltViewModel()) {
+fun DashboardRoute(
+    config: AppConfig,
+    onOpenRide: (Long) -> Unit,
+    coach: CoachNavigation = CoachNavigation(),
+    onOpenCoach: () -> Unit = {},
+    viewModel: DashboardViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onShown() }
@@ -71,6 +84,9 @@ fun DashboardRoute(config: AppConfig, onOpenRide: (Long) -> Unit, viewModel: Das
         onSelectRange = viewModel::selectRange,
         onOpenWeb = { openWebPage(context, config.webPage("")) },
         onOpenRide = onOpenRide,
+        coach = coach,
+        onOpenCoach = onOpenCoach,
+        now = rememberNow(60_000L),
     )
 }
 
@@ -84,6 +100,9 @@ fun DashboardScreen(
     onSelectRange: (Int) -> Unit,
     onOpenWeb: () -> Unit,
     onOpenRide: (Long) -> Unit = {},
+    coach: CoachNavigation = CoachNavigation(),
+    onOpenCoach: () -> Unit = {},
+    now: Instant = Instant.now(),
 ) {
     PullToRefreshBox(isRefreshing = state.refreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
         Column(
@@ -119,7 +138,10 @@ fun DashboardScreen(
                     onOpenWeb = onOpenWeb,
                     tag = "dashboard-no-rider",
                 )
-                state.rider != null || state.failed -> Content(state, fmt, onSelectRange, onOpenWeb, onOpenRide)
+                state.rider != null || state.failed -> {
+                    Content(state, fmt, onSelectRange, onOpenWeb, onOpenRide)
+                    state.conversations?.let { CoachCard(it, fmt, now, coach, onOpenCoach) }
+                }
             }
         }
     }
@@ -463,3 +485,56 @@ private fun Hint(title: String, text: String, onOpenWeb: () -> Unit, tag: String
 
 private val WIDE_LAYOUT = 600.dp
 private const val SPARK_DAYS = 42
+
+/** The web dashboard's coach section (spec 006): the 3 newest conversations and the ways to start. */
+@Composable
+private fun CoachCard(
+    conversations: List<CoachConversationSummary>,
+    fmt: Fmt,
+    now: Instant,
+    coach: CoachNavigation,
+    onOpenCoach: () -> Unit,
+) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth().testTag("dashboard-coach")) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CardTitle(stringResource(R.string.nav_coach), Modifier.weight(1f))
+                TextButton(onClick = onOpenCoach, modifier = Modifier.testTag("coach-all")) { Text(stringResource(R.string.dashboard_coach_all)) }
+            }
+            if (conversations.isEmpty()) {
+                Text(
+                    stringResource(R.string.coach_no_conversations),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp).testTag("coach-none"),
+                )
+            }
+            conversations.forEachIndexed { index, conversation ->
+                if (index > 0) HorizontalDivider()
+                Column(
+                    Modifier.fillMaxWidth().clickable { coach.openConversation(conversation.id) }.padding(vertical = 10.dp)
+                        .testTag("coach-conversation-${conversation.id}"),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(conversation.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ConversationTypeBadge(conversation.type)
+                        Text(
+                            fmt.relative(conversation.lastMessageAt ?: conversation.createdAt, now),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.extendedColors.textFaint,
+                        )
+                    }
+                }
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = coach.newTrainingBlock, modifier = Modifier.testTag("coach-new-block")) {
+                    Text(stringResource(R.string.coach_new_block))
+                }
+                OutlinedButton(onClick = coach.reviewFile, modifier = Modifier.testTag("coach-review-file")) {
+                    Text(stringResource(R.string.coach_review_file))
+                }
+            }
+        }
+    }
+}

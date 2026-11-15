@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name" translatable="false">Climbra</string>
 
     <!-- Navigation (web: nav.*) -->
@@ -443,7 +443,7 @@
     <string name="calendar_remove_confirm">The plan “%1$s” is removed from the calendar with its planned workouts. The conversation with the coach stays – you can add the block again.</string>
     <string name="calendar_removed">Plan “%1$s” removed from the calendar</string>
     <string name="calendar_open_web">Open on climbra.app</string>
-    <string name="calendar_no_plan">No training plan in this period. Create a training block with the coach on climbra.app.</string>
+    <string name="calendar_no_plan">No training plan in this period. The coach builds a block you can add to the calendar.</string>
     <string name="calendar_show_in_calendar">Show in calendar</string>
     <string name="methodology_auto">Automatic</string>
     <string name="methodology_polarized">Polarized</string>
@@ -512,4 +512,173 @@
     <string name="api_error_garmin_workout_not_sendable">This workout cannot be sent.</string>
     <string name="api_error_garmin_rate_limited">Garmin\'s limit of requests is reached. Send again later: what was sent stays.</string>
     <string name="api_error_garmin_unavailable">Garmin Connect did not answer. Send again later: what was sent stays.</string>
+
+    <!-- AI coach (spec 006; web: coach.*, coachRequest.*, coachErrors.*, coachQuota.*, askCoach.*, block.*, review.*, rpe.*, healthNote.*) -->
+    <string name="nav_coach">Coach</string>
+    <string name="coach_filter_all">All</string>
+    <string name="conversation_type_activity_review">Ride review</string>
+    <string name="conversation_type_file_review">File review</string>
+    <string name="conversation_type_training_block">Training block</string>
+    <string name="conversation_type_plan_adjustment">Plan adjustment</string>
+    <string name="coach_status_busy">Answering…</string>
+    <string name="coach_status_failed">Failed</string>
+    <string name="coach_linked_ride">Linked to a ride</string>
+    <string name="coach_linked_plan">Adjusts a plan of the calendar</string>
+    <string name="coach_load_failed">Cannot load conversations.</string>
+    <string name="coach_new">New</string>
+    <string name="coach_new_block">New training block</string>
+    <string name="coach_new_block_hint">A 4–6 week plan built around your goal, available time and recent load.</string>
+    <string name="coach_review_file">Review a FIT file</string>
+    <string name="coach_review_file_hint">A ride that isn\'t in your log, e.g. from a friend or another device.</string>
+    <string name="coach_review_ride">Review a ride</string>
+    <string name="coach_review_ride_hint">Open a ride in Activities and use “Ask the coach”.</string>
+    <string name="coach_welcome_title">Your coach</string>
+    <string name="coach_welcome">Start a conversation in one of these ways.</string>
+    <string name="coach_no_conversations">No conversations yet.</string>
+    <string name="coach_confirm_delete">Delete the conversation “%1$s”?</string>
+    <string name="coach_deleted">Conversation deleted</string>
+    <string name="quota_remaining" tools:ignore="PluralsCandidate">AI credits: %1$d of %2$d this month · renews on %3$s</string>
+    <string name="quota_bonus" tools:ignore="PluralsCandidate">+ bonus: %1$d (expire on %2$s)</string>
+    <string name="quota_exhausted">AI credits used up · renews on %1$s</string>
+    <string name="quota_unlimited" tools:ignore="PluralsCandidate">AI credits: unlimited · %1$d used this period</string>
+    <string name="quota_uses" tools:ignore="PluralsCandidate">Uses %1$d of %2$d remaining AI credits</string>
+    <string name="quota_uses_unlimited" tools:ignore="PluralsCandidate">Costs %1$d AI credits (unlimited)</string>
+    <string name="quota_not_enough" tools:ignore="PluralsCandidate">Not enough AI credits: needs %1$d, %2$d left · renews on %3$s</string>
+    <string name="quota_free">Free – the first review of this ride</string>
+    <string name="coach_busy_hint">The coach is answering another request – wait until it finishes.</string>
+    <string name="coach_not_found">Conversation not found.</string>
+    <string name="coach_conversation_failed">Cannot load the conversation.</string>
+    <string name="coach_open_ride">Open ride</string>
+    <string name="coach_open_plan">Open plan</string>
+    <string name="coach_chat">Chat</string>
+    <string name="coach_review">Review</string>
+    <string name="coach_training_block">Training block</string>
+    <string name="coach_updated">Updated</string>
+    <string name="coach_medical_referral">The coach recommends seeing a doctor: a doctor should assess these symptoms. Don\'t train until they have. In an emergency, call 112.</string>
+    <string name="coach_show_training_block">Show training block</string>
+    <string name="coach_block_ready">The training block is ready. Review the weeks and workouts and add it to the calendar.</string>
+    <string name="coach_block_revised">The block was revised – review the changes and update it in the calendar.</string>
+    <string name="coach_block_in_calendar">The block is in your calendar.</string>
+    <string name="coach_thinking">The coach is thinking…</string>
+    <string name="coach_queued">Waiting in the queue…</string>
+    <string name="coach_background_hint">You can leave this screen; you\'ll be told when the answer is ready.</string>
+    <string name="coach_retry">Retry</string>
+    <string name="coach_edit_again">Edit again</string>
+    <string name="coach_send_again">Send again</string>
+    <string name="coach_request_error_provider_error">The AI service failed to answer.</string>
+    <string name="coach_request_error_provider_quota">The AI service is overloaded right now. Try again in a moment.</string>
+    <string name="coach_request_error_refused">The AI model refused to answer this request.</string>
+    <string name="coach_request_error_invalid_answer">The AI model gave an unusable answer twice.</string>
+    <string name="coach_request_error_timeout">The AI model took too long to answer.</string>
+    <string name="coach_request_error_interrupted">The request was interrupted (e.g. by a server restart).</string>
+    <string name="coach_request_error_not_configured">The AI service is not configured.</string>
+    <string name="coach_request_error_unexpected">The request failed unexpectedly.</string>
+    <string name="coach_error_validation">The request is not valid.</string>
+    <string name="coach_error_conflict">The coach is still answering, or the conversation reached its message limit.</string>
+    <string name="coach_error_unprocessable">The request can\'t be processed (refusal, invalid file or missing thresholds).</string>
+    <string name="coach_error_limit">Monthly limit reached.</string>
+    <string name="coach_error_provider">The AI provider failed or timed out.</string>
+    <string name="coach_error_not_configured">The AI provider is not configured on the server.</string>
+    <string name="coach_error_other">Something went wrong.</string>
+    <string name="coach_read_only">This conversation can no longer continue: it used a retired provider (Claude) or ride data files sent to the model. You can read it or start a new one.</string>
+    <string name="coach_message_placeholder">Ask a follow-up question…</string>
+    <string name="coach_attach">Attach a FIT / ZIP file</string>
+    <string name="coach_remove_file">Remove the file</string>
+    <string name="coach_send">Send</string>
+    <string name="coach_file_type">Choose a FIT or ZIP file</string>
+    <string name="coach_proposal_on_web">The coach\'s proposal for the plan is decided on climbra.app.</string>
+    <string name="coach_answered">The coach answered “%1$s”</string>
+    <string name="coach_failed">The coach request “%1$s” failed</string>
+    <string name="coach_open">Open</string>
+    <string name="coach_language">Language of the answers</string>
+    <string name="health_note_text">The AI coach doesn\'t replace a doctor. With worrying symptoms, stop training and contact a doctor; in an emergency, call 112.</string>
+    <string name="health_note_terms">Health and safety in the terms</string>
+    <string name="review_estimated_rpe">Estimated RPE</string>
+    <string name="review_rider_rpe">Your RPE</string>
+    <string name="review_strengths">Strengths</string>
+    <string name="review_issues">Issues</string>
+    <string name="review_recommendations">Recommendations</string>
+    <string name="review_next_session">Next session</string>
+    <string name="review_next_planned">Next planned workout</string>
+    <string name="review_keeps_plan">The coach keeps your plan: %1$s</string>
+    <string name="review_suggests_change">The coach suggests a change on %1$s</string>
+    <string name="review_planned">Planned</string>
+    <string name="review_proposed">Proposed</string>
+    <string name="review_in_plan">In your plan</string>
+    <string name="review_not_applicable">This day can no longer change: it is past, has a completed workout or no plan covers it.</string>
+    <string name="recommendation_pacing">Pacing</string>
+    <string name="recommendation_intensity">Intensity</string>
+    <string name="recommendation_volume">Volume</string>
+    <string name="recommendation_recovery">Recovery</string>
+    <string name="recommendation_nutrition">Nutrition</string>
+    <string name="recommendation_technique">Technique</string>
+    <string name="recommendation_other">Other</string>
+    <string name="block_rationale">Why this structure</string>
+    <string name="block_previous_week">Previous week</string>
+    <string name="block_next_week">Next week</string>
+    <string name="block_week_of">Week %1$d of %2$d</string>
+    <string name="block_week">Week %1$d</string>
+    <string name="calendar_add">Add to calendar</string>
+    <string name="calendar_in_calendar">In calendar</string>
+    <string name="calendar_update">Update in calendar</string>
+    <string name="calendar_outdated_hint">The coach revised the block after you saved it. Updating replaces the workouts from today on.</string>
+    <string name="calendar_added">Added to the calendar</string>
+    <string name="calendar_updated">Calendar updated</string>
+    <string name="calendar_overlap_title">Plans overlap</string>
+    <string name="calendar_overlap_confirm">Replace the plan “%1$s” from %2$s?</string>
+    <string name="calendar_replace">Replace</string>
+    <string name="calendar_create_block">Create a training block</string>
+    <string name="calendar_open_conversation">Open conversation</string>
+    <string name="coach_ask">Ask the coach</string>
+    <string name="coach_continue_review">Continue review</string>
+    <string name="coach_open_conversation">Open conversation</string>
+    <string name="coach_no_review">No review of this ride yet</string>
+    <string name="coach_rpe_pair">RPE %1$s / %2$s</string>
+    <string name="ask_coach_title">Ask the coach about this ride</string>
+    <string name="ask_coach_note">Note</string>
+    <string name="ask_coach_note_placeholder" formatted="false">e.g. planned 4×8 min at 105 %, legs felt heavy</string>
+    <string name="ask_coach_start">Start review</string>
+    <string name="ask_coach_review_exists">This ride already has a review</string>
+    <string name="rpe_label">How hard did it feel? (RPE)</string>
+    <string name="rpe_none">No RPE</string>
+    <string name="rpe_1">1 – very easy</string>
+    <string name="rpe_2">2 – easy</string>
+    <string name="rpe_3">3 – moderate</string>
+    <string name="rpe_4">4 – somewhat hard</string>
+    <string name="rpe_5">5 – hard</string>
+    <string name="rpe_6">6 – hard+</string>
+    <string name="rpe_7">7 – very hard</string>
+    <string name="rpe_8">8 – very hard+</string>
+    <string name="rpe_9">9 – extremely hard</string>
+    <string name="rpe_10">10 – maximal</string>
+    <string name="block_start_date">Start date</string>
+    <string name="block_start_in_past">The start can\'t be in the past.</string>
+    <string name="block_weeks">Weeks</string>
+    <string name="block_event_date">Goal event date</string>
+    <string name="block_clear_date">Clear the date</string>
+    <string name="block_goal">Goal</string>
+    <string name="block_goal_placeholder">e.g. raise FTP, gran fondo 160 km / 2,500 m</string>
+    <string name="block_goal_required">Describe your goal.</string>
+    <string name="block_availability">Availability</string>
+    <string name="block_minutes">min</string>
+    <string name="block_less">Less time</string>
+    <string name="block_more">More time</string>
+    <string name="block_no_day">Choose at least one day.</string>
+    <string name="block_long_ride_day">Long ride day</string>
+    <string name="block_methodology">Methodology</string>
+    <string name="methodology_hint_auto">The coach chooses from your goal, time and history.</string>
+    <string name="methodology_hint_polarized" formatted="false">~80 % easy, ~20 % hard (VO2max), little in between.</string>
+    <string name="methodology_hint_pyramidal">Mostly easy, a fair share of tempo / threshold, a little very hard.</string>
+    <string name="methodology_hint_sweet_spot" formatted="false">Much of the work at 88–94 % FTP – efficient with limited time.</string>
+    <string name="block_notes">Notes</string>
+    <string name="block_notes_placeholder">Injuries, travel, preferences…</string>
+    <string name="block_create">Create training block</string>
+    <string name="file_review_choose">Choose a file</string>
+    <string name="dashboard_coach_all">All</string>
+    <string name="api_error_coach_busy">A request to the coach is running. You can send the next one when it has finished.</string>
+    <string name="api_error_coach_monthly_limit">Not enough AI credits for this request.</string>
+    <string name="api_error_conversation_busy">The coach is still answering in this conversation. Wait for the answer.</string>
+    <string name="api_error_conversation_read_only">This conversation can\'t continue – it used a retired provider or ride data files. Start a new conversation.</string>
+    <string name="api_error_plan_overlap">The block overlaps another plan in the calendar.</string>
+    <string name="api_error_plan_no_block">This conversation has no training block to save.</string>
 </resources>

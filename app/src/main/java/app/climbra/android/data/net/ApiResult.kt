@@ -15,11 +15,26 @@ data class ProblemDetail(
     val title: String? = null,
     val detail: String? = null,
     val code: String? = null,
+    /** With `COACH_REVIEW_EXISTS`: the ride's review conversation to continue (spec 006). */
+    val conversationId: Long? = null,
+    /** With `PLAN_OVERLAP`: the plan a saved training block overlaps. */
+    val overlappingPlan: OverlappingPlan? = null,
 )
 
+@Serializable
+data class OverlappingPlan(val id: Long? = null, val name: String = "", val startDate: String? = null, val endDate: String? = null)
+
 sealed interface ApiError {
-    /** The backend answered with an error status. */
-    data class Http(val status: Int, val code: String?) : ApiError
+    /**
+     * The backend answered with an error status; [conversationId] and [overlappingPlanName] come with
+     * `COACH_REVIEW_EXISTS` and `PLAN_OVERLAP` (spec 006).
+     */
+    data class Http(
+        val status: Int,
+        val code: String?,
+        val conversationId: Long? = null,
+        val overlappingPlanName: String? = null,
+    ) : ApiError
 
     /** No answer: offline, DNS, timeout, TLS. */
     data object Network : ApiError
@@ -41,7 +56,7 @@ private const val LOG_TAG = "ClimbraApi"
  */
 fun httpError(json: Json, status: Int, body: String?): ApiError.Http {
     val problem = body?.let { runCatching { json.decodeFromString(ProblemDetail.serializer(), it) }.getOrNull() }
-    return ApiError.Http(status, problem?.code)
+    return ApiError.Http(status, problem?.code, problem?.conversationId, problem?.overlappingPlan?.name)
 }
 
 /** Runs a Retrofit call and maps every failure to an [ApiError]. */
@@ -59,3 +74,20 @@ suspend fun <T> apiCall(json: Json, call: suspend () -> T): ApiResult<T> = try {
 } catch (e: IllegalArgumentException) {
     ApiResult.Failure(ApiError.Unexpected)
 }
+
+/**
+ * Runs a Retrofit call that returns the raw `Response` and maps an error status like [apiCall] does; the success keeps
+ * the response for its headers.
+ */
+suspend fun <T> apiResponseCall(json: Json, call: suspend () -> retrofit2.Response<T>): ApiResult<retrofit2.Response<T>> =
+    when (val result = apiCall(json, call)) {
+        is ApiResult.Failure -> result
+        is ApiResult.Success -> {
+            val response = result.value
+            when {
+                !response.isSuccessful -> ApiResult.Failure(httpError(json, response.code(), response.errorBody()?.string()))
+                response.body() == null -> ApiResult.Failure(ApiError.Unexpected)
+                else -> result
+            }
+        }
+    }

@@ -2,6 +2,8 @@ package app.climbra.android.ui.format
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import android.icu.text.RelativeDateTimeFormatter
+import android.icu.util.ULocale
 import androidx.compose.ui.platform.LocalConfiguration
 import java.math.RoundingMode
 import java.text.NumberFormat
@@ -120,6 +122,45 @@ class Fmt(val locale: Locale) {
         val skeleton = if (withTime) "d MMM y jj:mm" else DateStyle.DAY_MONTH_YEAR.skeleton
         val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, skeleton)
         return DateTimeFormatter.ofPattern(pattern, locale).format(instant.atZone(zone))
+    }
+
+    /** The time of day of an instant, `14:05` (the web's `fmt.time`). */
+    fun time(value: String?, zone: ZoneId = ZoneId.systemDefault()): String {
+        val instant = parseInstant(value) ?: return DASH
+        val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, "jj:mm")
+        return DateTimeFormatter.ofPattern(pattern, locale).format(instant.atZone(zone))
+    }
+
+    /** The time of an instant on [now]'s day, else the day with the time: `14:05`, `12 Nov 2026, 14:05`. */
+    fun timeOrDate(value: String?, now: Instant, zone: ZoneId = ZoneId.systemDefault()): String {
+        val instant = parseInstant(value) ?: return DASH
+        return if (instant.atZone(zone).toLocalDate() == now.atZone(zone).toLocalDate()) time(value, zone) else instant(value, zone = zone)
+    }
+
+    /**
+     * How long ago (or until) an instant is, "3 min ago", "yesterday", "in 2 hours", the date after 30 days — the
+     * web's `formatRelative` (`Intl.RelativeTimeFormat` with `numeric: 'auto'`).
+     */
+    fun relative(value: String?, now: Instant, zone: ZoneId = ZoneId.systemDefault()): String {
+        val instant = parseInstant(value) ?: return DASH
+        val seconds = (instant.toEpochMilli() - now.toEpochMilli()) / 1000.0
+        val format = RelativeDateTimeFormatter.getInstance(ULocale.forLocale(locale))
+        val distance = abs(seconds)
+        val (amount, unit) = when {
+            distance < 60 -> seconds to RelativeDateTimeFormatter.RelativeDateTimeUnit.SECOND
+            distance < 3600 -> seconds / 60 to RelativeDateTimeFormatter.RelativeDateTimeUnit.MINUTE
+            distance < 86400 -> seconds / 3600 to RelativeDateTimeFormatter.RelativeDateTimeUnit.HOUR
+            distance < 86400 * 30 -> seconds / 86400 to RelativeDateTimeFormatter.RelativeDateTimeUnit.DAY
+            else -> return instant(value, withTime = false, zone = zone)
+        }
+        // As Math.round of the web: halves up, and no negative zero
+        return format.format(kotlin.math.floor(amount + 0.5) + 0.0, unit)
+    }
+
+    private fun parseInstant(value: String?): Instant? = try {
+        value?.let { Instant.parse(it) }
+    } catch (e: DateTimeParseException) {
+        null
     }
 
     companion object {

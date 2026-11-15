@@ -209,17 +209,17 @@ class CalendarScreensTest {
         assertEquals(listOf("dismiss 7", "web calendar?week=2026-11-09"), calls)
     }
 
-    // AC6
+    // AC6; spec 006 AC18: the note offers the coach's training block form
     @Test
     fun withoutAPlanTheNoteShowsAndTheRidesStay() {
-        var path: String? = null
-        content { CalendarScreen(week(data(calendar(plans = "", workouts = ""))), fmt, CalendarActions(onOpenWeb = { path = it })) }
+        var created = 0
+        content { CalendarScreen(week(data(calendar(plans = "", workouts = ""))), fmt, CalendarActions(onNewTrainingBlock = { created++ })) }
 
         inside("no-plan", "No training plan in this period").assertExists()
-        inside("no-plan", "Open on climbra.app").performClick()
+        inside("no-plan", "Create a training block").performClick()
         scrollTo("ride-12")
         compose.onNodeWithTag("ride-12").assertExists()
-        assertEquals("coach/new/training-block", path)
+        assertEquals(1, created)
     }
 
     // AC9
@@ -419,16 +419,16 @@ class CalendarScreensTest {
         content {
             Shell(
                 dashboard = { Text("dashboard") },
-                activities = { open -> Button(onClick = { open(85) }, modifier = Modifier.testTag("open-activities")) { Text("activities") } },
+                activities = { nav -> Button(onClick = { nav.openRide(85) }, modifier = Modifier.testTag("open-activities")) { Text("activities") } },
                 profile = { Text("profile") },
-                calendar = { openRide, openWorkout ->
+                calendar = { nav ->
                     Column {
-                        Button(onClick = { openWorkout(1, "2026-11-10") }, modifier = Modifier.testTag("open-workout")) { Text("calendar") }
-                        Button(onClick = { openRide(11) }, modifier = Modifier.testTag("open-calendar-ride")) { Text("ride") }
+                        Button(onClick = { nav.openWorkout(1, "2026-11-10") }, modifier = Modifier.testTag("open-workout")) { Text("calendar") }
+                        Button(onClick = { nav.openRide(11) }, modifier = Modifier.testTag("open-calendar-ride")) { Text("ride") }
                     }
                 },
-                workout = { back, _ -> Button(onClick = back, modifier = Modifier.testTag("workout-screen")) { Text("workout") } },
-                ride = { _, openCalendar -> Button(onClick = openCalendar, modifier = Modifier.testTag("ride-screen")) { Text("ride") } },
+                workout = { nav -> Button(onClick = nav::back, modifier = Modifier.testTag("workout-screen")) { Text("workout") } },
+                ride = { nav -> Button(onClick = nav::openCalendar, modifier = Modifier.testTag("ride-screen")) { Text("ride") } },
             )
         }
 

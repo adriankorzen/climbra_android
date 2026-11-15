@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.climbra.android.R
 import app.climbra.android.data.api.AccountResponse
+import app.climbra.android.coach.CoachQuotaRepository
 import app.climbra.android.data.api.CoachQuota
 import app.climbra.android.data.api.GarminConnection
 import app.climbra.android.data.api.ImportJob
@@ -36,6 +37,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -106,6 +108,7 @@ class ProfileViewModel @Inject constructor(
     private val changes: DataChanges,
     private val themeSettings: ThemeSettings,
     private val clock: Clock,
+    private val quotas: CoachQuotaRepository,
 ) : ViewModel() {
 
     /** The device's zone decides "today" for the date picker; the backend's rider zone follows it (spec 002). */
@@ -122,6 +125,10 @@ class ProfileViewModel @Inject constructor(
             session.state.collect { session ->
                 (session as? SessionState.LoggedIn)?.let { logged -> mutableState.update { it.copy(account = logged.account) } }
             }
+        }
+        // The credits reload after every coach request (spec 006): the section shows the latest
+        viewModelScope.launch {
+            quotas.quota.filterNotNull().collect { quota -> mutableState.update { it.copy(quota = Section(value = quota)) } }
         }
         viewModelScope.launch {
             themeSettings.mode.collect { mode -> mutableState.update { it.copy(theme = mode) } }
@@ -244,10 +251,13 @@ class ProfileViewModel @Inject constructor(
         set = { state, section -> state.copy(garmin = section) },
     ) { api.garminConnection(riderId) }
 
-    private fun loadQuota() = loadSection(
-        get = { it.quota },
-        set = { state, section -> state.copy(quota = section) },
-    ) { api.coachQuota() }
+    private fun loadQuota() = viewModelScope.launch {
+        mutableState.update { it.copy(quota = it.quota.copy(loading = true, failed = false)) }
+        when (val result = quotas.reload()) {
+            is ApiResult.Success -> mutableState.update { it.copy(quota = Section(value = result.value)) }
+            is ApiResult.Failure -> mutableState.update { it.copy(quota = it.quota.copy(loading = false, failed = true)) }
+        }
+    }
 
     private fun <T> loadSection(
         get: (ProfileUiState) -> Section<T>,

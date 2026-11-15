@@ -191,6 +191,8 @@ data class TrainingPlan(
     val pendingProposal: PendingProposal? = null,
     /** The coach is adjusting the plan. */
     val adjustmentRunning: Boolean = false,
+    /** The coach conversation the plan was saved from, `null` once it was deleted (spec 006). */
+    val conversationId: Long? = null,
 )
 
 @Serializable

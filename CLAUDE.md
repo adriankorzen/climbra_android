@@ -69,11 +69,15 @@ them under "Backend dependencies" by number.
   Screens are split into a `…Route` (gets the ViewModel) and a stateless `…Screen` (state + callbacks) that tests render.
 - `SessionRepository.state` decides the top-level screen in `app.ClimbraContent` (login, terms, shell), so a session
   end leaves no back stack. The shell (`shell.Shell`) is a `NavigationBar`; each tab is a nested graph with type-safe
-  routes (a ride opens on the stack of its tab, spec 003). After a change to rides (delete, reanalyse, link) call
+  routes (a ride opens on the stack of its tab, spec 003); screens navigate through `shell.ShellNavigator` (a coach
+  conversation always opens on the Coach tab, above its list, spec 006). After a change to rides (delete, reanalyse, link) call
   `rider.DataChanges.changed()`: screens that show rides load again when shown.
 - Hilt for DI (`di.AppModule`), Retrofit + OkHttp + kotlinx.serialization, Navigation Compose. Vico for charts
   (from the first spec that needs one).
-- Packages by feature (`auth`, `profile`, `shell`, later `dashboard`, `activities`, …) plus `data/` (network, DTOs),
+- AI coach (spec 006): `coach.CoachQuotaRepository` (the AI credits, one for the app) and `coach.CoachActivity`
+  (requests answered in the background, polled while the app is in the foreground; call `track` after an accepted
+  request, `changed()` after a deletion) are app-scoped. Chosen files go through `coach.RideFileSource`.
+- Packages by feature (`auth`, `profile`, `shell`, `dashboard`, `activities`, `calendar`, `coach`, …) plus `data/` (network, DTOs),
   `session/` and `ui/` (theme, shared components).
 - Theme (`ui.theme`): Material 3 colors from the web tokens in `../cyclingapp/frontend/src/styles.scss` (light + dark),
   domain colors (power, HR, zones) in `MaterialTheme.extendedColors`, Inter / JetBrains Mono (`MonoFamily` for numbers),

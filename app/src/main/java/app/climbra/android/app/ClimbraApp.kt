@@ -42,6 +42,14 @@ import app.climbra.android.profile.ProfileRoute
 import app.climbra.android.session.SessionRepository
 import app.climbra.android.session.SessionState
 import app.climbra.android.shell.Shell
+import app.climbra.android.shell.ShellNavigator
+import app.climbra.android.coach.CoachActivity
+import app.climbra.android.coach.CoachListRoute
+import app.climbra.android.coach.CoachNavigation
+import app.climbra.android.coach.ConversationRoute
+import app.climbra.android.coach.FileReviewRoute
+import app.climbra.android.coach.TrainingBlockFormRoute
+import app.climbra.android.ui.common.openWebPage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.StateFlow
@@ -52,6 +60,7 @@ class AppViewModel @Inject constructor(
     private val session: SessionRepository,
     val config: AppConfig,
     private val calendarRequests: CalendarRequests,
+    val coachActivity: CoachActivity,
 ) : ViewModel() {
 
     val state: StateFlow<SessionState> = session.state
@@ -65,8 +74,8 @@ class AppViewModel @Inject constructor(
     }
 
     /** The calendar shows the week of [date] (an ISO date) when opened next (spec 005). */
-    fun showCalendarWeek(date: String) {
-        runCatching { LocalDate.parse(date.take(10)) }.getOrNull()?.let(calendarRequests::show)
+    fun showCalendarWeek(date: String?) {
+        date?.let { runCatching { LocalDate.parse(it.take(10)) }.getOrNull() }?.let(calendarRequests::show)
     }
 }
 
@@ -80,35 +89,66 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
             LoginRoute(expired = loggedOut.expired, config = viewModel.config, accountDeleted = loggedOut.accountDeleted)
         },
         terms = { changed -> TermsRoute(documentsChanged = changed, config = viewModel.config) },
-        shell = { account ->
+        shell = { _ ->
+            val config = viewModel.config
+            val context = LocalContext.current
+            val coachNavigation: (ShellNavigator) -> CoachNavigation = { nav ->
+                CoachNavigation(
+                    openConversation = nav::openConversation,
+                    newTrainingBlock = nav::newTrainingBlock,
+                    reviewFile = nav::reviewFile,
+                    openActivities = nav::openActivities,
+                )
+            }
             Shell(
-                dashboard = { openRide -> DashboardRoute(config = viewModel.config, onOpenRide = openRide) },
-                activities = { openRide -> ActivitiesRoute(config = viewModel.config, onOpenRide = openRide) },
-                profile = { ProfileRoute(config = viewModel.config) },
-                calendar = { openRide, openWorkout ->
+                dashboard = { nav -> DashboardRoute(config = config, onOpenRide = nav::openRide, coach = coachNavigation(nav), onOpenCoach = nav::openCoach) },
+                activities = { nav -> ActivitiesRoute(config = config, onOpenRide = nav::openRide) },
+                profile = { ProfileRoute(config = config) },
+                calendar = { nav ->
                     CalendarRoute(
-                        config = viewModel.config,
-                        onOpenRide = openRide,
-                        onOpenWorkout = { openWorkout(it.id, it.date) },
+                        config = config,
+                        onOpenRide = nav::openRide,
+                        onOpenWorkout = { nav.openWorkout(it.id, it.date) },
+                        onOpenConversation = nav::openConversation,
+                        onNewTrainingBlock = nav::newTrainingBlock,
                     )
                 },
-                workout = { onBack, openRide ->
-                    WorkoutDetailRoute(config = viewModel.config, onBack = onBack, onOpenRide = openRide)
-                },
-                ride = { onBack, openCalendar ->
-                    val context = LocalContext.current
+                workout = { nav -> WorkoutDetailRoute(config = config, onBack = nav::back, onOpenRide = nav::openRide) },
+                ride = { nav ->
                     RideDetailRoute(
-                        onBack = onBack,
+                        onBack = nav::back,
                         onDeleted = {
                             Toast.makeText(context, R.string.activity_deleted, Toast.LENGTH_SHORT).show()
-                            onBack()
+                            nav.back()
                         },
                         onOpenCalendar = { date ->
                             viewModel.showCalendarWeek(date)
-                            openCalendar()
+                            nav.openCalendar()
+                        },
+                        onOpenConversation = nav::openConversation,
+                        onOpenTerms = { openWebPage(context, config.webPage("terms")) },
+                    )
+                },
+                coach = { nav -> CoachListRoute(config = config, navigation = coachNavigation(nav)) },
+                conversation = { nav ->
+                    ConversationRoute(
+                        config = config,
+                        onBack = nav::back,
+                        onOpenRide = nav::openRide,
+                        onOpenCalendar = { date ->
+                            viewModel.showCalendarWeek(date)
+                            nav.openCalendar()
+                        },
+                        onDeleted = {
+                            Toast.makeText(context, R.string.coach_deleted, Toast.LENGTH_SHORT).show()
+                            nav.back()
                         },
                     )
                 },
+                trainingBlock = { nav -> TrainingBlockFormRoute(config = config, onBack = nav::back, onAccepted = nav::replaceWithConversation) },
+                fileReview = { nav -> FileReviewRoute(config = config, onBack = nav::back, onAccepted = nav::replaceWithConversation) },
+                coachEvents = viewModel.coachActivity.events,
+                notices = viewModel.coachActivity.notices,
             )
         },
     )

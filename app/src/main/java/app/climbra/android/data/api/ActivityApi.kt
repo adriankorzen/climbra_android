@@ -123,6 +123,8 @@ data class ActivityDetail(
     val elevationGainMeters: Double? = null,
     val deviceName: String? = null,
     val plannedWorkout: PlannedWorkoutLink? = null,
+    /** The first coach review of this ride is still free (cyclingapp spec 007). */
+    val freeReviewAvailable: Boolean = false,
 ) {
     /** The ride's local day, as the backend dates it. */
     val day: String get() = (startTimeLocal ?: startTime).take(10)

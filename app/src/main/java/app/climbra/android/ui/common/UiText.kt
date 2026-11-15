@@ -51,6 +51,13 @@ val TRANSLATED_ERROR_CODES: Map<String, Int> = mapOf(
     "GARMIN_WORKOUT_NOT_SENDABLE" to R.string.api_error_garmin_workout_not_sendable,
     "GARMIN_RATE_LIMITED" to R.string.api_error_garmin_rate_limited,
     "GARMIN_UNAVAILABLE" to R.string.api_error_garmin_unavailable,
+    "COACH_BUSY" to R.string.api_error_coach_busy,
+    "COACH_MONTHLY_LIMIT" to R.string.api_error_coach_monthly_limit,
+    "COACH_REVIEW_EXISTS" to R.string.ask_coach_review_exists,
+    "CONVERSATION_BUSY" to R.string.api_error_conversation_busy,
+    "CONVERSATION_READ_ONLY" to R.string.api_error_conversation_read_only,
+    "PLAN_OVERLAP" to R.string.api_error_plan_overlap,
+    "PLAN_NO_BLOCK" to R.string.api_error_plan_no_block,
 )
 
 fun ApiError.toUiText(): UiText = when (this) {

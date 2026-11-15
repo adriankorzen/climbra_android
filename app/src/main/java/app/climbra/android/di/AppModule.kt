@@ -7,6 +7,16 @@ import app.climbra.android.activities.MediaStoreFileSaver
 import app.climbra.android.data.api.ActivityApi
 import app.climbra.android.data.api.AuthApi
 import app.climbra.android.data.api.CalendarApi
+import app.climbra.android.data.api.CoachApi
+import app.climbra.android.coach.CoachActivity
+import app.climbra.android.coach.CoachQuotaRepository
+import app.climbra.android.coach.ContentResolverFileSource
+import app.climbra.android.coach.RideFileSource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import app.climbra.android.calendar.CalendarRequests
 import app.climbra.android.data.api.ProfileApi
 import app.climbra.android.data.api.RiderApi
@@ -124,4 +134,32 @@ object AppModule {
     @Provides
     @Singleton
     fun calendarRequests(): CalendarRequests = CalendarRequests()
+
+    @Provides
+    @Singleton
+    fun coachApi(retrofit: Retrofit): CoachApi = retrofit.create(CoachApi::class.java)
+
+    @Provides
+    @Singleton
+    fun coachQuotas(api: CoachApi, session: SessionRepository, scope: CoroutineScope): CoachQuotaRepository =
+        CoachQuotaRepository(api, session, scope)
+
+    /** Background coach requests are followed while the app is in the foreground (spec 006). */
+    @Provides
+    @Singleton
+    fun coachActivity(
+        api: CoachApi,
+        quotas: CoachQuotaRepository,
+        session: SessionRepository,
+        scope: CoroutineScope,
+    ): CoachActivity {
+        val foreground = ProcessLifecycleOwner.get().lifecycle.currentStateFlow
+            .map { it.isAtLeast(Lifecycle.State.STARTED) }
+            .stateIn(scope, SharingStarted.Eagerly, false)
+        return CoachActivity(api, quotas, session, foreground, scope)
+    }
+
+    @Provides
+    @Singleton
+    fun rideFileSource(@ApplicationContext context: Context): RideFileSource = ContentResolverFileSource(context)
 }

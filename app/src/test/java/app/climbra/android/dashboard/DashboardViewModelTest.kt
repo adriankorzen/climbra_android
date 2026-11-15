@@ -12,7 +12,10 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -46,14 +49,18 @@ class DashboardViewModelTest {
 
     @After
     fun tearDown() {
+        scope.cancel()
         Dispatchers.resetMain()
         backend.close()
     }
 
     private val changes = DataChanges()
 
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val coach by lazy { backend.coachActivity(backend.session(scope), scope) }
+
     private fun viewModel(deviceZone: String = "Europe/Warsaw") =
-        DashboardViewModel(RiderRepository(backend.riderApi) { deviceZone }, backend.riderApi, clock, changes)
+        DashboardViewModel(RiderRepository(backend.riderApi) { deviceZone }, backend.riderApi, clock, changes, backend.coachApi, coach)
 
     private suspend fun DashboardViewModel.settled() = state.first { !it.loading && !it.refreshing }
 
@@ -104,8 +111,9 @@ class DashboardViewModelTest {
         val analyses = backend.requests("GET /api/riders/5/analyses").single().url
         assertEquals(setOf("limit"), analyses.queryParameterNames)
         assertEquals("7", analyses.queryParameter("limit"))
-        // Nothing else: no history of rides, no list of all rides
-        assertEquals(3, backend.requests.size)
+        // The coach card's conversations (spec 006); nothing else: no history of rides, no list of all rides
+        assertEquals(1, backend.requests("GET /api/riders/5/coach/conversations").size)
+        assertEquals(4, backend.requests.size)
 
         assertFalse(state.failed)
         assertEquals("2026-11-11", state.load!!.today)
@@ -127,7 +135,7 @@ class DashboardViewModelTest {
                 other.on("GET /api/riders/5/training-load", json(trainingLoad(form.name)))
                 other.on("GET /api/riders/5/analyses", json("[${ride(1, "2026-11-06")}]"))
                 runTest(dispatcher) {
-                    val viewModel = DashboardViewModel(RiderRepository(other.riderApi) { "Europe/Warsaw" }, other.riderApi, clock, DataChanges())
+                    val viewModel = DashboardViewModel(RiderRepository(other.riderApi) { "Europe/Warsaw" }, other.riderApi, clock, DataChanges(), other.coachApi, other.coachActivity(other.session(scope), scope))
                     assertEquals(form, viewModel.settled().load!!.fitness.form)
                 }
             }
