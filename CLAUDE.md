@@ -77,6 +77,8 @@ them under "Backend dependencies" by number.
 - AI coach (spec 006): `coach.CoachQuotaRepository` (the AI credits, one for the app) and `coach.CoachActivity`
   (requests answered in the background, polled while the app is in the foreground; call `track` after an accepted
   request, `changed()` after a deletion) are app-scoped. Chosen files go through `coach.RideFileSource`.
+- intervals.icu sync (spec 007): `intervals.IntervalsSync` is the app's one sync (pull to refresh on the dashboard and
+  the training log, the profile's "Sync now"), app-scoped; its messages go to the shell's snackbar.
 - Packages by feature (`auth`, `profile`, `shell`, `dashboard`, `activities`, `calendar`, `coach`, …) plus `data/` (network, DTOs),
   `session/` and `ui/` (theme, shared components).
 - Theme (`ui.theme`): Material 3 colors from the web tokens in `../cyclingapp/frontend/src/styles.scss` (light + dark),

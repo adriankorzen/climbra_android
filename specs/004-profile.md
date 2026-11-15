@@ -87,8 +87,8 @@ documents, deletion). An account without a rider cannot create one in the app ye
   synced. "Sync now" → `POST /api/riders/{id}/intervals/sync` returns an import job; the app polls
   `GET /api/imports/{jobId}` every 2 s while it is `QUEUED` / `RUNNING` (the button shows progress and is disabled),
   then shows "Sync finished – imported {n}" or the failure, reloads the status and calls `DataChanges.changed()`.
-  Polling goes on while other tabs are shown (the profile keeps its state) and stops when the profile closes
-  (logout). "Disconnect" asks first, then `DELETE`.
+  Since spec 007 this is the app's one sync (`intervals.IntervalsSync`), shared with the pull to refresh of the
+  dashboard and the training log: polled in the app scope, stopped on logout, its messages in the shell's snackbar. "Disconnect" asks first, then `DELETE`.
 - Thresholds proposal: a table intervals.icu vs current (FTP with indoor FTP in brackets, LTHR, max HR); when
   `differsFromCurrent` an "Add to history" button opens the threshold form prefilled with these values and today,
   saved by the rider; otherwise "Same as your current thresholds". A failed request shows "Cannot load the thresholds

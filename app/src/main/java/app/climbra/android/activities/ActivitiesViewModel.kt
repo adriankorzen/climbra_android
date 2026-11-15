@@ -10,6 +10,9 @@ import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
+import app.climbra.android.intervals.IntervalsSync
+import app.climbra.android.intervals.SyncOrigin
+import app.climbra.android.intervals.SyncState
 import app.climbra.android.rider.DataChanges
 import app.climbra.android.rider.RiderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,6 +26,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -68,10 +72,17 @@ class ActivitiesViewModel @Inject constructor(
     private val api: ActivityApi,
     private val changes: DataChanges,
     private val clock: Clock,
+    private val intervalsSync: IntervalsSync,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(ActivitiesUiState(period = Period.of(RangePreset.FOUR_WEEKS, today())))
     val state: StateFlow<ActivitiesUiState> = mutableState.asStateFlow()
+
+    /** The app's intervals.icu sync (spec 007), shown above the list while it runs. */
+    val sync: StateFlow<SyncState> = intervalsSync.state
+
+    /** A pull waits for the rider of its reload before it starts a sync. */
+    private var syncAfterLoad = false
 
     private var rider: Rider? = null
     private var request: Job? = null
@@ -83,6 +94,8 @@ class ActivitiesViewModel @Inject constructor(
 
     init {
         reload()
+        // A sync brought rides: they show at once, also while the list is shown
+        viewModelScope.launch { intervalsSync.imported.drop(1).collect { reload() } }
     }
 
     fun selectPreset(preset: RangePreset) {
@@ -114,8 +127,10 @@ class ActivitiesViewModel @Inject constructor(
         load(page = current.rows.size / PAGE_SIZE, append = true)
     }
 
+    /** Pull to refresh and Retry: the list again, and new rides from intervals.icu when connected (spec 007). */
     fun refresh() {
         mutableState.update { it.copy(refreshing = true) }
+        syncAfterLoad = true
         reload()
     }
 
@@ -140,6 +155,10 @@ class ActivitiesViewModel @Inject constructor(
                 is ApiResult.Failure -> return@launch failed(result.error)
                 is ApiResult.Success -> result.value?.also { rider = it }
                     ?: return@launch mutableState.update { it.copy(noRider = true, loading = false, refreshing = false) }
+            }
+            if (syncAfterLoad) {
+                syncAfterLoad = false
+                intervalsSync.sync(rider.id, SyncOrigin.PULL)
             }
             loadedVersion = changes.version.value
             val result = apiCall(Network.json) {
@@ -167,8 +186,10 @@ class ActivitiesViewModel @Inject constructor(
         }
     }
 
-    private fun failed(error: ApiError) =
+    private fun failed(error: ApiError) {
+        syncAfterLoad = false
         mutableState.update { it.copy(error = error, loading = false, refreshing = false, loadingMore = false) }
+    }
 
     // LocalDate.ofInstant needs API 34; the app supports API 29
     private fun today(): LocalDate = clock.instant().atZone(ZoneId.systemDefault()).toLocalDate()

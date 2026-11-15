@@ -7,8 +7,6 @@ import app.climbra.android.data.api.AccountResponse
 import app.climbra.android.coach.CoachQuotaRepository
 import app.climbra.android.data.api.CoachQuota
 import app.climbra.android.data.api.GarminConnection
-import app.climbra.android.data.api.ImportJob
-import app.climbra.android.data.api.ImportJobStatus
 import app.climbra.android.data.api.IntervalsConnectRequest
 import app.climbra.android.data.api.IntervalsConnection
 import app.climbra.android.data.api.IntervalsThresholds
@@ -21,6 +19,8 @@ import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
+import app.climbra.android.intervals.IntervalsSync
+import app.climbra.android.intervals.SyncOrigin
 import app.climbra.android.rider.DataChanges
 import app.climbra.android.rider.RiderRepository
 import app.climbra.android.session.SessionRepository
@@ -35,8 +35,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -109,6 +109,7 @@ class ProfileViewModel @Inject constructor(
     private val themeSettings: ThemeSettings,
     private val clock: Clock,
     private val quotas: CoachQuotaRepository,
+    private val sync: IntervalsSync,
 ) : ViewModel() {
 
     /** The device's zone decides "today" for the date picker; the backend's rider zone follows it (spec 002). */
@@ -118,7 +119,6 @@ class ProfileViewModel @Inject constructor(
     val state: StateFlow<ProfileUiState> = mutableState.asStateFlow()
 
     private var loadJob: Job? = null
-    private var syncJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -132,6 +132,13 @@ class ProfileViewModel @Inject constructor(
         }
         viewModelScope.launch {
             themeSettings.mode.collect { mode -> mutableState.update { it.copy(theme = mode) } }
+        }
+        // The app's one sync (spec 007): "Sync now" shows it whoever started it; when it ends the status reloads
+        viewModelScope.launch {
+            sync.state.collect { sync -> mutableState.update { it.copy(syncing = sync.running) } }
+        }
+        viewModelScope.launch {
+            sync.finished.drop(1).collect { state.value.rider?.let { loadIntervals(it.id) } }
         }
         load()
     }
@@ -221,6 +228,7 @@ class ProfileViewModel @Inject constructor(
         mutableState.update { it.copy(intervals = it.intervals.copy(loading = true, failed = false)) }
         val result = call { api.intervals(riderId) }
         val connected = (result as? ApiResult.Success)?.value?.connected == true
+        if (result is ApiResult.Success) sync.connectionChanged(connected, riderId)
         mutableState.update {
             it.copy(
                 intervals = when (result) {
@@ -452,6 +460,7 @@ class ProfileViewModel @Inject constructor(
                 }
                 is ApiResult.Success -> {
                     mutableState.update { it.copy(intervalsForm = IntervalsForm(), intervals = Section(value = result.value)) }
+                    sync.connectionChanged(result.value.connected, riderId)
                     message(UiText(R.string.intervals_connected, listOf(result.value.athleteName.orEmpty())))
                     loadIntervalsThresholds(riderId)
                 }
@@ -476,49 +485,20 @@ class ProfileViewModel @Inject constructor(
                     mutableState.update {
                         it.copy(intervals = Section(value = IntervalsConnection()), intervalsThresholds = Section())
                     }
+                    sync.connectionChanged(false, riderId)
                     message(UiText(R.string.intervals_disconnected))
                 }
             }
         }
     }
 
-    /** Starts a sync and follows its job every [POLL_MS] until it ends (or the profile closes). */
+    /**
+     * "Sync now": the app's one sync (spec 007), followed in the app scope whichever screen is shown; its messages go
+     * to the shell's snackbar, and the status reloads when it ends.
+     */
     fun syncIntervals() {
         val riderId = state.value.rider?.id ?: return
-        if (state.value.syncing) return
-        mutableState.update { it.copy(syncing = true) }
-        syncJob = viewModelScope.launch {
-            var job = when (val started = call { api.syncIntervals(riderId) }) {
-                is ApiResult.Failure -> {
-                    mutableState.update { it.copy(syncing = false) }
-                    message(started.error.toUiText())
-                    return@launch
-                }
-                is ApiResult.Success -> started.value
-            }
-            message(UiText(R.string.intervals_sync_started))
-            while (job.running) {
-                delay(POLL_MS)
-                job = when (val polled = call { api.importJob(job.id) }) {
-                    is ApiResult.Failure -> {
-                        mutableState.update { it.copy(syncing = false) }
-                        message(polled.error.toUiText())
-                        return@launch
-                    }
-                    is ApiResult.Success -> polled.value
-                }
-            }
-            mutableState.update { it.copy(syncing = false) }
-            message(syncResult(job))
-            changes.changed()
-            loadIntervals(riderId)
-        }
-    }
-
-    private fun syncResult(job: ImportJob) = when {
-        job.status == ImportJobStatus.FAILED -> UiText(R.string.intervals_sync_failed, listOf(job.message.orEmpty()))
-        job.unavailable > 0 -> UiText(R.string.intervals_sync_done_unavailable, listOf(job.imported, job.unavailable))
-        else -> UiText(R.string.intervals_sync_done, listOf(job.imported))
+        sync.sync(riderId, SyncOrigin.BUTTON)
     }
 
     // Garmin Connect
@@ -632,7 +612,4 @@ class ProfileViewModel @Inject constructor(
 
     private suspend fun <T> call(request: suspend () -> T) = apiCall(Network.json, request)
 
-    companion object {
-        const val POLL_MS = 2_000L
-    }
 }

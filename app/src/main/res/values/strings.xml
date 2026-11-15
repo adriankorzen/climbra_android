@@ -356,6 +356,10 @@
     <string name="intervals_sync_done">intervals.icu sync finished – imported rides: %1$d</string>
     <string name="intervals_sync_done_unavailable">intervals.icu sync finished – imported rides: %1$d, not available: %2$d</string>
     <string name="intervals_sync_failed">The intervals.icu sync failed: %1$s</string>
+    <string name="intervals_sync_conflict">The intervals.icu sync cannot start: one is already running, or intervals.icu needs to be connected again in the profile.</string>
+    <string name="sync_progress">Syncing with intervals.icu…</string>
+    <string name="sync_progress_count">Syncing with intervals.icu… %1$s of %2$s</string>
+    <string name="sync_pull_hint">Pull down to fetch your rides from intervals.icu.</string>
     <string name="intervals_disconnect">Disconnect</string>
     <string name="intervals_confirm_disconnect">Disconnect intervals.icu? Imported rides stay.</string>
     <string name="intervals_disconnected">intervals.icu disconnected</string>

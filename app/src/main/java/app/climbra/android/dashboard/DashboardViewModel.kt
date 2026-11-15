@@ -12,6 +12,9 @@ import app.climbra.android.data.api.TrainingLoadResponse
 import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
+import app.climbra.android.intervals.IntervalsSync
+import app.climbra.android.intervals.SyncOrigin
+import app.climbra.android.intervals.SyncState
 import app.climbra.android.rider.DataChanges
 import app.climbra.android.rider.RiderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -69,10 +72,14 @@ class DashboardViewModel @Inject constructor(
     private val changes: DataChanges,
     private val coachApi: CoachApi,
     coachActivity: CoachActivity,
+    private val intervalsSync: IntervalsSync,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(DashboardUiState())
     val state: StateFlow<DashboardUiState> = mutableState.asStateFlow()
+
+    /** The app's intervals.icu sync (spec 007), shown above the content while it runs. */
+    val sync: StateFlow<SyncState> = intervalsSync.state
 
     private var loadJob: Job? = null
     private var loadedAt: Instant? = null
@@ -82,6 +89,14 @@ class DashboardViewModel @Inject constructor(
         load()
         // A coach request accepted or ended, a conversation deleted: the coach card loads again
         viewModelScope.launch { coachActivity.changes.drop(1).collect { state.value.rider?.let { loadConversations(it.id) } } }
+        // A sync brought rides: they show at once, also while the dashboard is shown
+        // (a load still running may predate the import, so it starts again)
+        viewModelScope.launch {
+            intervalsSync.imported.drop(1).collect {
+                loadJob?.cancel()
+                load()
+            }
+        }
     }
 
     private fun loadConversations(riderId: Long) = viewModelScope.launch {
@@ -90,8 +105,8 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    /** Pull to refresh and Retry. */
-    fun refresh() = load()
+    /** Pull to refresh and Retry: the data again, and new rides from intervals.icu when connected (spec 007). */
+    fun refresh() = load(pull = true)
 
     /**
      * The tab is shown again: figures older than [STALE_AFTER], or from before a change of the rider, the thresholds
@@ -111,23 +126,27 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    private fun load() {
-        if (loadJob?.isActive == true) return
+    private fun load(pull: Boolean = false) {
+        if (loadJob?.isActive == true) {
+            if (pull) state.value.rider?.let { intervalsSync.sync(it.id, SyncOrigin.PULL) }
+            return
+        }
         mutableState.update { it.copy(refreshing = !it.loading, failed = false) }
         loadJob = viewModelScope.launch {
             loadedVersion = changes.version.value
-            val result = fetch()
+            val result = fetch(pull)
             loadedAt = clock.instant()
             mutableState.update { result(it).copy(loading = false, refreshing = false) }
         }
     }
 
     /** @return how the loaded data changes the state */
-    private suspend fun fetch(): (DashboardUiState) -> DashboardUiState {
+    private suspend fun fetch(pull: Boolean): (DashboardUiState) -> DashboardUiState {
         val rider = when (val result = riders.load()) {
             is ApiResult.Failure -> return { it.copy(failed = true) }
             is ApiResult.Success -> result.value ?: return { DashboardUiState(noRider = true, range = it.range) }
         }
+        if (pull) intervalsSync.sync(rider.id, SyncOrigin.PULL)
         val (load, rides, conversations) = coroutineScope {
             val load = async { call { api.trainingLoad(rider.id, PMC_RANGES.last(), WEEKS) } }
             val rides = async { call { api.latestAnalyses(rider.id, RECENT_RIDES) } }

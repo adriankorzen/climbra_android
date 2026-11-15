@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -57,10 +58,12 @@ class DashboardViewModelTest {
     private val changes = DataChanges()
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
-    private val coach by lazy { backend.coachActivity(backend.session(scope), scope) }
+    private val session by lazy { backend.session(scope) }
+    private val coach by lazy { backend.coachActivity(session, scope) }
+    private val sync by lazy { backend.intervalsSync(session, scope, changes, clock, pollMillis = 10) }
 
     private fun viewModel(deviceZone: String = "Europe/Warsaw") =
-        DashboardViewModel(RiderRepository(backend.riderApi) { deviceZone }, backend.riderApi, clock, changes, backend.coachApi, coach)
+        DashboardViewModel(RiderRepository(backend.riderApi) { deviceZone }, backend.riderApi, clock, changes, backend.coachApi, coach, sync)
 
     private suspend fun DashboardViewModel.settled() = state.first { !it.loading && !it.refreshing }
 
@@ -135,7 +138,7 @@ class DashboardViewModelTest {
                 other.on("GET /api/riders/5/training-load", json(trainingLoad(form.name)))
                 other.on("GET /api/riders/5/analyses", json("[${ride(1, "2026-11-06")}]"))
                 runTest(dispatcher) {
-                    val viewModel = DashboardViewModel(RiderRepository(other.riderApi) { "Europe/Warsaw" }, other.riderApi, clock, DataChanges(), other.coachApi, other.coachActivity(other.session(scope), scope))
+                    val viewModel = DashboardViewModel(RiderRepository(other.riderApi) { "Europe/Warsaw" }, other.riderApi, clock, DataChanges(), other.coachApi, other.coachActivity(other.session(scope), scope), other.intervalsSync(other.session(scope), scope))
                     assertEquals(form, viewModel.settled().load!!.fitness.form)
                 }
             }
@@ -317,5 +320,59 @@ class DashboardViewModelTest {
         assertTrue(state.noRider)
         assertFalse(state.failed)
         assertEquals(1, backend.requests.size)
+    }
+
+    // Spec 007 AC1, AC6: a pull syncs intervals.icu when connected; rides it brought load at once
+    @Test
+    fun aPullSyncsIntervalsAndNewRidesLoadAtOnce() = runTest(dispatcher) {
+        withRides()
+        backend.on("GET /api/riders/5/intervals", json("""{"connected":true}"""))
+        backend.on("POST /api/riders/5/intervals/sync", json("""{"id":9,"status":"QUEUED"}""", 202))
+        backend.on("GET /api/imports/9", json("""{"id":9,"status":"COMPLETED","imported":2}"""))
+        val viewModel = viewModel()
+        viewModel.settled()
+        // The first load does not sync
+        assertEquals(0, backend.requests("POST /api/riders/5/intervals/sync").size)
+
+        viewModel.refresh()
+        waitFor { backend.requests("GET /api/imports/9").isNotEmpty() }
+        sync.join()
+        viewModel.settled()
+
+        assertEquals(1, backend.requests("POST /api/riders/5/intervals/sync").size)
+        // The figures are loaded again after the import ended (the request reaches the server on OkHttp's threads)
+        val end = System.currentTimeMillis() + 5_000
+        fun reloaded(): Boolean {
+            val paths = backend.requests.map { "${it.method} ${it.url.encodedPath}" }
+            return paths.lastIndexOf("GET /api/riders/5/training-load") > paths.lastIndexOf("GET /api/imports/9")
+        }
+        while (!reloaded() && System.currentTimeMillis() < end) withContext(Dispatchers.IO) { Thread.sleep(20) }
+        assertTrue(reloaded())
+        viewModel.settled()
+    }
+
+    // Spec 007 AC1: without a connection a pull only reloads
+    @Test
+    fun aPullWithoutIntervalsOnlyReloads() = runTest(dispatcher) {
+        withRides()
+        backend.on("GET /api/riders/5/intervals", json("""{"connected":false}"""))
+        val viewModel = viewModel()
+        viewModel.settled()
+
+        viewModel.refresh()
+        viewModel.settled()
+        waitFor { backend.requests("GET /api/riders/5/intervals").isNotEmpty() }
+        sync.join()
+
+        assertEquals(1, backend.requests("GET /api/riders/5/intervals").size)
+        assertEquals(0, backend.requests("POST /api/riders/5/intervals/sync").size)
+        assertEquals(2, backend.requests("GET /api/riders/5/training-load").size)
+    }
+
+    /** Requests reach the server on OkHttp's threads: waits in real time while the dispatcher runs. */
+    private suspend fun waitFor(check: () -> Boolean) {
+        val end = System.currentTimeMillis() + 5_000
+        while (!check() && System.currentTimeMillis() < end) withContext(Dispatchers.IO) { Thread.sleep(20) }
+        assertTrue(check())
     }
 }

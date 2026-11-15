@@ -61,6 +61,9 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.climbra.android.AppConfig
 import app.climbra.android.R
+import app.climbra.android.dashboard.emptyHint
+import app.climbra.android.intervals.SyncProgress
+import app.climbra.android.intervals.SyncState
 import app.climbra.android.data.api.RideRow
 import app.climbra.android.ui.common.ErrorBanner
 import app.climbra.android.ui.common.openWebPage
@@ -77,10 +80,12 @@ import java.time.ZoneOffset
 @Composable
 fun ActivitiesRoute(config: AppConfig, onOpenRide: (Long) -> Unit, viewModel: ActivitiesViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val sync by viewModel.sync.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onShown() }
     ActivitiesScreen(
         state = state,
+        sync = sync,
         fmt = rememberFmt(),
         onPreset = viewModel::selectPreset,
         onCustom = viewModel::selectCustom,
@@ -105,6 +110,7 @@ fun ActivitiesScreen(
     onRefresh: () -> Unit,
     onOpenRide: (Long) -> Unit,
     onOpenWeb: () -> Unit,
+    sync: SyncState = SyncState(),
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
     val list = rememberLazyListState()
@@ -132,6 +138,9 @@ fun ActivitiesScreen(
                     modifier = Modifier.semantics { heading() },
                 )
             }
+            if (sync.running) {
+                item(key = "sync") { SyncProgress(sync, fmt) }
+            }
             item(key = "filters") {
                 Filters(state, fmt, onPreset, onTextChange, onPickCustom = { picking = true })
             }
@@ -158,7 +167,7 @@ fun ActivitiesScreen(
                 !state.loading && !state.hasRides -> item(key = "empty-all") {
                     Hint(
                         stringResource(R.string.dashboard_empty_title),
-                        stringResource(R.string.dashboard_empty_hint),
+                        emptyHint(syncConnected = sync.connected == true),
                         onOpenWeb,
                         "activities-empty-all",
                     )

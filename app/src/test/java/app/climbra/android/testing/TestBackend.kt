@@ -17,8 +17,11 @@ import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.PersistentCookieJar
 import app.climbra.android.data.net.SessionEvents
 import app.climbra.android.session.AppLocales
+import app.climbra.android.intervals.IntervalsSync
+import app.climbra.android.rider.DataChanges
 import app.climbra.android.session.SessionRepository
 import java.io.Closeable
+import java.time.Clock
 import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlinx.coroutines.CoroutineScope
@@ -72,6 +75,15 @@ class TestBackend(
         foreground: StateFlow<Boolean> = MutableStateFlow(true),
         pollMillis: Long = CoachActivity.POLL_MILLIS,
     ) = CoachActivity(coachApi, quotas, session, foreground, scope, pollMillis)
+
+    /** The app's intervals.icu sync (spec 007). */
+    fun intervalsSync(
+        session: SessionRepository,
+        scope: CoroutineScope,
+        changes: DataChanges = DataChanges(),
+        clock: Clock = Clock.systemUTC(),
+        pollMillis: Long = IntervalsSync.POLL_MILLIS,
+    ) = IntervalsSync(profileApi, changes, clock, session, scope, pollMillis)
 
     /** Queues answers for `"POST /api/auth/login"`; the last one repeats. */
     fun on(route: String, vararg responses: MockResponse) {

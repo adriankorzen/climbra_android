@@ -9,13 +9,17 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -38,14 +42,18 @@ class ActivitiesViewModelTest {
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
 
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val sync by lazy { backend.intervalsSync(backend.session(scope), scope, changes, clock, pollMillis = 10) }
+
     @After
     fun tearDown() {
+        scope.cancel()
         Dispatchers.resetMain()
         backend.close()
     }
 
     private fun viewModel() =
-        ActivitiesViewModel(RiderRepository(backend.riderApi) { "Europe/Warsaw" }, backend.activityApi, changes, clock)
+        ActivitiesViewModel(RiderRepository(backend.riderApi) { "Europe/Warsaw" }, backend.activityApi, changes, clock, sync)
 
     private suspend fun ActivitiesViewModel.settled() = state.first { !it.loading && !it.loadingMore && !it.refreshing }
 
@@ -177,7 +185,7 @@ class ActivitiesViewModelTest {
         TestBackend().use { other ->
             other.on("GET /api/riders", json(rider))
             other.on("GET /api/riders/5/rides", problem(503, null))
-            val failing = ActivitiesViewModel(RiderRepository(other.riderApi) { "Europe/Warsaw" }, other.activityApi, changes, clock)
+            val failing = ActivitiesViewModel(RiderRepository(other.riderApi) { "Europe/Warsaw" }, other.activityApi, changes, clock, other.intervalsSync(other.session(scope), scope))
             assertEquals(app.climbra.android.data.net.ApiError.Http(503, null), failing.settled().error)
         }
     }
@@ -197,5 +205,55 @@ class ActivitiesViewModelTest {
         viewModel.onShown()
         viewModel.settled()
         assertEquals(2, ridesRequests().size)
+    }
+
+    // Spec 007 AC2, AC6: a pull on the log syncs intervals.icu when connected; rides it brought load at once
+    @Test
+    fun aPullSyncsIntervalsAndNewRidesLoadAtOnce() = runTest(dispatcher) {
+        backend.on("GET /api/riders", json(rider))
+        backend.on("GET /api/riders/5/rides", page(1..2, 2))
+        backend.on("GET /api/riders/5/intervals", json("""{"connected":true}"""))
+        backend.on("POST /api/riders/5/intervals/sync", json("""{"id":9,"status":"QUEUED"}""", 202))
+        backend.on("GET /api/imports/9", json("""{"id":9,"status":"COMPLETED","imported":1}"""))
+        val viewModel = viewModel()
+        viewModel.settled()
+        assertEquals(0, backend.requests("POST /api/riders/5/intervals/sync").size)
+
+        viewModel.refresh()
+        waitFor { backend.requests("GET /api/imports/9").isNotEmpty() }
+        sync.join()
+
+        assertEquals(1, backend.requests("POST /api/riders/5/intervals/sync").size)
+        // The list is loaded again after the import ended (the request reaches the server on OkHttp's threads)
+        val end = System.currentTimeMillis() + 5_000
+        fun reloaded(): Boolean {
+            val paths = backend.requests.map { "${it.method} ${it.url.encodedPath}" }
+            return paths.lastIndexOf("GET /api/riders/5/rides") > paths.lastIndexOf("GET /api/imports/9")
+        }
+        while (!reloaded() && System.currentTimeMillis() < end) withContext(Dispatchers.IO) { Thread.sleep(20) }
+        assertTrue(reloaded())
+        viewModel.settled()
+    }
+
+    // Spec 007 AC2: a search or a period change does not sync
+    @Test
+    fun onlyAPullSyncs() = runTest(dispatcher) {
+        backend.on("GET /api/riders", json(rider))
+        backend.on("GET /api/riders/5/rides", page(1..2, 2))
+        backend.on("GET /api/riders/5/intervals", json("""{"connected":true}"""))
+        val viewModel = viewModel()
+        viewModel.settled()
+
+        viewModel.selectPreset(RangePreset.WEEK)
+        viewModel.settled()
+
+        assertEquals(0, backend.requests("GET /api/riders/5/intervals").size)
+    }
+
+    /** Requests reach the server on OkHttp's threads: waits in real time while the dispatcher runs. */
+    private suspend fun waitFor(check: () -> Boolean) {
+        val end = System.currentTimeMillis() + 5_000
+        while (!check() && System.currentTimeMillis() < end) withContext(Dispatchers.IO) { Thread.sleep(20) }
+        assertTrue(check())
     }
 }

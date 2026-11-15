@@ -37,6 +37,7 @@ import app.climbra.android.data.api.PlannedWorkoutLink
 import app.climbra.android.data.api.PowerMetrics
 import app.climbra.android.data.api.Recording
 import app.climbra.android.data.api.RideRow
+import app.climbra.android.intervals.SyncState
 import app.climbra.android.data.api.RideTotals
 import app.climbra.android.data.api.Samples
 import app.climbra.android.data.api.ThresholdsUsed
@@ -90,7 +91,7 @@ class ActivitiesScreensTest {
     private val texts = mutableListOf<String>()
     private var webOpened = 0
 
-    private fun showLog(state: () -> ActivitiesUiState) = content {
+    private fun showLog(sync: () -> SyncState = { SyncState() }, state: () -> ActivitiesUiState) = content {
         ActivitiesScreen(
             state = state(),
             fmt = fmt,
@@ -101,6 +102,7 @@ class ActivitiesScreensTest {
             onRefresh = {},
             onOpenRide = { opened += it },
             onOpenWeb = { webOpened++ },
+            sync = sync(),
         )
     }
 
@@ -420,5 +422,17 @@ class ActivitiesScreensTest {
     @Composable
     private fun OpenButton(name: String, open: (Long) -> Unit) {
         Button(onClick = { open(85) }, modifier = Modifier.testTag("open-$name")) { Text(name) }
+    }
+
+    // Spec 007 AC3: a running sync shows above the list
+    @Test
+    fun aRunningSyncShowsAboveTheList() {
+        var sync by mutableStateOf(SyncState(running = true, processed = 1, total = 3))
+        showLog(sync = { sync }) { log }
+        compose.onNodeWithTag("sync-progress").assertIsDisplayed()
+        compose.onNodeWithText("Syncing with intervals.icu… 1 of 3").assertIsDisplayed()
+
+        sync = SyncState()
+        compose.onNodeWithTag("sync-progress").assertDoesNotExist()
     }
 }

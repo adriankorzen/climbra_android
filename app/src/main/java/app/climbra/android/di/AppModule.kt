@@ -29,6 +29,7 @@ import app.climbra.android.session.AppCompatLocales
 import app.climbra.android.session.AppLocales
 import app.climbra.android.session.SessionRepository
 import app.climbra.android.rider.DataChanges
+import app.climbra.android.intervals.IntervalsSync
 import app.climbra.android.rider.RiderRepository
 import app.climbra.android.ui.theme.DataStoreThemeSettings
 import app.climbra.android.ui.theme.ThemeSettings
@@ -158,6 +159,17 @@ object AppModule {
             .stateIn(scope, SharingStarted.Eagerly, false)
         return CoachActivity(api, quotas, session, foreground, scope)
     }
+
+    /** One intervals.icu sync for the whole app (spec 007). */
+    @Provides
+    @Singleton
+    fun intervalsSync(
+        api: ProfileApi,
+        changes: DataChanges,
+        clock: Clock,
+        session: SessionRepository,
+        scope: CoroutineScope,
+    ): IntervalsSync = IntervalsSync(api, changes, clock, session, scope)
 
     @Provides
     @Singleton

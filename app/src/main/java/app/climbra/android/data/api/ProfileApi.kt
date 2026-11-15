@@ -157,6 +157,10 @@ data class ImportJob(
     val imported: Int = 0,
     val unavailable: Int = 0,
     val message: String? = null,
+    /** Rides of the job done so far (spec 007). */
+    val processedFiles: Int = 0,
+    /** Rides the job imports; `null` until the backend knows them. */
+    val selectedRides: Int? = null,
 ) {
     val running: Boolean
         get() = status == ImportJobStatus.QUEUED || status == ImportJobStatus.RUNNING

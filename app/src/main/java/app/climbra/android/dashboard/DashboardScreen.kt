@@ -49,6 +49,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.climbra.android.AppConfig
 import app.climbra.android.R
+import app.climbra.android.intervals.SyncProgress
+import app.climbra.android.intervals.SyncState
 import app.climbra.android.coach.CoachNavigation
 import app.climbra.android.coach.ConversationTypeBadge
 import app.climbra.android.coach.rememberNow
@@ -75,10 +77,12 @@ fun DashboardRoute(
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val sync by viewModel.sync.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onShown() }
     DashboardScreen(
         state = state,
+        sync = sync,
         fmt = rememberFmt(),
         onRefresh = viewModel::refresh,
         onSelectRange = viewModel::selectRange,
@@ -103,6 +107,7 @@ fun DashboardScreen(
     coach: CoachNavigation = CoachNavigation(),
     onOpenCoach: () -> Unit = {},
     now: Instant = Instant.now(),
+    sync: SyncState = SyncState(),
 ) {
     PullToRefreshBox(isRefreshing = state.refreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
         Column(
@@ -125,6 +130,7 @@ fun DashboardScreen(
             if (state.loading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth().testTag("dashboard-loading"))
             }
+            SyncProgress(sync, fmt)
             if (state.failed) {
                 ErrorBanner(stringResource(R.string.dashboard_load_failed), Modifier.testTag("dashboard-error"))
                 OutlinedButton(onClick = onRefresh, modifier = Modifier.testTag("dashboard-retry")) {
@@ -139,7 +145,7 @@ fun DashboardScreen(
                     tag = "dashboard-no-rider",
                 )
                 state.rider != null || state.failed -> {
-                    Content(state, fmt, onSelectRange, onOpenWeb, onOpenRide)
+                    Content(state, fmt, onSelectRange, onOpenWeb, onOpenRide, syncConnected = sync.connected == true)
                     state.conversations?.let { CoachCard(it, fmt, now, coach, onOpenCoach) }
                 }
             }
@@ -154,11 +160,12 @@ private fun Content(
     onSelectRange: (Int) -> Unit,
     onOpenWeb: () -> Unit,
     onOpenRide: (Long) -> Unit,
+    syncConnected: Boolean,
 ) {
     if (state.noRidesAtAll) {
         Hint(
             title = stringResource(R.string.dashboard_empty_title),
-            text = stringResource(R.string.dashboard_empty_hint),
+            text = emptyHint(syncConnected),
             onOpenWeb = onOpenWeb,
             tag = "dashboard-empty",
         )
@@ -481,6 +488,13 @@ private fun Hint(title: String, text: String, onOpenWeb: () -> Unit, tag: String
             Button(onClick = onOpenWeb) { Text(stringResource(R.string.dashboard_open_web)) }
         }
     }
+}
+
+/** The no-rides hint; with intervals.icu connected it also tells that a pull fetches rides (spec 007). */
+@Composable
+fun emptyHint(syncConnected: Boolean): String {
+    val hint = stringResource(R.string.dashboard_empty_hint)
+    return if (syncConnected) "$hint ${stringResource(R.string.sync_pull_hint)}" else hint
 }
 
 private val WIDE_LAYOUT = 600.dp

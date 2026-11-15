@@ -2,6 +2,8 @@ package app.climbra.android.profile
 
 import app.climbra.android.R
 import app.climbra.android.data.api.GarminStatus
+import app.climbra.android.intervals.IntervalsSync
+import app.climbra.android.intervals.SyncOrigin
 import app.climbra.android.rider.DataChanges
 import app.climbra.android.rider.RiderRepository
 import app.climbra.android.session.SessionRepository
@@ -76,7 +78,10 @@ class ProfileViewModelTest {
         themes,
         clock,
         backend.quotas(session, scope),
+        sync,
     ).apply { zone = { ZoneId.of("Europe/Warsaw") } }
+
+    private val sync by lazy { backend.intervalsSync(session, scope, changes, clock) }
 
     /** Nothing loading or running (the backend answers on OkHttp's threads, so states are awaited). */
     private suspend fun ProfileViewModel.settled() = state.first { s ->
@@ -419,7 +424,7 @@ class ProfileViewModelTest {
         assertEquals(280, state.intervalsThresholds.value?.ftpWatts)
     }
 
-    // AC7
+    // AC7; spec 007 AC3: "Sync now" runs the app's one sync, whose messages go to the shell (IntervalsSyncTest)
     @Test
     fun aSyncIsFollowedUntilItsJobEnds() = runTest(dispatcher) {
         loggedIn()
@@ -436,31 +441,50 @@ class ProfileViewModelTest {
         val started = testScheduler.currentTime
 
         viewModel.syncIntervals()
-        assertTrue(viewModel.state.value.syncing)
-        val state = viewModel.state.first { !it.syncing && it.message == UiText(R.string.intervals_sync_done, listOf(3)) }
+        viewModel.state.first { it.syncing }
+        val state = viewModel.state.first { !it.syncing }
 
         // Polled every 2 s until the job ended
         assertEquals(2, count("GET /api/imports/9"))
-        assertTrue(testScheduler.currentTime - started >= 2 * ProfileViewModel.POLL_MS)
+        assertTrue(testScheduler.currentTime - started >= 2 * IntervalsSync.POLL_MILLIS)
         assertFalse(state.syncing)
         assertEquals(version + 1, changes.version.value)
         eventually { assertEquals(2, count("GET /api/riders/5/intervals")) }
     }
 
-    // AC7
+    // Spec 007 AC3: a sync started elsewhere (a pull on the dashboard) shows on "Sync now"
     @Test
-    fun aFailedSyncShowsItsMessage() = runTest(dispatcher) {
+    fun aSyncStartedElsewhereDisablesSyncNow() = runTest(dispatcher) {
         loggedIn()
         withProfile(intervals = connected)
-        backend.on("POST /api/riders/5/intervals/sync", json("""{"id":9,"status":"FAILED","message":"Rate limit"}""", 202))
+        backend.on("POST /api/riders/5/intervals/sync", json("""{"id":9,"status":"QUEUED"}""", 202))
+        backend.on("GET /api/imports/9", json("""{"id":9,"status":"RUNNING"}"""))
         val viewModel = viewModel()
         viewModel.settled()
 
-        viewModel.syncIntervals()
-        val state = viewModel.state.first { !it.syncing && it.message != null && it.message.res != R.string.intervals_sync_started }
+        sync.sync(5, SyncOrigin.PULL)
 
-        assertEquals(UiText(R.string.intervals_sync_failed, listOf("Rate limit")), state.message)
-        assertEquals(0, count("GET /api/imports/9"))
+        viewModel.state.first { it.syncing }
+        viewModel.syncIntervals()
+        eventually { assertEquals(1, count("GET /api/imports/9").coerceAtMost(1)) }
+        assertEquals(1, count("POST /api/riders/5/intervals/sync"))
+    }
+
+    // Spec 007 AC10: connecting tells the app's sync, so a pull syncs without reading the status first
+    @Test
+    fun connectingTellsTheSync() = runTest(dispatcher) {
+        loggedIn()
+        withProfile()
+        val viewModel = viewModel()
+        viewModel.settled()
+        assertEquals(false, sync.state.value.connected)
+
+        backend.on("PUT /api/riders/5/intervals", json(connected))
+        viewModel.onIntervalsChange(IntervalsForm(apiKey = "secret"))
+        viewModel.connectIntervals()
+        viewModel.settled()
+
+        assertEquals(true, sync.state.value.connected)
     }
 
     // AC7

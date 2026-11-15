@@ -25,6 +25,7 @@ import app.climbra.android.data.api.Rider
 import app.climbra.android.data.api.ThresholdEntry
 import app.climbra.android.data.api.TrainingLoadResponse
 import app.climbra.android.data.api.WeekLoad
+import app.climbra.android.intervals.SyncState
 import app.climbra.android.ui.format.Fmt
 import app.climbra.android.ui.theme.ClimbraTheme
 import java.util.Locale
@@ -78,7 +79,7 @@ class DashboardScreenTest {
     private var webOpened = 0
     private val selectedRanges = mutableListOf<Int>()
 
-    private fun show(state: () -> DashboardUiState, fmt: Fmt = english) = compose.setContent {
+    private fun show(state: () -> DashboardUiState, fmt: Fmt = english, sync: () -> SyncState = { SyncState() }) = compose.setContent {
         ClimbraTheme(darkTheme = false) {
             DashboardScreen(
                 state = state(),
@@ -86,6 +87,7 @@ class DashboardScreenTest {
                 onRefresh = { refreshes++ },
                 onSelectRange = { selectedRanges += it },
                 onOpenWeb = { webOpened++ },
+                sync = sync(),
             )
         }
     }
@@ -231,5 +233,28 @@ class DashboardScreenTest {
         compose.onNodeWithTag("dashboard-no-rider").assertIsDisplayed()
         compose.onNodeWithText("Create your rider profile").assertIsDisplayed()
         compose.onNodeWithTag("kpi-tss").assertDoesNotExist()
+    }
+
+    // Spec 007 AC3: a running sync shows above the content, with its count once known
+    @Test
+    fun aRunningSyncShowsItsProgress() {
+        var sync by mutableStateOf(SyncState())
+        show({ ready }, sync = { sync })
+        compose.onNodeWithTag("sync-progress").assertDoesNotExist()
+
+        sync = SyncState(running = true)
+        compose.onNodeWithTag("sync-progress").assertIsDisplayed()
+        compose.onNodeWithText("Syncing with intervals.icu…").assertIsDisplayed()
+
+        sync = SyncState(running = true, processed = 2, total = 5)
+        compose.onNodeWithText("Syncing with intervals.icu… 2 of 5").assertIsDisplayed()
+    }
+
+    // Spec 007: with intervals.icu connected the empty state tells to pull
+    @Test
+    fun theEmptyStateTellsToPullWhenConnected() {
+        show({ ready.copy(rides = emptyList(), noRidesAtAll = true) }, sync = { SyncState(connected = true) })
+
+        compose.onNodeWithText("Pull down to fetch your rides from intervals.icu.", substring = true).assertIsDisplayed()
     }
 }

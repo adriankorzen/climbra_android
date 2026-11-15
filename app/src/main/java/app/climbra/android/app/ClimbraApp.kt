@@ -14,6 +14,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +45,8 @@ import app.climbra.android.session.SessionState
 import app.climbra.android.shell.Shell
 import app.climbra.android.shell.ShellNavigator
 import app.climbra.android.coach.CoachActivity
+import app.climbra.android.intervals.IntervalsSync
+import kotlinx.coroutines.flow.merge
 import app.climbra.android.coach.CoachListRoute
 import app.climbra.android.coach.CoachNavigation
 import app.climbra.android.coach.ConversationRoute
@@ -61,6 +64,7 @@ class AppViewModel @Inject constructor(
     val config: AppConfig,
     private val calendarRequests: CalendarRequests,
     val coachActivity: CoachActivity,
+    val intervalsSync: IntervalsSync,
 ) : ViewModel() {
 
     val state: StateFlow<SessionState> = session.state
@@ -148,7 +152,7 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                 trainingBlock = { nav -> TrainingBlockFormRoute(config = config, onBack = nav::back, onAccepted = nav::replaceWithConversation) },
                 fileReview = { nav -> FileReviewRoute(config = config, onBack = nav::back, onAccepted = nav::replaceWithConversation) },
                 coachEvents = viewModel.coachActivity.events,
-                notices = viewModel.coachActivity.notices,
+                notices = remember(viewModel) { merge(viewModel.coachActivity.notices, viewModel.intervalsSync.messages) },
             )
         },
     )
