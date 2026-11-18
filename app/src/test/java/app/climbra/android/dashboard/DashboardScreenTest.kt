@@ -77,6 +77,7 @@ class DashboardScreenTest {
 
     private var refreshes = 0
     private var webOpened = 0
+    private var imports = 0
     private val selectedRanges = mutableListOf<Int>()
 
     private fun show(state: () -> DashboardUiState, fmt: Fmt = english, sync: () -> SyncState = { SyncState() }) = compose.setContent {
@@ -87,6 +88,7 @@ class DashboardScreenTest {
                 onRefresh = { refreshes++ },
                 onSelectRange = { selectedRanges += it },
                 onOpenWeb = { webOpened++ },
+                onImport = { imports++ },
                 sync = sync(),
             )
         }
@@ -204,8 +206,10 @@ class DashboardScreenTest {
         show({ state })
 
         compose.onNodeWithTag("dashboard-empty").assertIsDisplayed()
-        compose.onNodeWithText("Open climbra.app").performClick()
-        assertEquals(1, webOpened)
+        // Spec 009 AC1: the import, not the web
+        compose.onNodeWithText("Open climbra.app").assertDoesNotExist()
+        compose.onNodeWithText("Import rides").performClick()
+        assertEquals(1, imports)
 
         state = ready.copy(rides = emptyList(), noRidesAtAll = false)
         compose.onNodeWithTag("dashboard-empty").assertDoesNotExist()

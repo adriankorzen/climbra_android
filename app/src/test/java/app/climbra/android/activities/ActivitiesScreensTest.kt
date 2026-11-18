@@ -90,6 +90,7 @@ class ActivitiesScreensTest {
     private val presets = mutableListOf<RangePreset>()
     private val texts = mutableListOf<String>()
     private var webOpened = 0
+    private var imports = 0
 
     private fun showLog(sync: () -> SyncState = { SyncState() }, state: () -> ActivitiesUiState) = content {
         ActivitiesScreen(
@@ -102,6 +103,7 @@ class ActivitiesScreensTest {
             onRefresh = {},
             onOpenRide = { opened += it },
             onOpenWeb = { webOpened++ },
+            onImport = { imports++ },
             sync = sync(),
         )
     }
@@ -147,8 +149,11 @@ class ActivitiesScreensTest {
         var state by mutableStateOf(log.copy(rows = emptyList(), hasRides = false, totals = null, totalRows = 0))
         showLog { state }
         compose.onNodeWithTag("activities-empty-all").assertIsDisplayed()
-        compose.onNodeWithText("Open climbra.app").performClick()
-        assertEquals(1, webOpened)
+        // Spec 009 AC1: the import, not the web
+        compose.onNodeWithText("Open climbra.app").assertDoesNotExist()
+        compose.onNodeWithTag("activities-empty-all-button").performClick()
+        compose.onNodeWithTag("activities-import").performClick()
+        assertEquals(2, imports)
 
         state = log.copy(rows = emptyList(), totalRows = 0)
         compose.onNodeWithTag("activities-empty-all").assertDoesNotExist()

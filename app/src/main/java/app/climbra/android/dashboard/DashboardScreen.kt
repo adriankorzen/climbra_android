@@ -74,6 +74,7 @@ fun DashboardRoute(
     onOpenRide: (Long) -> Unit,
     coach: CoachNavigation = CoachNavigation(),
     onOpenCoach: () -> Unit = {},
+    onImport: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -91,6 +92,7 @@ fun DashboardRoute(
         coach = coach,
         onOpenCoach = onOpenCoach,
         now = rememberNow(60_000L),
+        onImport = onImport,
     )
 }
 
@@ -108,6 +110,7 @@ fun DashboardScreen(
     onOpenCoach: () -> Unit = {},
     now: Instant = Instant.now(),
     sync: SyncState = SyncState(),
+    onImport: () -> Unit = {},
 ) {
     PullToRefreshBox(isRefreshing = state.refreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
         Column(
@@ -141,11 +144,11 @@ fun DashboardScreen(
                 state.noRider -> Hint(
                     title = stringResource(R.string.dashboard_no_rider_title),
                     text = stringResource(R.string.dashboard_no_rider_hint),
-                    onOpenWeb = onOpenWeb,
+                    onClick = onOpenWeb,
                     tag = "dashboard-no-rider",
                 )
                 state.rider != null || state.failed -> {
-                    Content(state, fmt, onSelectRange, onOpenWeb, onOpenRide, syncConnected = sync.connected == true)
+                    Content(state, fmt, onSelectRange, onImport, onOpenRide, syncConnected = sync.connected == true)
                     state.conversations?.let { CoachCard(it, fmt, now, coach, onOpenCoach) }
                 }
             }
@@ -158,7 +161,7 @@ private fun Content(
     state: DashboardUiState,
     fmt: Fmt,
     onSelectRange: (Int) -> Unit,
-    onOpenWeb: () -> Unit,
+    onImport: () -> Unit,
     onOpenRide: (Long) -> Unit,
     syncConnected: Boolean,
 ) {
@@ -166,8 +169,9 @@ private fun Content(
         Hint(
             title = stringResource(R.string.dashboard_empty_title),
             text = emptyHint(syncConnected),
-            onOpenWeb = onOpenWeb,
+            onClick = onImport,
             tag = "dashboard-empty",
+            button = stringResource(R.string.import_button),
         )
     }
     BoxWithConstraints {
@@ -480,12 +484,12 @@ private fun Legend(vararg entries: Pair<String, Color>) {
 }
 
 @Composable
-private fun Hint(title: String, text: String, onOpenWeb: () -> Unit, tag: String) {
+private fun Hint(title: String, text: String, onClick: () -> Unit, tag: String, button: String = stringResource(R.string.dashboard_open_web)) {
     ElevatedCard(modifier = Modifier.fillMaxWidth().testTag(tag)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Button(onClick = onOpenWeb) { Text(stringResource(R.string.dashboard_open_web)) }
+            Button(onClick = onClick, modifier = Modifier.testTag("$tag-button")) { Text(button) }
         }
     }
 }

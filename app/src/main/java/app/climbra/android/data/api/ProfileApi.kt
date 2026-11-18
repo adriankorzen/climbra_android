@@ -161,6 +161,20 @@ data class ImportJob(
     val processedFiles: Int = 0,
     /** Rides the job imports; `null` until the backend knows them. */
     val selectedRides: Int? = null,
+    /** `UPLOAD` or `INTERVALS_SYNC`. */
+    val kind: String? = null,
+    // Spec 009: the outcome of an upload
+    val duplicates: Int = 0,
+    /** Not cycling. */
+    val skipped: Int = 0,
+    /** Cycling rides older than the imported ones. */
+    val overLimit: Int = 0,
+    /** Invalid or too large files, and rides the file storage did not take. */
+    val failed: Int = 0,
+    val firstRideDate: String? = null,
+    val lastRideDate: String? = null,
+    /** Every file's outcome, when asked for (`items=true`). */
+    val items: List<ImportItem> = emptyList(),
 ) {
     val running: Boolean
         get() = status == ImportJobStatus.QUEUED || status == ImportJobStatus.RUNNING
@@ -169,6 +183,20 @@ data class ImportJob(
 /** A status the app does not know yet reads as [FAILED]. */
 @Serializable
 enum class ImportJobStatus { QUEUED, RUNNING, COMPLETED, FAILED }
+
+/** Mirrors `upload.ActivityImportJobResponse.Item`: one file of an upload (spec 009). */
+@Serializable
+data class ImportItem(
+    val fileName: String = "",
+    /** Unknown values read as [ImportItemStatus.FAILED]. */
+    val status: ImportItemStatus = ImportItemStatus.FAILED,
+    /** The stored ride: the imported one, or the one a duplicate matches. */
+    val activityId: Long? = null,
+    val message: String? = null,
+)
+
+@Serializable
+enum class ImportItemStatus { IMPORTED, DUPLICATE, NOT_CYCLING, OVER_LIMIT, INVALID, FAILED, TOO_LARGE, UNAVAILABLE, DELETED }
 
 /** Mirrors `garminconnect.GarminConnectionResponse` as far as the app reads it. */
 @Serializable

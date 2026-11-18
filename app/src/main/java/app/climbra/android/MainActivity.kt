@@ -1,5 +1,6 @@
 package app.climbra.android
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -9,7 +10,10 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.climbra.android.activities.SharedRideFiles
+import app.climbra.android.activities.sharedFiles
 import app.climbra.android.app.AppViewModel
+import app.climbra.android.coach.RideFileSource
 import app.climbra.android.app.ClimbraApp
 import app.climbra.android.session.SessionState
 import app.climbra.android.ui.theme.ClimbraTheme
@@ -27,10 +31,18 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var themeSettings: ThemeSettings
 
+    @Inject
+    lateinit var sharedRideFiles: SharedRideFiles
+
+    @Inject
+    lateinit var rideFiles: RideFileSource
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().setKeepOnScreenCondition { appViewModel.state.value == SessionState.Loading }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Ride files shared from another app (spec 009); not again after a configuration change
+        if (savedInstanceState == null) receive(intent)
         setContent {
             // The rider's choice in the profile (spec 004), the system's otherwise
             val mode by themeSettings.mode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
@@ -44,4 +56,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        receive(intent)
+    }
+
+    private fun receive(intent: Intent?) = sharedRideFiles.offer(rideFiles.sharedFiles(intent))
 }

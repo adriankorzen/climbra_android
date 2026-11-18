@@ -31,6 +31,9 @@ import app.climbra.android.AppConfig
 import app.climbra.android.R
 import app.climbra.android.auth.LoginRoute
 import app.climbra.android.activities.ActivitiesRoute
+import app.climbra.android.activities.ImportRoute
+import app.climbra.android.activities.RideImport
+import app.climbra.android.activities.SharedRideFiles
 import app.climbra.android.activities.RideDetailRoute
 import app.climbra.android.auth.TermsRoute
 import app.climbra.android.calendar.CalendarRequests
@@ -57,6 +60,8 @@ import app.climbra.android.ui.common.openWebPage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -66,6 +71,8 @@ class AppViewModel @Inject constructor(
     private val calendarRequests: CalendarRequests,
     val coachActivity: CoachActivity,
     val intervalsSync: IntervalsSync,
+    val rideImport: RideImport,
+    val sharedRideFiles: SharedRideFiles,
 ) : ViewModel() {
 
     val state: StateFlow<SessionState> = session.state
@@ -106,8 +113,22 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                 )
             }
             Shell(
-                dashboard = { nav -> DashboardRoute(config = config, onOpenRide = nav::openRide, coach = coachNavigation(nav), onOpenCoach = nav::openCoach) },
-                activities = { nav -> ActivitiesRoute(config = config, onOpenRide = nav::openRide) },
+                dashboard = { nav ->
+                    DashboardRoute(config = config, onOpenRide = nav::openRide, coach = coachNavigation(nav), onOpenCoach = nav::openCoach, onImport = nav::openImport)
+                },
+                activities = { nav -> ActivitiesRoute(config = config, onOpenRide = nav::openRide, onImport = nav::openImport) },
+                rideImport = { nav ->
+                    ImportRoute(
+                        config = config,
+                        onBack = nav::back,
+                        onOpenRide = nav::openRide,
+                        onAdded = { id ->
+                            Toast.makeText(context, R.string.import_ride_added, Toast.LENGTH_SHORT).show()
+                            nav.rideAdded(id)
+                        },
+                        onOpenProfile = nav::openProfile,
+                    )
+                },
                 profile = { ProfileRoute(config = config) },
                 calendar = { nav ->
                     CalendarRoute(
@@ -157,7 +178,11 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                 trainingBlock = { nav -> TrainingBlockFormRoute(config = config, onBack = nav::back, onAccepted = nav::replaceWithConversation) },
                 fileReview = { nav -> FileReviewRoute(config = config, onBack = nav::back, onAccepted = nav::replaceWithConversation) },
                 coachEvents = viewModel.coachActivity.events,
-                notices = remember(viewModel) { merge(viewModel.coachActivity.notices, viewModel.intervalsSync.messages) },
+                notices = remember(viewModel) {
+                    merge(viewModel.coachActivity.notices, viewModel.intervalsSync.messages, viewModel.sharedRideFiles.notices)
+                },
+                importRequests = remember(viewModel) { viewModel.sharedRideFiles.pending.filterNotNull().map { } },
+                importNotices = viewModel.rideImport.notices,
             )
         },
     )

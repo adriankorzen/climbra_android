@@ -19,6 +19,8 @@ data class ProblemDetail(
     val conversationId: Long? = null,
     /** With `PLAN_OVERLAP`: the plan a saved training block overlaps. */
     val overlappingPlan: OverlappingPlan? = null,
+    /** With `409` on a ride upload: the ride already stored (spec 009). */
+    val activityId: Long? = null,
 )
 
 @Serializable
@@ -34,6 +36,8 @@ sealed interface ApiError {
         val code: String?,
         val conversationId: Long? = null,
         val overlappingPlanName: String? = null,
+        /** The stored ride a duplicate upload matches (spec 009). */
+        val activityId: Long? = null,
     ) : ApiError
 
     /** No answer: offline, DNS, timeout, TLS. */
@@ -56,7 +60,7 @@ private const val LOG_TAG = "ClimbraApi"
  */
 fun httpError(json: Json, status: Int, body: String?): ApiError.Http {
     val problem = body?.let { runCatching { json.decodeFromString(ProblemDetail.serializer(), it) }.getOrNull() }
-    return ApiError.Http(status, problem?.code, problem?.conversationId, problem?.overlappingPlan?.name)
+    return ApiError.Http(status, problem?.code, problem?.conversationId, problem?.overlappingPlan?.name, problem?.activityId)
 }
 
 /** Runs a Retrofit call and maps every failure to an [ApiError]. */

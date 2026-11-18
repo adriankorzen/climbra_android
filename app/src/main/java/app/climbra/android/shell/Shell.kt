@@ -66,6 +66,10 @@ data object ActivitiesRoute
 @Serializable
 data class ActivitiesRideRoute(val id: Long)
 
+/** Importing rides from files (spec 009). */
+@Serializable
+data object ActivitiesImportRoute
+
 @Serializable
 data object CalendarGraph
 
@@ -177,6 +181,21 @@ class ShellNavigator internal constructor(private val nav: NavController) {
 
     fun openActivities() = nav.openTab(TopLevelDestination.ACTIVITIES)
 
+    fun openProfile() = nav.openTab(TopLevelDestination.PROFILE)
+
+    /** The import screen on the training log's stack (spec 009); shown already, it stays as it is. */
+    fun openImport() {
+        if (currentTab() != TopLevelDestination.ACTIVITIES) openActivities()
+        nav.navigate(ActivitiesImportRoute) { launchSingleTop = true }
+    }
+
+    /** A single ride was added: its detail in place of the import screen. */
+    fun rideAdded(id: Long) {
+        nav.navigate(ActivitiesRideRoute(id)) {
+            popUpTo<ActivitiesImportRoute> { inclusive = true }
+        }
+    }
+
     fun openCoach() = nav.openTab(TopLevelDestination.COACH)
 
     /** The Coach tab with the list as its start and the conversation on top, so back returns to the list (spec 006). */
@@ -254,8 +273,13 @@ fun Shell(
     trainingBlock: @Composable (ShellNavigator) -> Unit = {},
     fileReview: @Composable (ShellNavigator) -> Unit = {},
     adjustment: @Composable (ShellNavigator) -> Unit = {},
+    rideImport: @Composable (ShellNavigator) -> Unit = {},
     coachEvents: Flow<CoachFinished> = emptyFlow(),
     notices: Flow<UiText> = emptyFlow(),
+    /** Shared files wait for the import screen (spec 009). */
+    importRequests: Flow<Unit> = emptyFlow(),
+    /** The end of an import while its screen is not shown, with "Show". */
+    importNotices: Flow<UiText> = emptyFlow(),
 ) {
     val navController = rememberNavController()
     val navigator = remember(navController) { ShellNavigator(navController) }
@@ -274,7 +298,22 @@ fun Shell(
     }
     LaunchedEffect(notices) {
         notices.collect { notice ->
-            launch { snackbar.showSnackbar(resources.getString(notice.res, *notice.args.toTypedArray())) }
+            launch { snackbar.showSnackbar(notice.resolve(resources)) }
+        }
+    }
+    LaunchedEffect(importRequests) {
+        importRequests.collect { navigator.openImport() }
+    }
+    LaunchedEffect(importNotices) {
+        importNotices.collect { notice ->
+            launch {
+                val result = snackbar.showSnackbar(
+                    notice.resolve(resources),
+                    actionLabel = resources.getString(R.string.import_show),
+                    duration = SnackbarDuration.Long,
+                )
+                if (result == SnackbarResult.ActionPerformed) navigator.openImport()
+            }
         }
     }
     Scaffold(
@@ -308,6 +347,7 @@ fun Shell(
             navigation<ActivitiesGraph>(startDestination = ActivitiesRoute) {
                 composable<ActivitiesRoute> { Screen { activities(navigator) } }
                 composable<ActivitiesRideRoute> { Screen { ride(navigator) } }
+                composable<ActivitiesImportRoute> { Screen { rideImport(navigator) } }
             }
             navigation<CalendarGraph>(startDestination = CalendarRoute) {
                 composable<CalendarRoute> { Screen { calendar(navigator) } }

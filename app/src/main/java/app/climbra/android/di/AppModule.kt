@@ -8,7 +8,10 @@ import app.climbra.android.data.api.ActivityApi
 import app.climbra.android.data.api.AuthApi
 import app.climbra.android.data.api.CalendarApi
 import app.climbra.android.data.api.CoachApi
+import app.climbra.android.activities.RideImport
+import app.climbra.android.activities.SharedRideFiles
 import app.climbra.android.coach.CoachActivity
+import app.climbra.android.data.api.ImportApi
 import app.climbra.android.coach.CoachQuotaRepository
 import app.climbra.android.coach.ContentResolverFileSource
 import app.climbra.android.coach.RideFileSource
@@ -174,4 +177,23 @@ object AppModule {
     @Provides
     @Singleton
     fun rideFileSource(@ApplicationContext context: Context): RideFileSource = ContentResolverFileSource(context)
+
+    @Provides
+    @Singleton
+    fun importApi(retrofit: Retrofit): ImportApi = retrofit.create(ImportApi::class.java)
+
+    /** One import of several rides for the whole app (spec 009). */
+    @Provides
+    @Singleton
+    fun rideImport(
+        api: ImportApi,
+        files: RideFileSource,
+        changes: DataChanges,
+        session: SessionRepository,
+        scope: CoroutineScope,
+    ): RideImport = RideImport(api, files, changes, session, scope)
+
+    @Provides
+    @Singleton
+    fun sharedRideFiles(): SharedRideFiles = SharedRideFiles()
 }

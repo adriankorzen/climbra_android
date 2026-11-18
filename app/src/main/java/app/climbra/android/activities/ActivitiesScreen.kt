@@ -78,7 +78,12 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 
 @Composable
-fun ActivitiesRoute(config: AppConfig, onOpenRide: (Long) -> Unit, viewModel: ActivitiesViewModel = hiltViewModel()) {
+fun ActivitiesRoute(
+    config: AppConfig,
+    onOpenRide: (Long) -> Unit,
+    onImport: () -> Unit = {},
+    viewModel: ActivitiesViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val sync by viewModel.sync.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -94,6 +99,7 @@ fun ActivitiesRoute(config: AppConfig, onOpenRide: (Long) -> Unit, viewModel: Ac
         onRefresh = viewModel::refresh,
         onOpenRide = onOpenRide,
         onOpenWeb = { openWebPage(context, config.webPage("")) },
+        onImport = onImport,
     )
 }
 
@@ -111,6 +117,7 @@ fun ActivitiesScreen(
     onOpenRide: (Long) -> Unit,
     onOpenWeb: () -> Unit,
     sync: SyncState = SyncState(),
+    onImport: () -> Unit = {},
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
     val list = rememberLazyListState()
@@ -132,11 +139,17 @@ fun ActivitiesScreen(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
         ) {
             item(key = "header") {
-                Text(
-                    stringResource(R.string.nav_activities),
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.semantics { heading() },
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.nav_activities),
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.weight(1f).semantics { heading() },
+                    )
+                    // Spec 009
+                    IconButton(onClick = onImport, modifier = Modifier.testTag("activities-import")) {
+                        Icon(painterResource(R.drawable.ic_upload_file), stringResource(R.string.import_button))
+                    }
+                }
             }
             if (sync.running) {
                 item(key = "sync") { SyncProgress(sync, fmt) }
@@ -168,8 +181,9 @@ fun ActivitiesScreen(
                     Hint(
                         stringResource(R.string.dashboard_empty_title),
                         emptyHint(syncConnected = sync.connected == true),
-                        onOpenWeb,
+                        onImport,
                         "activities-empty-all",
+                        stringResource(R.string.import_button),
                     )
                 }
                 else -> {
@@ -365,12 +379,12 @@ private fun RideListItem(row: RideRow, fmt: Fmt, onOpenRide: (Long) -> Unit) {
 }
 
 @Composable
-private fun Hint(title: String, text: String, onOpenWeb: () -> Unit, tag: String) {
+private fun Hint(title: String, text: String, onClick: () -> Unit, tag: String, button: String = stringResource(R.string.dashboard_open_web)) {
     ElevatedCard(modifier = Modifier.fillMaxWidth().testTag(tag)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Button(onClick = onOpenWeb) { Text(stringResource(R.string.dashboard_open_web)) }
+            Button(onClick = onClick, modifier = Modifier.testTag("$tag-button")) { Text(button) }
         }
     }
 }

@@ -30,6 +30,9 @@ interface RideFileSource {
 
     /** The display name, `null` when unknown. */
     fun name(uri: String): String?
+
+    /** The size in bytes, `null` when unknown (spec 009). */
+    fun size(uri: String): Long? = null
 }
 
 class ContentResolverFileSource(private val context: Context) : RideFileSource {
@@ -39,6 +42,12 @@ class ContentResolverFileSource(private val context: Context) : RideFileSource {
     override fun name(uri: String): String? = context.contentResolver
         .query(uri.toUri(), arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
         ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+
+    override fun size(uri: String): Long? = runCatching {
+        context.contentResolver
+            .query(uri.toUri(), arrayOf(OpenableColumns.SIZE), null, null, null)
+            ?.use { cursor -> if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else null }
+    }.getOrNull()
 }
 
 /**

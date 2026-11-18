@@ -122,9 +122,14 @@ object CoachFixtures {
     fun parseQuota(json: String): CoachQuota = Network.json.decodeFromString(CoachQuota.serializer(), json)
 }
 
-/** Files the rider chose, by uri. */
-class FakeFileSource(private val files: Map<String, ByteArray> = emptyMap()) : RideFileSource {
+/** Files the rider chose, by uri; [sizes] stand in for the system's sizes of files too large to hold. */
+class FakeFileSource(
+    private val files: Map<String, ByteArray> = emptyMap(),
+    private val sizes: Map<String, Long> = emptyMap(),
+) : RideFileSource {
     override fun open(uri: String): InputStream = ByteArrayInputStream(files[uri] ?: throw FileNotFoundException(uri))
 
     override fun name(uri: String): String? = uri.substringAfterLast('/')
+
+    override fun size(uri: String): Long? = sizes[uri] ?: files[uri]?.size?.toLong()
 }

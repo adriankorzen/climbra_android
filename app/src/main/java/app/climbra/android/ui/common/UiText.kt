@@ -1,6 +1,7 @@
 package app.climbra.android.ui.common
 
 import android.annotation.SuppressLint
+import android.content.res.Resources
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -18,6 +19,12 @@ data class UiText(val res: Int, val args: List<Any> = emptyList(), val quantity:
     fun resolve(): String =
         if (quantity != null) pluralStringResource(res, quantity, *args.toTypedArray())
         else stringResource(res, *args.toTypedArray())
+
+    /** Outside composition, e.g. for a snackbar. */
+    @SuppressLint("ResourceType")
+    fun resolve(resources: Resources): String =
+        if (quantity != null) resources.getQuantityString(res, quantity, *args.toTypedArray())
+        else resources.getString(res, *args.toTypedArray())
 }
 
 /** Backend error codes with a translated message, like `TRANSLATED_ERROR_CODES` of the web app. */
@@ -63,6 +70,8 @@ val TRANSLATED_ERROR_CODES: Map<String, Int> = mapOf(
     "PROPOSAL_OUTDATED" to R.string.api_error_proposal_outdated,
     "REVIEW_NO_PLAN_CHANGE" to R.string.api_error_review_no_plan_change,
     "PLAN_CHANGE_NOT_APPLICABLE" to R.string.api_error_plan_change_not_applicable,
+    "IMPORT_RUNNING" to R.string.api_error_import_running,
+    "IMPORT_QUEUE_FULL" to R.string.api_error_import_queue_full,
 )
 
 fun ApiError.toUiText(): UiText = when (this) {
