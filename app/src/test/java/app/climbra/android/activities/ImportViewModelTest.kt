@@ -149,7 +149,7 @@ class ImportViewModelTest {
 
     // AC5: no doubles, unsupported named, sizes summed; over 50 MB no Import
     @Test
-    fun theSelectionListsFilesOnceAndStopsOver50Mb() = runTest(dispatcher) {
+    fun theSelectionListsFilesOnceAndTellsOver50Mb() = runTest(dispatcher) {
         backend.on("GET /api/riders", json(RIDERS))
         val viewModel = viewModel()
         viewModel.loaded()
@@ -167,7 +167,8 @@ class ImportViewModelTest {
         viewModel.addFiles(listOf("content://x/huge.zip"))
         state = viewModel.state.value
         assertTrue(state.overLimit)
-        assertFalse(state.canImport)
+        // Spec 014 AC8: more than 50 MB goes in batches
+        assertTrue(state.canImport)
 
         viewModel.removeFile(state.files.last())
         assertTrue(viewModel.state.value.canImport)

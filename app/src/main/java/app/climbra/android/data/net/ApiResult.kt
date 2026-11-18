@@ -36,6 +36,8 @@ sealed interface ApiError {
         val code: String?,
         val conversationId: Long? = null,
         val overlappingPlanName: String? = null,
+        /** Seconds the server asks to wait (`Retry-After` of a `503`, spec 014). */
+        val retryAfterSeconds: Long? = null,
         /** The stored ride a duplicate upload matches (spec 009). */
         val activityId: Long? = null,
     ) : ApiError
@@ -58,9 +60,12 @@ private const val LOG_TAG = "ClimbraApi"
  * The error of an answer with [status], with the backend's code from its problem details [body]; also for calls that
  * return the raw `Response` (a file download), which Retrofit does not throw for.
  */
-fun httpError(json: Json, status: Int, body: String?): ApiError.Http {
+fun httpError(json: Json, status: Int, body: String?, retryAfter: String? = null): ApiError.Http {
     val problem = body?.let { runCatching { json.decodeFromString(ProblemDetail.serializer(), it) }.getOrNull() }
-    return ApiError.Http(status, problem?.code, problem?.conversationId, problem?.overlappingPlan?.name, problem?.activityId)
+    return ApiError.Http(
+        status, problem?.code, problem?.conversationId, problem?.overlappingPlan?.name,
+        retryAfterSeconds = retryAfter?.trim()?.toLongOrNull(), activityId = problem?.activityId,
+    )
 }
 
 /** Runs a Retrofit call and maps every failure to an [ApiError]. */
@@ -69,7 +74,7 @@ suspend fun <T> apiCall(json: Json, call: suspend () -> T): ApiResult<T> = try {
 } catch (e: CancellationException) {
     throw e
 } catch (e: HttpException) {
-    ApiResult.Failure(httpError(json, e.code(), e.response()?.errorBody()?.string()))
+    ApiResult.Failure(httpError(json, e.code(), e.response()?.errorBody()?.string(), e.response()?.headers()?.get("Retry-After")))
 } catch (e: IOException) {
     Log.w(LOG_TAG, "Request failed: ${e.javaClass.simpleName}: ${e.message}")
     ApiResult.Failure(ApiError.Network)

@@ -34,6 +34,7 @@ import app.climbra.android.ui.theme.ClimbraTheme
 import java.util.Locale
 import kotlinx.coroutines.flow.MutableSharedFlow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -124,14 +125,20 @@ class ImportScreenTest {
         compose.onNodeWithTag("start-import").performScrollTo().assertIsEnabled()
         compose.onNodeWithTag("remove-b.tcx").performClick()
         assertEquals(listOf("b.tcx"), removed)
-        compose.onNodeWithTag("import-over-limit").assertDoesNotExist()
+        compose.onNodeWithTag("import-large").assertDoesNotExist()
 
+        // Spec 014 AC8: more than 50 MB goes in batches, no longer on the web
         state = state.copy(files = files + ChosenFile(PickedFile("content://x/all.zip", "all.zip"), 60 * mb))
-        compose.onNodeWithTag("import-over-limit").performScrollTo()
-        inside("import-over-limit", "Large exports (more than 50 MB) are imported on climbra.app.").assertExists()
-        compose.onNodeWithTag("import-open-web").performClick()
-        assertEquals(1, web)
-        compose.onNodeWithTag("start-import").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("import-large").performScrollTo()
+        inside("import-large", "sends their rides in batches").assertExists()
+        compose.onNodeWithText("climbra.app", substring = true).assertDoesNotExist()
+        compose.onNodeWithTag("start-import").performScrollTo().assertIsEnabled()
+        assertEquals(0, web)
+
+        // Spec 014: the chosen files could not be used
+        state = state.copy(problem = UiText(R.string.import_no_ride_files))
+        inside("import-problem", "There are no FIT or TCX files").assertExists()
+        state = state.copy(problem = null)
 
         // AC6
         state = state.copy(files = files, error = ApiError.Http(409, "IMPORT_RUNNING"))
@@ -257,5 +264,79 @@ class ImportScreenTest {
         compose.onNodeWithText("Imported rides: 3").assertIsDisplayed()
         compose.onNodeWithText("Show").performClick()
         compose.onNodeWithTag("import-screen").assertIsDisplayed()
+    }
+
+    // Spec 014 AC3: reading, then the progress over the batches; Stop while it sends
+    @Test
+    fun aLargeImportShowsItsBatchesAndCanBeStopped() {
+        var stops = 0
+        val running = job(ImportFixtures.job("RUNNING", processed = 120, selected = 830))
+        var state by mutableStateOf(ready.copy(mode = ImportMode.SEVERAL, job = job(ImportFixtures.job("RUNNING")), session = SessionProgress(SessionPhase.READING, found = 42)))
+        content { ImportScreen(state, fmt, ImportActions(onStop = { stops++ })) }
+
+        inside("import-progress", "Reading the files… 42 ride files found").assertExists()
+        state = state.copy(job = running, session = SessionProgress(SessionPhase.SENDING, batch = 2, batches = 9))
+        inside("import-progress", "Importing rides: 120 of 830 · batch 2 of 9").assertExists()
+        compose.onNodeWithTag("import-stop").performScrollTo().performClick()
+        assertEquals(1, stops)
+
+        state = state.copy(session = SessionProgress(SessionPhase.SENDING, batch = 2, batches = 9, stopping = true))
+        inside("import-stop", "Stopping after this batch…").assertExists()
+        state = state.copy(session = SessionProgress(SessionPhase.WAITING, batch = 2, batches = 9))
+        inside("import-progress", "Waiting for a free slot on the server…").assertExists()
+    }
+
+    // Spec 014 AC4: a paused import tells why, with Resume and Finish
+    @Test
+    fun aPausedImportOffersResumeAndFinish() {
+        val calls = mutableListOf<String>()
+        val paused = SessionProgress(SessionPhase.PAUSED, batch = 3, batches = 9, pausedBy = UiText(R.string.import_batch_failed, listOf("Storage down")))
+        content {
+            ImportScreen(
+                ready.copy(mode = ImportMode.SEVERAL, job = job(ImportFixtures.job("RUNNING", processed = 200, selected = 830)), session = paused),
+                fmt,
+                ImportActions(onResume = { calls += "resume" }, onFinish = { calls += "finish" }),
+            )
+        }
+
+        inside("import-paused", "Import paused: The server did not import the batch: Storage down").assertExists()
+        compose.onNodeWithTag("import-resume").performScrollTo().performClick()
+        compose.onNodeWithTag("import-finish").performScrollTo().performClick()
+        compose.onNodeWithTag("import-stop").assertDoesNotExist()
+        assertEquals(listOf("resume", "finish"), calls)
+    }
+
+    // Spec 014 AC5: the result names the files not sent
+    @Test
+    fun theResultNamesTheFilesNotSent() {
+        content {
+            ImportScreen(
+                ready.copy(mode = ImportMode.SEVERAL, job = job(ImportFixtures.job("COMPLETED", imported = 300)), session = SessionProgress(SessionPhase.DONE, notSent = 530)),
+                fmt,
+                ImportActions(),
+            )
+        }
+
+        inside("import-not-sent", "Files not sent: 530. Choose the same export again").assertExists()
+    }
+
+    // Spec 014 AC7: the notification follows the import
+    @Test
+    fun theNotificationFollowsTheImport() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val running = job(ImportFixtures.job("RUNNING", processed = 120, selected = 830))
+
+        assertEquals(null, importNotice(context, running, null))
+        val sending = importNotice(context, running, SessionProgress(SessionPhase.SENDING, batch = 2, batches = 9))!!
+        assertEquals("Importing rides: 120 of 830 · batch 2 of 9", sending.text)
+        assertEquals(830, sending.max)
+        assertEquals(120, sending.progress)
+        assertTrue(sending.ongoing)
+        assertEquals("Reading the files…", importNotice(context, running, SessionProgress(SessionPhase.READING))!!.text)
+        val paused = importNotice(context, running, SessionProgress(SessionPhase.PAUSED, pausedBy = UiText(R.string.error_request_failed, listOf(400))))!!
+        assertEquals("Import paused: Request failed (400)", paused.text)
+        val done = importNotice(context, job(ImportFixtures.job("COMPLETED", imported = 300)), SessionProgress(SessionPhase.DONE))!!
+        assertEquals("Imported rides: 300", done.text)
+        assertTrue(!done.ongoing)
     }
 }

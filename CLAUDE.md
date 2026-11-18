@@ -81,7 +81,9 @@ them under "Backend dependencies" by number.
   the training log, the profile's "Sync now"), app-scoped; its messages go to the shell's snackbar.
 - Ride import (spec 009): `activities.RideImport` follows the import job of several files, app-scoped; files shared
   from other apps reach `MainActivity` (`singleTask`, intent filters for ride MIME types) and wait in
-  `activities.SharedRideFiles` until the shell opens the import screen.
+  `activities.SharedRideFiles` until the shell opens the import screen. More than 50 MB (spec 014) goes through
+  `activities.ImportSession` (`ExportReader` walks the archives twice, `ImportBatches` packs a batch in the cache) while
+  `ImportService` keeps the process in the foreground with a notification.
 - Before login (spec 013): `auth.LoggedOutNavigation` (login → registration / forgot password); requests that send an
   email take a Turnstile token from `auth.TurnstileController` (`assets/turnstile.html` in a WebView on the web's
   address), asked for when sending, as the web's widget.

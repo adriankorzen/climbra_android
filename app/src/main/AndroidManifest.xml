@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Spec 014: a large ride import runs in a foreground service with a progress notification -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".ClimbraApplication"
@@ -62,6 +66,12 @@
                 <data android:mimeType="text/xml" />
             </intent-filter>
         </activity>
+
+        <!-- Spec 014: keeps a large ride import going while the app is not shown -->
+        <service
+            android:name=".activities.ImportService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- Keeps the per-app language on Android 10-12 (Android 13+ stores it in the system) -->
         <service

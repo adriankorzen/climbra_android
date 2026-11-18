@@ -9,6 +9,7 @@ import app.climbra.android.data.api.AuthApi
 import app.climbra.android.data.api.CalendarApi
 import app.climbra.android.data.api.CoachApi
 import app.climbra.android.activities.RideImport
+import app.climbra.android.activities.ServiceForegroundImports
 import app.climbra.android.activities.SharedRideFiles
 import app.climbra.android.coach.CoachActivity
 import app.climbra.android.data.api.FeedbackApi
@@ -195,7 +196,8 @@ object AppModule {
         changes: DataChanges,
         session: SessionRepository,
         scope: CoroutineScope,
-    ): RideImport = RideImport(api, files, changes, session, scope)
+        @ApplicationContext context: Context,
+    ): RideImport = RideImport(api, files, changes, session, scope, context.cacheDir, ServiceForegroundImports(context))
 
     @Provides
     @Singleton

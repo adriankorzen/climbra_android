@@ -761,7 +761,6 @@
         <item quantity="other">%1$d files · %2$s MB</item>
     </plurals>
     <string name="import_unsupported">Skipped unsupported files: %1$s</string>
-    <string name="import_over_limit">Large exports (more than 50 MB) are imported on climbra.app.</string>
     <string name="import_queued">The import is queued…</string>
     <string name="import_scanning">Reading the files…</string>
     <string name="import_progress">Importing rides: %1$s of %2$s</string>
@@ -872,4 +871,26 @@
     <string name="api_error_captcha_failed">We could not confirm that you are not a bot. Please try again.</string>
     <string name="api_error_email_limit_reached">We can\'t send emails right now. Please try again later or use Google login.</string>
     <string name="api_error_email_domain_not_allowed">An account can\'t be created with a disposable email address. Please use another address.</string>
+    <!-- Spec 014: large ride exports in batches (the web's texts) -->
+    <string name="import_large_hint">More than 50 MB: the app reads the files on the phone and sends their rides in batches, one after the other. This can take a while; it goes on in the background.</string>
+    <plurals name="import_reading">
+        <item quantity="one">Reading the files… %1$s ride file found</item>
+        <item quantity="other">Reading the files… %1$s ride files found</item>
+    </plurals>
+    <string name="import_progress_batch_text">Importing rides: %1$s of %2$s · batch %3$s of %4$s</string>
+    <string name="import_progress_batch">Importing rides: %1$d of %2$d · batch %3$d of %4$d</string>
+    <string name="import_waiting">Waiting for a free slot on the server…</string>
+    <string name="import_paused">Import paused: %1$s</string>
+    <string name="import_batch_failed">The server did not import the batch: %1$s</string>
+    <string name="import_resume">Resume</string>
+    <string name="import_finish">Finish</string>
+    <string name="import_stop">Stop</string>
+    <string name="import_stopping">Stopping after this batch…</string>
+    <plurals name="import_not_sent">
+        <item quantity="one">Files not sent: %1$s. Choose the same export again, and rides already stored will be skipped.</item>
+        <item quantity="other">Files not sent: %1$s. Choose the same export again, and rides already stored will be skipped.</item>
+    </plurals>
+    <string name="import_unreadable_file">Could not read the file %1$s. Check that the archive is not damaged.</string>
+    <string name="import_no_ride_files">There are no FIT or TCX files in the chosen files.</string>
+    <string name="import_channel">Ride imports</string>
 </resources>

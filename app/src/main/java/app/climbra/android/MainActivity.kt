@@ -10,6 +10,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.climbra.android.activities.ImportService
 import app.climbra.android.activities.SharedRideFiles
 import app.climbra.android.activities.sharedFiles
 import app.climbra.android.app.AppViewModel
@@ -62,5 +63,8 @@ class MainActivity : AppCompatActivity() {
         receive(intent)
     }
 
-    private fun receive(intent: Intent?) = sharedRideFiles.offer(rideFiles.sharedFiles(intent))
+    private fun receive(intent: Intent?) {
+        if (intent?.action == ImportService.ACTION_OPEN_IMPORT) sharedRideFiles.openScreen()
+        else sharedRideFiles.offer(rideFiles.sharedFiles(intent))
+    }
 }

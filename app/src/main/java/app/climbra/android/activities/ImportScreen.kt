@@ -1,6 +1,10 @@
 package app.climbra.android.activities
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.core.content.ContextCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -81,6 +85,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -108,6 +114,10 @@ data class ImportUiState(
     val job: ImportJob? = null,
     /** The stored ride of a single upload: the screen gives way to it. */
     val added: Long? = null,
+    /** A large import's batches (spec 014), `null` for an import of up to 50 MB. */
+    val session: SessionProgress? = null,
+    /** Why the chosen files could not be imported (spec 014): unreadable, or no ride file in them. */
+    val problem: UiText? = null,
     /** Files were shared for several rides while an import runs. */
     val sharedWhileRunning: Boolean = false,
 ) {
@@ -115,7 +125,7 @@ data class ImportUiState(
     val overLimit: Boolean get() = totalBytes > MAX_IMPORT_BYTES
     val running: Boolean get() = job?.running == true
     val canAdd: Boolean get() = !loading && !noRider && single != null && !sending
-    val canImport: Boolean get() = !loading && !noRider && files.isNotEmpty() && !overLimit && !sending && job == null
+    val canImport: Boolean get() = !loading && !noRider && files.isNotEmpty() && !sending && job == null
 }
 
 /**
@@ -146,6 +156,9 @@ class ImportViewModel @Inject constructor(
             }
         }
         viewModelScope.launch { shared.pending.filterNotNull().collect { shared.take()?.let(::receiveShared) } }
+        viewModelScope.launch {
+            rideImport.session.flatMapLatest { it?.progress ?: flowOf(null) }.collect { progress -> mutableState.update { it.copy(session = progress) } }
+        }
         load()
     }
 
@@ -216,14 +229,26 @@ class ImportViewModel @Inject constructor(
         val current = state.value
         val rider = riderId ?: return
         if (!current.canImport) return
-        mutableState.update { it.copy(sending = true, error = null) }
+        mutableState.update { it.copy(sending = true, error = null, problem = null) }
         viewModelScope.launch {
             when (val result = rideImport.start(rider, current.files.map { it.file }, zone.id)) {
-                is ApiResult.Success -> mutableState.update { it.copy(sending = false, files = emptyList(), rejected = emptyList()) }
-                is ApiResult.Failure -> mutableState.update { it.copy(sending = false, error = result.error) }
+                StartResult.Started -> mutableState.update { it.copy(sending = false, files = emptyList(), rejected = emptyList()) }
+                is StartResult.Failed -> mutableState.update { it.copy(sending = false, error = result.error) }
+                is StartResult.Unreadable ->
+                    mutableState.update { it.copy(sending = false, problem = UiText(R.string.import_unreadable_file, listOf(result.fileName))) }
+                StartResult.NoRideFiles -> mutableState.update { it.copy(sending = false, problem = UiText(R.string.import_no_ride_files)) }
             }
         }
     }
+
+    /** Spec 014: no batch after the current one. */
+    fun stop() = rideImport.stop()
+
+    /** Spec 014: a paused import sends the batch again. */
+    fun resume() = rideImport.decide(Decision.RESUME)
+
+    /** Spec 014: a paused import ends with what was imported. */
+    fun finish() = rideImport.decide(Decision.FINISH)
 
     /** Clears the result to choose files again. */
     fun importMore() {
@@ -286,6 +311,8 @@ fun ImportRoute(
     val pickOne = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { viewModel.chooseSingle(it.toString()) }
     }
+    // Spec 014: a large import shows its progress in a notification; it runs without one too
+    val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { viewModel.startImport() }
     val pickMany = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) viewModel.addFiles(uris.map { it.toString() })
     }
@@ -301,11 +328,18 @@ fun ImportRoute(
             onAddRide = viewModel::addRide,
             onChooseFiles = { pickMany.launch(arrayOf("*/*")) },
             onRemove = viewModel::removeFile,
-            onImport = viewModel::startImport,
+            onImport = {
+                val ask = state.overLimit && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                if (ask) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS) else viewModel.startImport()
+            },
             onImportMore = viewModel::importMore,
             onOpenRide = onOpenRide,
             onOpenWeb = { openWebPage(context, config.webPage("activities")) },
             onOpenProfile = onOpenProfile,
+            onStop = viewModel::stop,
+            onResume = viewModel::resume,
+            onFinish = viewModel::finish,
         ),
     )
 }
@@ -324,6 +358,10 @@ data class ImportActions(
     val onOpenRide: (Long) -> Unit = {},
     val onOpenWeb: () -> Unit = {},
     val onOpenProfile: () -> Unit = {},
+    // Spec 014
+    val onStop: () -> Unit = {},
+    val onResume: () -> Unit = {},
+    val onFinish: () -> Unit = {},
 )
 
 /** The web's `import-dialog` as one screen (spec 009). */
@@ -394,12 +432,13 @@ private fun Several(state: ImportUiState, fmt: Fmt, actions: ImportActions) {
     val job = state.job
     when {
         job != null && job.running -> {
-            Progress(job, fmt)
+            Progress(job, fmt, state.session)
+            state.session?.let { SessionControls(it, actions) }
             if (state.sharedWhileRunning) {
                 ErrorBanner(stringResource(R.string.api_error_import_running), Modifier.testTag("shared-while-running"))
             }
         }
-        job != null -> Result(job, fmt, actions)
+        job != null -> Result(job, fmt, actions, notSent = state.session?.notSent ?: 0)
         else -> Selection(state, fmt, actions)
     }
 }
@@ -434,13 +473,12 @@ private fun Selection(state: ImportUiState, fmt: Fmt, actions: ImportActions) {
             modifier = Modifier.testTag("import-selected"),
         )
     }
+    // Spec 014: more than 50 MB goes in batches
     if (state.overLimit) {
-        Column(Modifier.testTag("import-over-limit"), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            ErrorBanner(stringResource(R.string.import_over_limit))
-            TextButton(onClick = actions.onOpenWeb, modifier = Modifier.testTag("import-open-web")) { Text(stringResource(R.string.dashboard_open_web)) }
-        }
+        Text(stringResource(R.string.import_large_hint), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("import-large"))
     }
     Hint(stringResource(R.string.import_thresholds_hint))
+    state.problem?.let { ErrorBanner(it.resolve(), Modifier.testTag("import-problem")) }
     ImportError(state.error, single = false, actions)
     Button(onClick = actions.onImport, enabled = state.canImport, modifier = Modifier.fillMaxWidth().testTag("start-import")) {
         Text(stringResource(if (state.sending) R.string.import_uploading else R.string.import_start))
@@ -448,12 +486,17 @@ private fun Selection(state: ImportUiState, fmt: Fmt, actions: ImportActions) {
 }
 
 @Composable
-private fun Progress(job: ImportJob, fmt: Fmt) {
+private fun Progress(job: ImportJob, fmt: Fmt, session: SessionProgress? = null) {
     Column(Modifier.testTag("import-progress"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         val total = job.selectedRides
         val text = when {
             job.status == ImportJobStatus.QUEUED -> stringResource(R.string.import_queued)
+            session?.phase == SessionPhase.READING -> pluralStringResource(R.plurals.import_reading, session.found, fmt.num(session.found))
+            session?.phase == SessionPhase.WAITING -> stringResource(R.string.import_waiting)
             total == null -> stringResource(R.string.import_scanning)
+            session != null -> stringResource(
+                R.string.import_progress_batch_text, fmt.num(job.processedFiles), fmt.num(total), fmt.num(session.batch), fmt.num(session.batches),
+            )
             else -> stringResource(R.string.import_progress, fmt.num(job.processedFiles), fmt.num(total))
         }
         Text(text, style = MaterialTheme.typography.bodyMedium)
@@ -466,9 +509,29 @@ private fun Progress(job: ImportJob, fmt: Fmt) {
     }
 }
 
+/** Spec 014: Stop while it sends; Resume or Finish while it is paused. */
+@Composable
+private fun SessionControls(session: SessionProgress, actions: ImportActions) {
+    when (session.phase) {
+        SessionPhase.PAUSED -> Column(Modifier.testTag("import-paused"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ErrorBanner(stringResource(R.string.import_paused, session.pausedBy?.resolve().orEmpty()))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = actions.onResume, modifier = Modifier.testTag("import-resume")) { Text(stringResource(R.string.import_resume)) }
+                OutlinedButton(onClick = actions.onFinish, modifier = Modifier.testTag("import-finish")) { Text(stringResource(R.string.import_finish)) }
+            }
+        }
+        SessionPhase.SENDING, SessionPhase.WAITING -> OutlinedButton(
+            onClick = actions.onStop,
+            enabled = !session.stopping,
+            modifier = Modifier.testTag("import-stop"),
+        ) { Text(stringResource(if (session.stopping) R.string.import_stopping else R.string.import_stop)) }
+        else -> Unit
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Result(job: ImportJob, fmt: Fmt, actions: ImportActions) {
+private fun Result(job: ImportJob, fmt: Fmt, actions: ImportActions, notSent: Int = 0) {
     Column(Modifier.testTag("import-result"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (job.status == ImportJobStatus.COMPLETED) {
             Text(stringResource(R.string.import_completed), style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("import-completed"))
@@ -491,6 +554,13 @@ private fun Result(job: ImportJob, fmt: Fmt, actions: ImportActions) {
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag("import-range"),
+            )
+        }
+        if (notSent > 0) {
+            Text(
+                pluralStringResource(R.plurals.import_not_sent, notSent, fmt.num(notSent)),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag("import-not-sent"),
             )
         }
         val notImported = job.items.filter { it.status != ImportItemStatus.IMPORTED }

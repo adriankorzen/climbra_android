@@ -29,6 +29,7 @@ import app.climbra.android.session.SessionRepository
 import java.io.Closeable
 import java.time.Clock
 import java.io.File
+import kotlin.io.path.createTempDirectory
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlinx.coroutines.CoroutineScope
 import mockwebserver3.Dispatcher
@@ -109,7 +110,9 @@ class TestBackend(
         files: RideFileSource,
         changes: DataChanges = DataChanges(),
         pollMillis: Long = RideImport.POLL_MILLIS,
-    ) = RideImport(importApi, files, changes, session, scope, pollMillis)
+        cacheDir: File = createTempDirectory("ride-import").toFile(),
+        sleep: suspend (Long) -> Unit = { kotlinx.coroutines.delay(it) },
+    ) = RideImport(importApi, files, changes, session, scope, cacheDir, pollMillis = pollMillis, sleep = sleep)
 
     /** Queues answers for `"POST /api/auth/login"`; the last one repeats. */
     fun on(route: String, vararg responses: MockResponse) {

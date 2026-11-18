@@ -100,7 +100,7 @@ class RideImportTest {
         val version = changes.version.value
 
         val result = rideImport.start(5, chosen, "Europe/Warsaw")
-        assertTrue(result is ApiResult.Success)
+        assertEquals(StartResult.Started, result)
         rideImport.join()
 
         val request = backend.requests(startRoute).single()
@@ -152,7 +152,7 @@ class RideImportTest {
 
         val result = rideImport.start(5, chosen, "UTC")
 
-        assertEquals(ApiError.Http(409, "IMPORT_RUNNING"), (result as ApiResult.Failure).error)
+        assertEquals(ApiError.Http(409, "IMPORT_RUNNING"), (result as StartResult.Failed).error)
         assertNull(rideImport.job.value)
     }
 

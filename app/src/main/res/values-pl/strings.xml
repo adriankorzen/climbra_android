@@ -762,7 +762,6 @@
         <item quantity="other">%1$d pliku · %2$s MB</item>
     </plurals>
     <string name="import_unsupported">Pominięto nieobsługiwane pliki: %1$s</string>
-    <string name="import_over_limit">Duże eksporty (ponad 50 MB) importuje się na climbra.app.</string>
     <string name="import_queued">Import czeka w kolejce…</string>
     <string name="import_scanning">Czytanie plików…</string>
     <string name="import_progress">Importowanie jazd: %1$s z %2$s</string>
@@ -879,4 +878,30 @@
     <string name="api_error_captcha_failed">Nie potwierdziliśmy, że nie jesteś botem. Spróbuj ponownie.</string>
     <string name="api_error_email_limit_reached">Chwilowo nie możemy wysyłać e-maili. Spróbuj ponownie później albo użyj logowania przez Google.</string>
     <string name="api_error_email_domain_not_allowed">Nie można założyć konta na jednorazowy adres e-mail. Użyj innego adresu.</string>
+    <!-- Spec 014: duże eksporty jazd w paczkach (teksty weba) -->
+    <string name="import_large_hint">Ponad 50 MB: aplikacja przeczyta pliki na telefonie i wyśle ich jazdy w paczkach, jedna po drugiej. To może chwilę potrwać; import trwa też w tle.</string>
+    <plurals name="import_reading">
+        <item quantity="one">Czytanie plików… znaleziono %1$s plik jazdy</item>
+        <item quantity="few">Czytanie plików… znaleziono %1$s pliki jazd</item>
+        <item quantity="many">Czytanie plików… znaleziono %1$s plików jazd</item>
+        <item quantity="other">Czytanie plików… znaleziono %1$s pliku jazd</item>
+    </plurals>
+    <string name="import_progress_batch_text">Importowanie jazd: %1$s z %2$s · paczka %3$s z %4$s</string>
+    <string name="import_progress_batch">Importowanie jazd: %1$d z %2$d · paczka %3$d z %4$d</string>
+    <string name="import_waiting">Czekamy na wolne miejsce na serwerze…</string>
+    <string name="import_paused">Import wstrzymany: %1$s</string>
+    <string name="import_batch_failed">Serwer nie zaimportował paczki: %1$s</string>
+    <string name="import_resume">Wznów</string>
+    <string name="import_finish">Zakończ</string>
+    <string name="import_stop">Zatrzymaj</string>
+    <string name="import_stopping">Zatrzymanie po tej paczce…</string>
+    <plurals name="import_not_sent">
+        <item quantity="one">Niewysłane pliki: %1$s. Wybierz ten sam eksport ponownie, a zapisane już jazdy zostaną pominięte.</item>
+        <item quantity="few">Niewysłane pliki: %1$s. Wybierz ten sam eksport ponownie, a zapisane już jazdy zostaną pominięte.</item>
+        <item quantity="many">Niewysłane pliki: %1$s. Wybierz ten sam eksport ponownie, a zapisane już jazdy zostaną pominięte.</item>
+        <item quantity="other">Niewysłane pliki: %1$s. Wybierz ten sam eksport ponownie, a zapisane już jazdy zostaną pominięte.</item>
+    </plurals>
+    <string name="import_unreadable_file">Nie udało się odczytać pliku %1$s. Sprawdź, czy archiwum nie jest uszkodzone.</string>
+    <string name="import_no_ride_files">W wybranych plikach nie ma plików FIT ani TCX.</string>
+    <string name="import_channel">Import jazd</string>
 </resources>

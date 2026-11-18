@@ -1,6 +1,6 @@
 # 014: Importing large ride exports
 
-- **Status:** Draft
+- **Status:** Implemented
 - **Created:** 2026-11-18
 
 ## Problem
@@ -42,7 +42,9 @@ downloaded, the rider cannot import it.
 - **Reading** shows "Reading the files…" with the count of ride files found so far; an unreadable archive ends the
   import before anything is sent with "Could not read the file {name}. Check that the archive is not damaged.";
   no ride file at all → "There are no FIT or TCX files in the chosen files."
-- Entries are read from the content URIs as streams (`ZipInputStream`), nothing is unpacked to storage but the batch
+- The chosen files are read twice, both times as streams from the content URIs (`ZipInputStream`): a first walk finds
+  the ride files and divides them into batches, a second packs each batch while it goes; nothing is unpacked to
+  storage but the batch
   being sent (in the app's cache, deleted after it was sent).
 - **Sending**: batch after batch as above; each job polled as in spec 009; `DataChanges.changed()` after each batch
   that imported rides, so the training log fills while it runs.
@@ -65,7 +67,8 @@ Existing only: `POST /api/riders/{id}/imports` and `GET /api/imports/{id}?items=
 
 - The import screen of spec 009, Several rides: the progress with the batch, Stop, Pause with Resume / Finish, the
   "Files not sent" line.
-- A foreground service notification (channel "Ride imports") with progress and a Stop action.
+- A foreground service notification (channel "Ride imports") with the progress, the pause and the end; a tap opens
+  the import screen (Stop and Resume / Finish are on the screen).
 - Manifest: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`, `POST_NOTIFICATIONS`.
 
 ## Data and storage
@@ -77,18 +80,18 @@ Existing only: `POST /api/riders/{id}/imports` and `GET /api/imports/{id}?items=
 
 ## Acceptance criteria
 
-- [ ] AC1: Ride files are found loose, gzipped and in archives up to 3 deep; other entries are ignored and counted;
+- [x] AC1: Ride files are found loose, gzipped and in archives up to 3 deep; other entries are ignored and counted;
   files over 50 MB are rejected as too large.
-- [ ] AC2: Batches stay within 100 files, 40 MB packed and 200 MB raw; a batch that packs over 50 MB is split.
-- [ ] AC3: Batches are sent one after the other, each followed to its end; the progress names the batch.
-- [ ] AC4: `IMPORT_QUEUE_FULL` waits for `Retry-After` (at most 30 minutes in all), network errors are retried after
+- [x] AC2: Batches stay within 100 files, 40 MB packed and 200 MB raw; a batch that packs over 50 MB is split.
+- [x] AC3: Batches are sent one after the other, each followed to its end; the progress names the batch.
+- [x] AC4: `IMPORT_QUEUE_FULL` waits for `Retry-After` (at most 30 minutes in all), network errors are retried after
   5, 15 and 30 s, then the import pauses with Resume and Finish.
-- [ ] AC5: Outcomes of all batches are merged, an imported ride staying imported; the result counts them and names
+- [x] AC5: Outcomes of all batches are merged, an imported ride staying imported; the result counts them and names
   the files not sent.
-- [ ] AC6: Stop ends after the current batch; logout cancels.
-- [ ] AC7: The import runs in a foreground service with a progress notification that opens the screen.
-- [ ] AC8: Selections up to 50 MB still go as one job (spec 009); "Large exports are imported on climbra.app" is gone.
-- [ ] AC9: New strings exist in English and Polish; counted texts are plurals.
+- [x] AC6: Stop ends after the current batch; logout cancels.
+- [x] AC7: The import runs in a foreground service with a progress notification that opens the screen.
+- [x] AC8: Selections up to 50 MB still go as one job (spec 009); "Large exports are imported on climbra.app" is gone.
+- [x] AC9: New strings exist in English and Polish; counted texts are plurals.
 
 ## Open questions
 

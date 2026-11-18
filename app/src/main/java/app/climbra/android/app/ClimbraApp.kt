@@ -208,7 +208,9 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                         viewModel.garminSync.messages,
                     )
                 },
-                importRequests = remember(viewModel) { viewModel.sharedRideFiles.pending.filterNotNull().map { } },
+                importRequests = remember(viewModel) {
+                    merge(viewModel.sharedRideFiles.pending.filterNotNull().map { }, viewModel.sharedRideFiles.opens)
+                },
                 importNotices = viewModel.rideImport.notices,
             )
         },
