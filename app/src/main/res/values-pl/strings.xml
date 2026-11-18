@@ -809,4 +809,36 @@
     <string name="import_open_profile">Otwórz profil</string>
     <string name="api_error_import_running">Import już trwa. Poczekaj, aż się skończy.</string>
     <string name="api_error_import_queue_full">Serwer jest zajęty innymi importami, spróbuj za minutę.</string>
+    <!-- Spec 010: zgłoszenia (teksty weba) -->
+    <string name="feedback_title">Wyślij zgłoszenie</string>
+    <string name="feedback_open">Wyślij zgłoszenie</string>
+    <string name="feedback_intro">Napisz, co nie działa, co poprawić albo czego brakuje. Każda wiadomość trafia do autora aplikacji.</string>
+    <string name="feedback_name">Imię</string>
+    <string name="feedback_type">Rodzaj</string>
+    <string name="feedback_type_bug">Błąd</string>
+    <string name="feedback_type_improvement">Coś do poprawy</string>
+    <string name="feedback_type_suggestion">Sugestia</string>
+    <string name="feedback_type_other">Inne</string>
+    <string name="feedback_message">Wiadomość</string>
+    <string name="feedback_message_placeholder">Opisz, co się stało albo co proponujesz…</string>
+    <string name="feedback_chars">%1$d / %2$d</string>
+    <string name="feedback_required">Uzupełnij to pole.</string>
+    <string name="feedback_send">Wyślij</string>
+    <string name="feedback_sending">Wysyłanie…</string>
+    <string name="feedback_sent">Dziękujemy za zgłoszenie!</string>
+    <string name="feedback_too_many">Wysłałeś ostatnio dużo zgłoszeń. Spróbuj ponownie później.</string>
+    <!-- Spec 011: synchronizacja Garmin admina (teksty weba) -->
+    <string name="garmin_sync_title">Synchronizacja Garmin</string>
+    <string name="garmin_sync_intro">Pobiera Twoje nowe aktywności z Garmina (Personal API właściciela).</string>
+    <string name="garmin_sync_button">Synchronizuj z Garmin</string>
+    <string name="garmin_sync_syncing">Synchronizacja…</string>
+    <string name="garmin_sync_progress">Synchronizacja z Garmin…</string>
+    <plurals name="garmin_sync_imported">
+        <item quantity="one">Nowe aktywności z Garmina: %1$d</item>
+        <item quantity="few">Nowe aktywności z Garmina: %1$d</item>
+        <item quantity="many">Nowe aktywności z Garmina: %1$d</item>
+        <item quantity="other">Nowe aktywności z Garmina: %1$d</item>
+    </plurals>
+    <string name="garmin_sync_nothing_new">Brak nowych aktywności od %1$s</string>
+    <string name="garmin_sync_failed">Synchronizacja z Garmin nie powiodła się: %1$s</string>
 </resources>

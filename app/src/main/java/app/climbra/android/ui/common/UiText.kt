@@ -3,10 +3,11 @@ package app.climbra.android.ui.common
 import android.annotation.SuppressLint
 import android.content.res.Resources
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalResources
 import app.climbra.android.R
 import app.climbra.android.data.net.ApiError
+import app.climbra.android.ui.format.DateStyle
+import app.climbra.android.ui.format.Fmt
 
 /**
  * A translated message with its arguments, resolved in the UI in the current language; with [quantity], [res] is a
@@ -16,16 +17,24 @@ data class UiText(val res: Int, val args: List<Any> = emptyList(), val quantity:
     // A string, or with a quantity a plurals resource
     @SuppressLint("ResourceType")
     @Composable
-    fun resolve(): String =
-        if (quantity != null) pluralStringResource(res, quantity, *args.toTypedArray())
-        else stringResource(res, *args.toTypedArray())
+    fun resolve(): String = resolve(LocalResources.current)
 
-    /** Outside composition, e.g. for a snackbar. */
+    /** Outside composition, e.g. for a snackbar; an argument that is a [UiText] or a [DateArg] is resolved too. */
     @SuppressLint("ResourceType")
-    fun resolve(resources: Resources): String =
-        if (quantity != null) resources.getQuantityString(res, quantity, *args.toTypedArray())
-        else resources.getString(res, *args.toTypedArray())
+    fun resolve(resources: Resources): String {
+        val values = args.map { arg ->
+            when (arg) {
+                is UiText -> arg.resolve(resources)
+                is DateArg -> Fmt(resources.configuration.locales[0]).date(arg.iso, DateStyle.DAY_MONTH_YEAR)
+                else -> arg
+            }
+        }.toTypedArray()
+        return if (quantity != null) resources.getQuantityString(res, quantity, *values) else resources.getString(res, *values)
+    }
 }
+
+/** An ISO date as an argument of a [UiText], formatted in the app's language (spec 011). */
+data class DateArg(val iso: String)
 
 /** Backend error codes with a translated message, like `TRANSLATED_ERROR_CODES` of the web app. */
 val TRANSLATED_ERROR_CODES: Map<String, Int> = mapOf(

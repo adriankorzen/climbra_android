@@ -42,6 +42,7 @@ import app.climbra.android.calendar.WorkoutDetailRoute
 import java.time.LocalDate
 import app.climbra.android.dashboard.DashboardRoute
 import app.climbra.android.data.api.AccountResponse
+import app.climbra.android.profile.FeedbackRoute
 import app.climbra.android.profile.ProfileRoute
 import app.climbra.android.session.SessionRepository
 import app.climbra.android.session.SessionState
@@ -49,6 +50,7 @@ import app.climbra.android.shell.Shell
 import app.climbra.android.shell.ShellNavigator
 import app.climbra.android.coach.AdjustmentFormRoute
 import app.climbra.android.coach.CoachActivity
+import app.climbra.android.garmin.GarminSync
 import app.climbra.android.intervals.IntervalsSync
 import kotlinx.coroutines.flow.merge
 import app.climbra.android.coach.CoachListRoute
@@ -73,6 +75,7 @@ class AppViewModel @Inject constructor(
     val intervalsSync: IntervalsSync,
     val rideImport: RideImport,
     val sharedRideFiles: SharedRideFiles,
+    val garminSync: GarminSync,
 ) : ViewModel() {
 
     val state: StateFlow<SessionState> = session.state
@@ -129,7 +132,16 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                         onOpenProfile = nav::openProfile,
                     )
                 },
-                profile = { ProfileRoute(config = config) },
+                profile = { nav -> ProfileRoute(config = config, onOpenFeedback = nav::openFeedback) },
+                feedback = { nav ->
+                    FeedbackRoute(
+                        onBack = nav::back,
+                        onSent = {
+                            Toast.makeText(context, R.string.feedback_sent, Toast.LENGTH_SHORT).show()
+                            nav.back()
+                        },
+                    )
+                },
                 calendar = { nav ->
                     CalendarRoute(
                         config = config,
@@ -179,7 +191,12 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                 fileReview = { nav -> FileReviewRoute(config = config, onBack = nav::back, onAccepted = nav::replaceWithConversation) },
                 coachEvents = viewModel.coachActivity.events,
                 notices = remember(viewModel) {
-                    merge(viewModel.coachActivity.notices, viewModel.intervalsSync.messages, viewModel.sharedRideFiles.notices)
+                    merge(
+                        viewModel.coachActivity.notices,
+                        viewModel.intervalsSync.messages,
+                        viewModel.sharedRideFiles.notices,
+                        viewModel.garminSync.messages,
+                    )
                 },
                 importRequests = remember(viewModel) { viewModel.sharedRideFiles.pending.filterNotNull().map { } },
                 importNotices = viewModel.rideImport.notices,

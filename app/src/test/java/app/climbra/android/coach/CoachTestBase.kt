@@ -46,6 +46,9 @@ abstract class CoachTestBase {
     fun tearDownCoach() {
         viewModels.forEach { it.viewModelScope.cancel() }
         scope.cancel()
+        // A call still on OkHttp's threads resumes on Main when it answers: let it, before Main is reset
+        val end = System.currentTimeMillis() + 2_000
+        while (backend.client.dispatcher.runningCallsCount() > 0 && System.currentTimeMillis() < end) Thread.sleep(10)
         Dispatchers.resetMain()
         backend.close()
     }

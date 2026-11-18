@@ -82,6 +82,8 @@ them under "Backend dependencies" by number.
 - Ride import (spec 009): `activities.RideImport` follows the import job of several files, app-scoped; files shared
   from other apps reach `MainActivity` (`singleTask`, intent filters for ride MIME types) and wait in
   `activities.SharedRideFiles` until the shell opens the import screen.
+- Garmin sync (spec 011): `garmin.GarminSync`, app-scoped, admins only (`AccountResponse.role`); a pull to refresh
+  starts it next to `IntervalsSync` (the screens' `pullSync`), its `GarminApi` has a 120 s read timeout.
 - Packages by feature (`auth`, `profile`, `shell`, `dashboard`, `activities`, `calendar`, `coach`, …) plus `data/` (network, DTOs),
   `session/` and `ui/` (theme, shared components).
 - Theme (`ui.theme`): Material 3 colors from the web tokens in `../cyclingapp/frontend/src/styles.scss` (light + dark),

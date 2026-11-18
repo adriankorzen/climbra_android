@@ -530,6 +530,22 @@ internal fun GarminCard(state: ProfileUiState, fmt: Fmt, actions: ProfileActions
 // Account
 
 @Composable
+internal fun GarminSyncCard(state: ProfileUiState, actions: ProfileActions) {
+    if (state.account?.role != "ADMIN" || state.rider == null) return
+    ProfileCard(stringResource(R.string.garmin_sync_title), "profile-garmin-sync") {
+        Faint(stringResource(R.string.garmin_sync_intro))
+        Button(onClick = actions::syncGarmin, enabled = !state.garminSyncing, modifier = Modifier.testTag("garmin-sync")) {
+            Icon(painterResource(R.drawable.ic_sync), contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(
+                stringResource(if (state.garminSyncing) R.string.garmin_sync_syncing else R.string.garmin_sync_button),
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+    }
+}
+
+/** The account (spec 004), with the feedback form (spec 010). */
+@Composable
 internal fun AccountCard(state: ProfileUiState, fmt: Fmt, actions: ProfileActions) {
     val account = state.account ?: return
     ProfileCard(stringResource(R.string.account_title), "profile-account") {
@@ -565,6 +581,13 @@ internal fun AccountCard(state: ProfileUiState, fmt: Fmt, actions: ProfileAction
             TextButton(onClick = actions::openPrivacy, modifier = Modifier.testTag("account-privacy")) {
                 Text(stringResource(R.string.terms_open_privacy))
             }
+        }
+
+        // Spec 010
+        Text(stringResource(R.string.feedback_title), style = MaterialTheme.typography.titleSmall)
+        OutlinedButton(onClick = actions::openFeedback, modifier = Modifier.testTag("account-feedback")) {
+            Icon(painterResource(R.drawable.ic_feedback), contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(stringResource(R.string.feedback_open), modifier = Modifier.padding(start = 8.dp))
         }
 
         Text(stringResource(R.string.delete_account_title), style = MaterialTheme.typography.titleSmall)

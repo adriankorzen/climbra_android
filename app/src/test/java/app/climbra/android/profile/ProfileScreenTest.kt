@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
@@ -122,6 +123,8 @@ class ProfileScreenTest {
         override fun openDeleteAccount() { calls += "openDeleteAccount" }
         override fun deleteAccount() { calls += "deleteAccount" }
         override fun logout() { calls += "logout" }
+        override fun openFeedback() { calls += "openFeedback" }
+        override fun syncGarmin() { calls += "syncGarmin" }
     }
 
     private val actions = Recorder()
@@ -456,5 +459,30 @@ class ProfileScreenTest {
 
         scrolled("profile-logout").performClick()
         assertEquals(listOf("logout"), actions.calls)
+    }
+
+    // Spec 010 AC1: the account card opens the feedback form
+    @Test
+    fun theAccountCardOpensTheFeedbackForm() {
+        show(ready)
+
+        scrolled("account-feedback").performClick()
+
+        assertEquals(listOf("openFeedback"), actions.calls)
+    }
+
+    // Spec 011 AC1, AC2: only an admin sees the Garmin sync; it waits while it runs
+    @Test
+    fun onlyAnAdminSeesTheGarminSync() {
+        var state by mutableStateOf(ready)
+        compose.setContent { ClimbraTheme(darkTheme = false) { ProfileScreen(state, polish, today, actions) } }
+        tag("profile-garmin-sync").assertDoesNotExist()
+
+        state = ready.copy(account = account.copy(role = "ADMIN"))
+        scrolled("garmin-sync").assertIsEnabled().performClick()
+        assertEquals(listOf("syncGarmin"), actions.calls)
+
+        state = state.copy(garminSyncing = true)
+        scrolled("garmin-sync").assertIsNotEnabled()
     }
 }

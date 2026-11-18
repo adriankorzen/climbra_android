@@ -79,9 +79,11 @@ class ProfileViewModelTest {
         clock,
         backend.quotas(session, scope),
         sync,
+        garminSync,
     ).apply { zone = { ZoneId.of("Europe/Warsaw") } }
 
     private val sync by lazy { backend.intervalsSync(session, scope, changes, clock) }
+    private val garminSync by lazy { backend.garminSync(session, scope, changes, clock) }
 
     /** Nothing loading or running (the backend answers on OkHttp's threads, so states are awaited). */
     private suspend fun ProfileViewModel.settled() = state.first { s ->

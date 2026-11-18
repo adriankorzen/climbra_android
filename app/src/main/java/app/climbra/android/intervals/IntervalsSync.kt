@@ -37,6 +37,8 @@ data class SyncState(
     /** Rides of the job done so far, of [total] once the backend knows them. */
     val processed: Int = 0,
     val total: Int? = null,
+    /** The admin's Garmin sync runs (spec 011), shown with this one. */
+    val garminRunning: Boolean = false,
     /** The rider has a connection; `null` until read. */
     val connected: Boolean? = null,
 )

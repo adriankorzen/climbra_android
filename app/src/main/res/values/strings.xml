@@ -804,4 +804,34 @@
     <string name="import_open_profile">Open profile</string>
     <string name="api_error_import_running">An import is already running. Wait until it ends.</string>
     <string name="api_error_import_queue_full">The server is busy with other imports, try again in a minute.</string>
+    <!-- Spec 010: feedback (the web's texts) -->
+    <string name="feedback_title">Send feedback</string>
+    <string name="feedback_open">Send feedback</string>
+    <string name="feedback_intro">Tell us what doesn\'t work, what to improve or what is missing. Every message goes to the author of the app.</string>
+    <string name="feedback_name">Name</string>
+    <string name="feedback_type">Type</string>
+    <string name="feedback_type_bug">Bug</string>
+    <string name="feedback_type_improvement">Something to improve</string>
+    <string name="feedback_type_suggestion">Suggestion</string>
+    <string name="feedback_type_other">Other</string>
+    <string name="feedback_message">Message</string>
+    <string name="feedback_message_placeholder">Describe what happened or what you suggest…</string>
+    <string name="feedback_chars">%1$d / %2$d</string>
+    <string name="feedback_required">Fill in this field.</string>
+    <string name="feedback_send">Send</string>
+    <string name="feedback_sending">Sending…</string>
+    <string name="feedback_sent">Thank you for your feedback!</string>
+    <string name="feedback_too_many">You have sent a lot of feedback lately. Try again later.</string>
+    <!-- Spec 011: the admin's Garmin sync (the web's texts) -->
+    <string name="garmin_sync_title">Garmin sync</string>
+    <string name="garmin_sync_intro">Fetches your new activities from Garmin (Personal API of the owner).</string>
+    <string name="garmin_sync_button">Sync from Garmin</string>
+    <string name="garmin_sync_syncing">Syncing…</string>
+    <string name="garmin_sync_progress">Syncing from Garmin…</string>
+    <plurals name="garmin_sync_imported">
+        <item quantity="one">New activities from Garmin: %1$d</item>
+        <item quantity="other">New activities from Garmin: %1$d</item>
+    </plurals>
+    <string name="garmin_sync_nothing_new">No new activities since %1$s</string>
+    <string name="garmin_sync_failed">Garmin sync failed: %1$s</string>
 </resources>

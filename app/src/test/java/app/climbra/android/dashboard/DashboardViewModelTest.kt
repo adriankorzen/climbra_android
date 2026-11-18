@@ -61,9 +61,10 @@ class DashboardViewModelTest {
     private val session by lazy { backend.session(scope) }
     private val coach by lazy { backend.coachActivity(session, scope) }
     private val sync by lazy { backend.intervalsSync(session, scope, changes, clock, pollMillis = 10) }
+    private val garminSync by lazy { backend.garminSync(session, scope, changes, clock) }
 
     private fun viewModel(deviceZone: String = "Europe/Warsaw") =
-        DashboardViewModel(RiderRepository(backend.riderApi) { deviceZone }, backend.riderApi, clock, changes, backend.coachApi, coach, sync)
+        DashboardViewModel(RiderRepository(backend.riderApi) { deviceZone }, backend.riderApi, clock, changes, backend.coachApi, coach, sync, garminSync)
 
     private suspend fun DashboardViewModel.settled() = state.first { !it.loading && !it.refreshing }
 
@@ -138,7 +139,7 @@ class DashboardViewModelTest {
                 other.on("GET /api/riders/5/training-load", json(trainingLoad(form.name)))
                 other.on("GET /api/riders/5/analyses", json("[${ride(1, "2026-11-06")}]"))
                 runTest(dispatcher) {
-                    val viewModel = DashboardViewModel(RiderRepository(other.riderApi) { "Europe/Warsaw" }, other.riderApi, clock, DataChanges(), other.coachApi, other.coachActivity(other.session(scope), scope), other.intervalsSync(other.session(scope), scope))
+                    val viewModel = DashboardViewModel(RiderRepository(other.riderApi) { "Europe/Warsaw" }, other.riderApi, clock, DataChanges(), other.coachApi, other.coachActivity(other.session(scope), scope), other.intervalsSync(other.session(scope), scope), other.garminSync(other.session(scope), scope))
                     assertEquals(form, viewModel.settled().load!!.fitness.form)
                 }
             }

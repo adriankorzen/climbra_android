@@ -44,6 +44,8 @@ class ActivitiesViewModelTest {
 
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val sync by lazy { backend.intervalsSync(backend.session(scope), scope, changes, clock, pollMillis = 10) }
+    private val garminSession by lazy { backend.session(scope) }
+    private val garminSync by lazy { backend.garminSync(garminSession, scope, changes, clock) }
 
     @After
     fun tearDown() {
@@ -53,7 +55,7 @@ class ActivitiesViewModelTest {
     }
 
     private fun viewModel() =
-        ActivitiesViewModel(RiderRepository(backend.riderApi) { "Europe/Warsaw" }, backend.activityApi, changes, clock, sync)
+        ActivitiesViewModel(RiderRepository(backend.riderApi) { "Europe/Warsaw" }, backend.activityApi, changes, clock, sync, garminSync)
 
     private suspend fun ActivitiesViewModel.settled() = state.first { !it.loading && !it.loadingMore && !it.refreshing }
 
@@ -185,7 +187,7 @@ class ActivitiesViewModelTest {
         TestBackend().use { other ->
             other.on("GET /api/riders", json(rider))
             other.on("GET /api/riders/5/rides", problem(503, null))
-            val failing = ActivitiesViewModel(RiderRepository(other.riderApi) { "Europe/Warsaw" }, other.activityApi, changes, clock, other.intervalsSync(other.session(scope), scope))
+            val failing = ActivitiesViewModel(RiderRepository(other.riderApi) { "Europe/Warsaw" }, other.activityApi, changes, clock, other.intervalsSync(other.session(scope), scope), other.garminSync(other.session(scope), scope))
             assertEquals(app.climbra.android.data.net.ApiError.Http(503, null), failing.settled().error)
         }
     }
@@ -255,5 +257,36 @@ class ActivitiesViewModelTest {
         val end = System.currentTimeMillis() + 5_000
         while (!check() && System.currentTimeMillis() < end) withContext(Dispatchers.IO) { Thread.sleep(20) }
         assertTrue(check())
+    }
+
+    // Spec 011 AC1, AC4: an admin's pull also syncs Garmin; others' does not
+    @Test
+    fun anAdminsPullSyncsGarminToo() = runTest(dispatcher) {
+        backend.on("GET /api/riders", json(rider))
+        backend.on("GET /api/riders/5/rides", page(1..2, 2))
+        backend.on("GET /api/riders/5/intervals", json("""{"connected":false}"""))
+        backend.on("POST /api/riders/5/garmin/sync", json("""{"since":"2026-11-01","fetched":1,"imported":1}"""))
+        backend.on("POST /api/auth/login", json(TestBackend.account(role = "USER"), 200, TestBackend.SESSION_COOKIE))
+        garminSession.login("anna@example.com", "correct-horse-1")
+        val viewModel = viewModel()
+        viewModel.settled()
+
+        viewModel.refresh()
+        viewModel.settled()
+        garminSync.join()
+        assertEquals(0, backend.requests("POST /api/riders/5/garmin/sync").size)
+
+        backend.replace("POST /api/auth/login", json(TestBackend.account(role = "ADMIN"), 200, TestBackend.SESSION_COOKIE))
+        garminSession.login("anna@example.com", "correct-horse-1")
+        viewModel.refresh()
+        waitFor { backend.requests("POST /api/riders/5/garmin/sync").isNotEmpty() }
+        garminSync.join()
+        assertEquals(1, backend.requests("POST /api/riders/5/garmin/sync").size)
+        // The new activity loads at once
+        waitFor {
+            val paths = backend.requests.map { "${it.method} ${it.url.encodedPath}" }
+            paths.lastIndexOf("GET /api/riders/5/rides") > paths.lastIndexOf("POST /api/riders/5/garmin/sync")
+        }
+        viewModel.settled()
     }
 }

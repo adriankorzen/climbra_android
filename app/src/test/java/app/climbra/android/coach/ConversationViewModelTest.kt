@@ -202,6 +202,8 @@ class ConversationViewModelTest : CoachTestBase() {
         viewModel.retry()
         viewModel.state.first { it.busy }
         assertEquals(1, count("POST /api/coach/conversations/12/retry"))
+        // Joins the credits' reload the retry started: nothing is left running when the test ends
+        quotas.reload()
     }
 
     // AC7: no credits or another request running: no retry

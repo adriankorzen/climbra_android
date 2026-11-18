@@ -81,14 +81,16 @@ interface ProfileActions {
     fun deleteAccount() {}
     fun logout() {}
     fun messageShown() {}
+    fun openFeedback() {}
+    fun syncGarmin() {}
 }
 
 @Composable
-fun ProfileRoute(config: AppConfig, viewModel: ProfileViewModel = hiltViewModel()) {
+fun ProfileRoute(config: AppConfig, onOpenFeedback: () -> Unit = {}, viewModel: ProfileViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResumed() }
-    val actions = remember(viewModel, config, context) {
+    val actions = remember(viewModel, config, context, onOpenFeedback) {
         object : ProfileActions {
             override fun refresh() = viewModel.refresh()
             override fun retry(section: ProfileSection) = viewModel.retry(section)
@@ -121,6 +123,8 @@ fun ProfileRoute(config: AppConfig, viewModel: ProfileViewModel = hiltViewModel(
             override fun deleteAccount() = viewModel.deleteAccount()
             override fun logout() = viewModel.logout()
             override fun messageShown() = viewModel.messageShown()
+            override fun openFeedback() = onOpenFeedback()
+            override fun syncGarmin() = viewModel.syncGarmin()
         }
     }
     ProfileScreen(state = state, fmt = rememberFmt(), today = viewModel.today(), actions = actions)
@@ -173,6 +177,7 @@ fun ProfileScreen(state: ProfileUiState, fmt: Fmt, today: LocalDate, actions: Pr
                         IntervalsCard(state, fmt, actions)
                         GarminCard(state, fmt, actions)
                     }
+                    GarminSyncCard(state, actions)
                     AccountCard(state, fmt, actions)
                     OutlinedButton(onClick = actions::logout, modifier = Modifier.testTag("profile-logout")) {
                         Icon(painterResource(R.drawable.ic_logout), contentDescription = null, modifier = Modifier.size(18.dp))

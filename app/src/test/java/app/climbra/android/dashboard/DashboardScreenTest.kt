@@ -252,6 +252,12 @@ class DashboardScreenTest {
 
         sync = SyncState(running = true, processed = 2, total = 5)
         compose.onNodeWithText("Syncing with intervals.icu… 2 of 5").assertIsDisplayed()
+
+        // Spec 011 AC5: the admin's Garmin sync shows with it
+        sync = SyncState(garminRunning = true)
+        compose.onNodeWithTag("sync-progress").assertDoesNotExist()
+        compose.onNodeWithTag("garmin-sync-progress").assertIsDisplayed()
+        compose.onNodeWithText("Syncing from Garmin…").assertIsDisplayed()
     }
 
     // Spec 007: with intervals.icu connected the empty state tells to pull

@@ -19,6 +19,7 @@ import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
+import app.climbra.android.garmin.GarminSync
 import app.climbra.android.intervals.IntervalsSync
 import app.climbra.android.intervals.SyncOrigin
 import app.climbra.android.rider.DataChanges
@@ -69,6 +70,8 @@ data class ProfileUiState(
     /** The account has no rider profile yet: the rider form creates it. */
     val noRider: Boolean = false,
     val account: AccountResponse? = null,
+    /** The admin's Garmin sync runs (spec 011). */
+    val garminSyncing: Boolean = false,
     val theme: ThemeMode = ThemeMode.SYSTEM,
     val thresholds: Section<List<ThresholdEntry>> = Section(),
     val zones: Section<Zones> = Section(),
@@ -110,6 +113,7 @@ class ProfileViewModel @Inject constructor(
     private val clock: Clock,
     private val quotas: CoachQuotaRepository,
     private val sync: IntervalsSync,
+    private val garminSync: GarminSync,
 ) : ViewModel() {
 
     /** The device's zone decides "today" for the date picker; the backend's rider zone follows it (spec 002). */
@@ -132,6 +136,9 @@ class ProfileViewModel @Inject constructor(
         }
         viewModelScope.launch {
             themeSettings.mode.collect { mode -> mutableState.update { it.copy(theme = mode) } }
+        }
+        viewModelScope.launch {
+            garminSync.running.collect { running -> mutableState.update { it.copy(garminSyncing = running) } }
         }
         // The app's one sync (spec 007): "Sync now" shows it whoever started it; when it ends the status reloads
         viewModelScope.launch {
@@ -496,6 +503,12 @@ class ProfileViewModel @Inject constructor(
      * "Sync now": the app's one sync (spec 007), followed in the app scope whichever screen is shown; its messages go
      * to the shell's snackbar, and the status reloads when it ends.
      */
+    /** The admin's Garmin sync (spec 011). */
+    fun syncGarmin() {
+        val riderId = state.value.rider?.id ?: return
+        garminSync.sync(riderId, SyncOrigin.BUTTON)
+    }
+
     fun syncIntervals() {
         val riderId = state.value.rider?.id ?: return
         sync.sync(riderId, SyncOrigin.BUTTON)

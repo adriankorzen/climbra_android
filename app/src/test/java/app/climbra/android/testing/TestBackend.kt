@@ -9,6 +9,9 @@ import app.climbra.android.activities.RideImport
 import app.climbra.android.coach.RideFileSource
 import app.climbra.android.data.api.CoachApi
 import app.climbra.android.data.api.ImportApi
+import app.climbra.android.data.api.GarminApi
+import app.climbra.android.data.api.FeedbackApi
+import app.climbra.android.garmin.GarminSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import app.climbra.android.data.api.ProfileApi
@@ -60,6 +63,8 @@ class TestBackend(
     val calendarApi: CalendarApi = retrofit.create(CalendarApi::class.java)
     val coachApi: CoachApi = retrofit.create(CoachApi::class.java)
     val importApi: ImportApi = retrofit.create(ImportApi::class.java)
+    val garminApi: GarminApi = retrofit.create(GarminApi::class.java)
+    val feedbackApi: FeedbackApi = retrofit.create(FeedbackApi::class.java)
     val locales = FakeAppLocales()
 
     /** Requests in the order they arrived. */
@@ -88,6 +93,14 @@ class TestBackend(
         clock: Clock = Clock.systemUTC(),
         pollMillis: Long = IntervalsSync.POLL_MILLIS,
     ) = IntervalsSync(profileApi, changes, clock, session, scope, pollMillis)
+
+    /** The admin's Garmin sync (spec 011). */
+    fun garminSync(
+        session: SessionRepository,
+        scope: CoroutineScope,
+        changes: DataChanges = DataChanges(),
+        clock: Clock = Clock.systemUTC(),
+    ) = GarminSync(garminApi, changes, clock, session, scope)
 
     /** The app's import of several rides (spec 009). */
     fun rideImport(

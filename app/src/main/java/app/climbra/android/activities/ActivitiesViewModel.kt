@@ -10,6 +10,7 @@ import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
+import app.climbra.android.garmin.GarminSync
 import app.climbra.android.intervals.IntervalsSync
 import app.climbra.android.intervals.SyncOrigin
 import app.climbra.android.intervals.SyncState
@@ -28,6 +29,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** Period presets of the training log, as the web's `RANGE_PRESETS`; [days] counts today. */
@@ -73,13 +78,15 @@ class ActivitiesViewModel @Inject constructor(
     private val changes: DataChanges,
     private val clock: Clock,
     private val intervalsSync: IntervalsSync,
+    private val garminSync: GarminSync,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(ActivitiesUiState(period = Period.of(RangePreset.FOUR_WEEKS, today())))
     val state: StateFlow<ActivitiesUiState> = mutableState.asStateFlow()
 
     /** The app's intervals.icu sync (spec 007), shown above the list while it runs. */
-    val sync: StateFlow<SyncState> = intervalsSync.state
+    val sync: StateFlow<SyncState> = combine(intervalsSync.state, garminSync.running) { sync, garmin -> sync.copy(garminRunning = garmin) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, intervalsSync.state.value)
 
     /** A pull waits for the rider of its reload before it starts a sync. */
     private var syncAfterLoad = false
@@ -95,7 +102,7 @@ class ActivitiesViewModel @Inject constructor(
     init {
         reload()
         // A sync brought rides: they show at once, also while the list is shown
-        viewModelScope.launch { intervalsSync.imported.drop(1).collect { reload() } }
+        viewModelScope.launch { merge(intervalsSync.imported.drop(1), garminSync.imported.drop(1)).collect { reload() } }
     }
 
     fun selectPreset(preset: RangePreset) {
@@ -158,7 +165,7 @@ class ActivitiesViewModel @Inject constructor(
             }
             if (syncAfterLoad) {
                 syncAfterLoad = false
-                intervalsSync.sync(rider.id, SyncOrigin.PULL)
+                pullSync(rider.id)
             }
             loadedVersion = changes.version.value
             val result = apiCall(Network.json) {
@@ -193,6 +200,12 @@ class ActivitiesViewModel @Inject constructor(
 
     // LocalDate.ofInstant needs API 34; the app supports API 29
     private fun today(): LocalDate = clock.instant().atZone(ZoneId.systemDefault()).toLocalDate()
+
+    /** A pull syncs intervals.icu (spec 007) and, for an admin, Garmin (spec 011). */
+    private fun pullSync(riderId: Long) {
+        intervalsSync.sync(riderId, SyncOrigin.PULL)
+        garminSync.sync(riderId, SyncOrigin.PULL)
+    }
 
     companion object {
         const val PAGE_SIZE = 50

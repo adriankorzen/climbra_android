@@ -131,6 +131,10 @@ data object ProfileGraph
 @Serializable
 data object ProfileRoute
 
+/** The feedback form (spec 010). */
+@Serializable
+data object ProfileFeedbackRoute
+
 /** Top-level destinations; the web app's sidebar / tab bar (spec 002 of cyclingapp) as a bottom navigation bar. */
 enum class TopLevelDestination(
     val graph: Any,
@@ -182,6 +186,11 @@ class ShellNavigator internal constructor(private val nav: NavController) {
     fun openActivities() = nav.openTab(TopLevelDestination.ACTIVITIES)
 
     fun openProfile() = nav.openTab(TopLevelDestination.PROFILE)
+
+    /** The feedback form on the profile's stack (spec 010). */
+    fun openFeedback() {
+        nav.navigate(ProfileFeedbackRoute) { launchSingleTop = true }
+    }
 
     /** The import screen on the training log's stack (spec 009); shown already, it stays as it is. */
     fun openImport() {
@@ -264,7 +273,7 @@ private fun NavDestination.tab(): TopLevelDestination? =
 fun Shell(
     dashboard: @Composable (ShellNavigator) -> Unit,
     activities: @Composable (ShellNavigator) -> Unit,
-    profile: @Composable () -> Unit,
+    profile: @Composable (ShellNavigator) -> Unit,
     calendar: @Composable (ShellNavigator) -> Unit = {},
     workout: @Composable (ShellNavigator) -> Unit = {},
     ride: @Composable (ShellNavigator) -> Unit = {},
@@ -274,6 +283,7 @@ fun Shell(
     fileReview: @Composable (ShellNavigator) -> Unit = {},
     adjustment: @Composable (ShellNavigator) -> Unit = {},
     rideImport: @Composable (ShellNavigator) -> Unit = {},
+    feedback: @Composable (ShellNavigator) -> Unit = {},
     coachEvents: Flow<CoachFinished> = emptyFlow(),
     notices: Flow<UiText> = emptyFlow(),
     /** Shared files wait for the import screen (spec 009). */
@@ -364,7 +374,8 @@ fun Shell(
                 composable<CoachAdjustmentRoute> { Screen { adjustment(navigator) } }
             }
             navigation<ProfileGraph>(startDestination = ProfileRoute) {
-                composable<ProfileRoute> { Screen { profile() } }
+                composable<ProfileRoute> { Screen { profile(navigator) } }
+                composable<ProfileFeedbackRoute> { Screen { feedback(navigator) } }
             }
         }
     }

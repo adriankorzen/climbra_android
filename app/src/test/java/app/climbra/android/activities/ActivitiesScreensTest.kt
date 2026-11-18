@@ -439,5 +439,9 @@ class ActivitiesScreensTest {
 
         sync = SyncState()
         compose.onNodeWithTag("sync-progress").assertDoesNotExist()
+
+        // Spec 011 AC5
+        sync = SyncState(garminRunning = true)
+        compose.onNodeWithTag("garmin-sync-progress").assertIsDisplayed()
     }
 }

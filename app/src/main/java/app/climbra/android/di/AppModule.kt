@@ -11,7 +11,10 @@ import app.climbra.android.data.api.CoachApi
 import app.climbra.android.activities.RideImport
 import app.climbra.android.activities.SharedRideFiles
 import app.climbra.android.coach.CoachActivity
+import app.climbra.android.data.api.FeedbackApi
 import app.climbra.android.data.api.ImportApi
+import app.climbra.android.data.api.GarminApi
+import app.climbra.android.garmin.GarminSync
 import app.climbra.android.coach.CoachQuotaRepository
 import app.climbra.android.coach.ContentResolverFileSource
 import app.climbra.android.coach.RideFileSource
@@ -43,6 +46,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.io.File
 import java.time.Clock
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -196,4 +200,25 @@ object AppModule {
     @Provides
     @Singleton
     fun sharedRideFiles(): SharedRideFiles = SharedRideFiles()
+
+    @Provides
+    @Singleton
+    fun feedbackApi(retrofit: Retrofit): FeedbackApi = retrofit.create(FeedbackApi::class.java)
+
+    /** The Garmin sync answers when it is done: a longer read timeout for it alone (spec 011). */
+    @Provides
+    @Singleton
+    fun garminApi(config: AppConfig, client: OkHttpClient): GarminApi =
+        Network.retrofit(config.apiBaseUrl, client.newBuilder().readTimeout(120, TimeUnit.SECONDS).build())
+            .create(GarminApi::class.java)
+
+    @Provides
+    @Singleton
+    fun garminSync(
+        api: GarminApi,
+        changes: DataChanges,
+        clock: Clock,
+        session: SessionRepository,
+        scope: CoroutineScope,
+    ): GarminSync = GarminSync(api, changes, clock, session, scope)
 }

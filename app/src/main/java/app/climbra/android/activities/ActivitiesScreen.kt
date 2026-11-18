@@ -64,6 +64,7 @@ import app.climbra.android.R
 import app.climbra.android.dashboard.emptyHint
 import app.climbra.android.intervals.SyncProgress
 import app.climbra.android.intervals.SyncState
+import app.climbra.android.intervals.shown
 import app.climbra.android.data.api.RideRow
 import app.climbra.android.ui.common.ErrorBanner
 import app.climbra.android.ui.common.openWebPage
@@ -151,7 +152,7 @@ fun ActivitiesScreen(
                     }
                 }
             }
-            if (sync.running) {
+            if (sync.shown) {
                 item(key = "sync") { SyncProgress(sync, fmt) }
             }
             item(key = "filters") {

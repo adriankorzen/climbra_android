@@ -12,6 +12,7 @@ import app.climbra.android.data.api.TrainingLoadResponse
 import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
+import app.climbra.android.garmin.GarminSync
 import app.climbra.android.intervals.IntervalsSync
 import app.climbra.android.intervals.SyncOrigin
 import app.climbra.android.intervals.SyncState
@@ -30,6 +31,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** Visible days of the performance management chart, as on the web. */
@@ -73,13 +78,15 @@ class DashboardViewModel @Inject constructor(
     private val coachApi: CoachApi,
     coachActivity: CoachActivity,
     private val intervalsSync: IntervalsSync,
+    private val garminSync: GarminSync,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(DashboardUiState())
     val state: StateFlow<DashboardUiState> = mutableState.asStateFlow()
 
     /** The app's intervals.icu sync (spec 007), shown above the content while it runs. */
-    val sync: StateFlow<SyncState> = intervalsSync.state
+    val sync: StateFlow<SyncState> = combine(intervalsSync.state, garminSync.running) { sync, garmin -> sync.copy(garminRunning = garmin) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, intervalsSync.state.value)
 
     private var loadJob: Job? = null
     private var loadedAt: Instant? = null
@@ -92,7 +99,7 @@ class DashboardViewModel @Inject constructor(
         // A sync brought rides: they show at once, also while the dashboard is shown
         // (a load still running may predate the import, so it starts again)
         viewModelScope.launch {
-            intervalsSync.imported.drop(1).collect {
+            merge(intervalsSync.imported.drop(1), garminSync.imported.drop(1)).collect {
                 loadJob?.cancel()
                 load()
             }
@@ -128,7 +135,7 @@ class DashboardViewModel @Inject constructor(
 
     private fun load(pull: Boolean = false) {
         if (loadJob?.isActive == true) {
-            if (pull) state.value.rider?.let { intervalsSync.sync(it.id, SyncOrigin.PULL) }
+            if (pull) state.value.rider?.let { pullSync(it.id) }
             return
         }
         mutableState.update { it.copy(refreshing = !it.loading, failed = false) }
@@ -146,7 +153,7 @@ class DashboardViewModel @Inject constructor(
             is ApiResult.Failure -> return { it.copy(failed = true) }
             is ApiResult.Success -> result.value ?: return { DashboardUiState(noRider = true, range = it.range) }
         }
-        if (pull) intervalsSync.sync(rider.id, SyncOrigin.PULL)
+        if (pull) pullSync(rider.id)
         val (load, rides, conversations) = coroutineScope {
             val load = async { call { api.trainingLoad(rider.id, PMC_RANGES.last(), WEEKS) } }
             val rides = async { call { api.latestAnalyses(rider.id, RECENT_RIDES) } }
@@ -171,6 +178,12 @@ class DashboardViewModel @Inject constructor(
     }
 
     private suspend fun <T> call(request: suspend () -> T) = apiCall(Network.json, request)
+
+    /** A pull syncs intervals.icu (spec 007) and, for an admin, Garmin (spec 011). */
+    private fun pullSync(riderId: Long) {
+        intervalsSync.sync(riderId, SyncOrigin.PULL)
+        garminSync.sync(riderId, SyncOrigin.PULL)
+    }
 
     companion object {
         const val WEEKS = 12
