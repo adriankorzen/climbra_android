@@ -19,6 +19,7 @@ import app.climbra.android.rider.RiderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -31,10 +32,22 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/** The calendar's views (spec 015): one week, or the whole weeks covering a month. */
+enum class CalendarMode { WEEK, MONTH }
+
+/** The whole weeks (Monday to Sunday) covering [month], as the web's `monthRange`. */
+fun monthRange(month: YearMonth): Pair<LocalDate, LocalDate> =
+    mondayOf(month.atDay(1)) to mondayOf(month.atEndOfMonth()).plusDays(6)
+
 data class CalendarUiState(
+    val mode: CalendarMode = CalendarMode.WEEK,
+    /** The rider chose the view: the window's width no longer decides it. */
+    val modeChosen: Boolean = false,
     /** Monday of the week shown. */
     val week: LocalDate,
     val today: LocalDate,
+    /** The month of the month view (spec 015). */
+    val month: YearMonth = YearMonth.from(week.plusDays(3)),
     val loading: Boolean = true,
     val refreshing: Boolean = false,
     val error: ApiError? = null,
@@ -54,6 +67,16 @@ data class CalendarUiState(
 
     /** The week's totals and plan week (cyclingapp spec 054). */
     val figures: CalendarWeek? get() = data?.weeks?.firstOrNull { it.start == week.toString() }
+
+    /** The month view's weeks (spec 015): days outside [month] are marked by the screen. */
+    val monthWeeks: List<List<CalendarDay>>
+        get() {
+            val (first, last) = monthRange(month)
+            return generateSequence(first) { it.plusWeeks(1) }.takeWhile { !it.isAfter(last) }
+                .map { calendarDays(it, data, today) }.toList()
+        }
+
+    fun figuresOf(monday: LocalDate): CalendarWeek? = data?.weeks?.firstOrNull { it.start == monday.toString() }
 
     val plans: List<TrainingPlan> get() = data?.plans.orEmpty()
 
@@ -100,18 +123,71 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
-    fun previous() = showWeek(state.value.week.minusWeeks(1))
+    fun previous() = when (state.value.mode) {
+        CalendarMode.WEEK -> showWeek(state.value.week.minusWeeks(1))
+        CalendarMode.MONTH -> showMonth(state.value.month.minusMonths(1))
+    }
 
-    fun next() = showWeek(state.value.week.plusWeeks(1))
+    fun next() = when (state.value.mode) {
+        CalendarMode.WEEK -> showWeek(state.value.week.plusWeeks(1))
+        CalendarMode.MONTH -> showMonth(state.value.month.plusMonths(1))
+    }
 
-    fun showToday() = showWeek(mondayOf(today()))
+    fun showToday() = when (state.value.mode) {
+        CalendarMode.WEEK -> showWeek(mondayOf(today()))
+        CalendarMode.MONTH -> showMonth(YearMonth.from(today()))
+    }
 
-    /** The week of [date], e.g. from the date picker or a swipe. */
+    /** The week of [date], e.g. from the date picker or a swipe; in the month view its month. */
     fun showWeek(date: LocalDate) {
+        if (state.value.mode == CalendarMode.MONTH) return showMonth(YearMonth.from(date))
         val monday = mondayOf(date)
         if (monday == state.value.week) return
         savedState[WEEK_KEY] = monday.toString()
         mutableState.update { it.copy(week = monday, data = null) }
+        load()
+    }
+
+    /** Spec 015: the month view of [month]. */
+    fun showMonth(month: YearMonth) {
+        if (month == state.value.month && state.value.mode == CalendarMode.MONTH && state.value.data != null) return
+        mutableState.update { it.copy(month = month, data = null) }
+        load()
+    }
+
+    /** Spec 015: the rider switches the view; the shown date stays (the week of today or of the month's 1st). */
+    fun setMode(mode: CalendarMode) = switchMode(mode, chosen = true)
+
+    /** Spec 015: the window's width picks the view until the rider chose one. */
+    fun defaultMode(mode: CalendarMode) {
+        if (!state.value.modeChosen) switchMode(mode, chosen = false)
+    }
+
+    /** Spec 015: a day of the month view opens its week. */
+    fun openWeekOf(date: LocalDate) {
+        val monday = mondayOf(date)
+        savedState[WEEK_KEY] = monday.toString()
+        mutableState.update { it.copy(mode = CalendarMode.WEEK, modeChosen = true, week = monday, data = null) }
+        load()
+    }
+
+    private fun switchMode(mode: CalendarMode, chosen: Boolean) {
+        val current = state.value
+        if (mode == current.mode) {
+            if (chosen) mutableState.update { it.copy(modeChosen = true) }
+            return
+        }
+        mutableState.update {
+            when (mode) {
+                CalendarMode.MONTH -> it.copy(mode = mode, modeChosen = chosen || it.modeChosen, month = YearMonth.from(it.week.plusDays(3)), data = null)
+                CalendarMode.WEEK -> {
+                    val today = today()
+                    val date = if (YearMonth.from(today) == it.month) today else it.month.atDay(1)
+                    it.copy(mode = mode, modeChosen = chosen || it.modeChosen, week = mondayOf(date), data = null)
+                }
+            }
+        }
+        savedState[WEEK_KEY] = state.value.week.toString()
         load()
     }
 
@@ -133,6 +209,11 @@ class CalendarViewModel @Inject constructor(
     private fun load(withGarmin: Boolean = false) {
         request?.cancel()
         val week = state.value.week
+        // The month view asks for the whole weeks covering its month (spec 015)
+        val (from, to) = when (state.value.mode) {
+            CalendarMode.WEEK -> week to week.plusDays(6)
+            CalendarMode.MONTH -> monthRange(state.value.month)
+        }
         mutableState.update { it.copy(loading = !it.refreshing, error = null) }
         request = viewModelScope.launch {
             val first = rider == null
@@ -140,7 +221,7 @@ class CalendarViewModel @Inject constructor(
             loadedVersion = changes.version.value
             val (result, garmin) = coroutineScope {
                 val garmin = if (first || withGarmin) async { garmin(rider) } else null
-                val calendar = call { api.calendar(rider.id, week.toString(), week.plusDays(6).toString()) }
+                val calendar = call { api.calendar(rider.id, from.toString(), to.toString()) }
                 calendar to garmin?.await()
             }
             mutableState.update {

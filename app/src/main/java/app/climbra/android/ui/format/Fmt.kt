@@ -109,6 +109,12 @@ class Fmt(val locale: Locale) {
         return DateTimeFormatter.ofPattern(pattern, locale).format(date)
     }
 
+    /** A month as a title: `November 2026`, `listopad 2026` (the stand-alone month name; spec 015). */
+    fun month(month: java.time.YearMonth): String {
+        val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, "LLLLy")
+        return DateTimeFormatter.ofPattern(pattern, locale).format(month).replaceFirstChar { it.titlecase(locale) }
+    }
+
     /**
      * [value] is an ISO instant (`2026-10-26T09:00:00Z`), shown in the device's [zone]: `26 Oct 2026, 10:00`, or the
      * day alone without [withTime] — the web's `fmt.dateTime` and `fmt.date(…, 'medium')` of an instant.

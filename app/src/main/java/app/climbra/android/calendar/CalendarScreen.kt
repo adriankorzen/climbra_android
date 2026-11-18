@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -89,6 +91,7 @@ import app.climbra.android.ui.theme.MonoFamily
 import app.climbra.android.ui.theme.extendedColors
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneOffset
 import java.time.format.TextStyle
 
@@ -132,6 +135,10 @@ fun CalendarRoute(
             onNewTrainingBlock = onNewTrainingBlock,
             onAdjust = { plan, suggestion -> onAdjust(AdjustmentArgs(plan.id, plan.endDate.take(10), suggestion = suggestion)) },
             onOpenProposal = onOpenProposal,
+            onMode = viewModel::setMode,
+            onDefaultMode = viewModel::defaultMode,
+            onShowMonth = viewModel::showMonth,
+            onOpenWeekOf = viewModel::openWeekOf,
         ),
     )
 }
@@ -161,6 +168,12 @@ data class CalendarActions(
     val onAdjust: (plan: TrainingPlan, suggestion: Boolean) -> Unit = { _, _ -> },
     /** The proposal's conversation, on its proposal tab. */
     val onOpenProposal: (conversationId: Long) -> Unit = {},
+    /** Spec 015: the rider switches the view; the window's width picks it until then. */
+    val onMode: (CalendarMode) -> Unit = {},
+    val onDefaultMode: (CalendarMode) -> Unit = {},
+    val onShowMonth: (YearMonth) -> Unit = {},
+    /** A day of the month view opens its week. */
+    val onOpenWeekOf: (LocalDate) -> Unit = {},
 )
 
 /** The web calendar's phone layout (spec 005): one week as a list of days, swiped or stepped through. */
@@ -191,19 +204,29 @@ fun CalendarScreen(state: CalendarUiState, fmt: Fmt, actions: CalendarActions) {
         if (pager.currentPage != page) pager.scrollToPage(page)
     }
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            Header(state, fmt, actions, onPick = { picking = true })
-            HorizontalPager(state = pager, modifier = Modifier.fillMaxSize().testTag("calendar-pager"), key = { it }) { page ->
-                if (mondayOfPage(page) == state.week) {
-                    WeekPage(state, fmt, actions)
-                } else {
-                    Box(Modifier.fillMaxSize())
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+            // Spec 015: the month on wide windows, the week on phones, until the rider chooses
+            val wide = maxWidth >= WIDE_CALENDAR
+            val defaultMode by rememberUpdatedState(actions.onDefaultMode)
+            LaunchedEffect(wide) { defaultMode(if (wide) CalendarMode.MONTH else CalendarMode.WEEK) }
+            Column(Modifier.fillMaxSize()) {
+                Header(state, fmt, actions, onPick = { picking = true })
+                ModeSwitch(state.mode, actions.onMode)
+                when (state.mode) {
+                    CalendarMode.WEEK -> HorizontalPager(state = pager, modifier = Modifier.fillMaxSize().testTag("calendar-pager"), key = { it }) { page ->
+                        if (mondayOfPage(page) == state.week) {
+                            WeekPage(state, fmt, actions)
+                        } else {
+                            Box(Modifier.fillMaxSize())
+                        }
+                    }
+                    CalendarMode.MONTH -> MonthPager(state, fmt, actions, wide)
                 }
             }
         }
     }
     if (picking) {
-        WeekPicker(state.week, onPick = { picking = false; actions.onShowWeek(it) }, onDismiss = { picking = false })
+        WeekPicker(if (state.mode == CalendarMode.MONTH) state.month.atDay(1) else state.week, onPick = { picking = false; actions.onShowWeek(it) }, onDismiss = { picking = false })
     }
     state.removing?.let { plan ->
         AlertDialog(
@@ -231,10 +254,18 @@ private fun Header(state: CalendarUiState, fmt: Fmt, actions: CalendarActions, o
         modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp, top = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val month = state.mode == CalendarMode.MONTH
         IconButton(onClick = actions.onPrevious, modifier = Modifier.testTag("calendar-previous")) {
-            Icon(painterResource(R.drawable.ic_chevron_left), stringResource(R.string.calendar_previous_week))
+            Icon(
+                painterResource(R.drawable.ic_chevron_left),
+                stringResource(if (month) R.string.calendar_previous_month else R.string.calendar_previous_week),
+            )
         }
-        val period = "${fmt.date(state.week.toString(), DateStyle.DAY_MONTH)} – ${fmt.date(state.week.plusDays(6).toString(), DateStyle.DAY_MONTH)}"
+        val period = if (month) {
+            fmt.month(state.month)
+        } else {
+            "${fmt.date(state.week.toString(), DateStyle.DAY_MONTH)} – ${fmt.date(state.week.plusDays(6).toString(), DateStyle.DAY_MONTH)}"
+        }
         val pickLabel = stringResource(R.string.calendar_pick_week)
         TextButton(
             onClick = onPick,
@@ -243,7 +274,7 @@ private fun Header(state: CalendarUiState, fmt: Fmt, actions: CalendarActions, o
             Text(period, style = MaterialTheme.typography.titleMedium, fontFamily = MonoFamily, modifier = Modifier.semantics { heading() })
         }
         IconButton(onClick = actions.onNext, modifier = Modifier.testTag("calendar-next")) {
-            Icon(painterResource(R.drawable.ic_chevron_right), stringResource(R.string.calendar_next_week))
+            Icon(painterResource(R.drawable.ic_chevron_right), stringResource(if (month) R.string.calendar_next_month else R.string.calendar_next_week))
         }
         Spacer(Modifier.weight(1f))
         TextButton(onClick = actions.onToday, modifier = Modifier.testTag("calendar-today")) {
@@ -266,46 +297,55 @@ private fun WeekPage(state: CalendarUiState, fmt: Fmt, actions: CalendarActions)
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(16.dp),
         ) {
-            if (state.loading || state.sendingPlan || state.deleting) {
-                item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth().testTag("calendar-loading")) }
-            }
-            if (state.sendingPlan && state.garmin?.from != null) {
-                item(key = "garmin-range") {
-                    Text(
-                        stringResource(R.string.garmin_import_tip, fmt.date(state.garmin.from, DateStyle.DAY_MONTH), fmt.date(state.garmin.to, DateStyle.DAY_MONTH)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.extendedColors.textFaint,
-                    )
-                }
-            }
-            state.error?.let { error ->
-                item(key = "error") {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ErrorBanner("${stringResource(R.string.calendar_load_failed)} ${error.toUiText().resolve()}", Modifier.testTag("calendar-error"))
-                        OutlinedButton(onClick = actions.onRetry, modifier = Modifier.testTag("calendar-retry")) { Text(stringResource(R.string.retry)) }
-                    }
-                }
-            }
-            if (state.noRider) {
-                item(key = "no-rider") { NoRider { actions.onOpenWeb("") } }
-                return@LazyColumn
-            }
-            val data = state.data ?: return@LazyColumn
-            if (state.garminStale) {
-                item(key = "garmin-outdated") {
-                    Notice(stringResource(R.string.garmin_outdated_notice), Modifier.testTag("garmin-outdated"))
-                }
-            }
-            items(state.plans, key = { "plan-${it.id}" }) { plan ->
-                PlanCard(plan, data.plannedWorkouts, fmt, actions)
-            }
-            if (state.plans.isEmpty()) {
-                item(key = "no-plan") { NoPlan(onCreateBlock = actions.onNewTrainingBlock) }
-            }
+            if (!top(state, fmt, actions)) return@LazyColumn
             item(key = "summary") { WeekSummary(state.figures, fmt) }
             items(state.days, key = { "day-${it.date}" }) { day -> DayRow(day, fmt, actions) }
         }
     }
+}
+
+/**
+ * What both views show above their days (specs 005, 015): progress, errors, the Garmin notice, the plan cards with
+ * their banners. `false` when there is nothing more to show (no rider, nothing loaded yet).
+ */
+internal fun LazyListScope.top(state: CalendarUiState, fmt: Fmt, actions: CalendarActions): Boolean {
+    if (state.loading || state.sendingPlan || state.deleting) {
+        item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth().testTag("calendar-loading")) }
+    }
+    if (state.sendingPlan && state.garmin?.from != null) {
+        item(key = "garmin-range") {
+            Text(
+                stringResource(R.string.garmin_import_tip, fmt.date(state.garmin.from, DateStyle.DAY_MONTH), fmt.date(state.garmin.to, DateStyle.DAY_MONTH)),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.extendedColors.textFaint,
+            )
+        }
+    }
+    state.error?.let { error ->
+        item(key = "error") {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ErrorBanner("${stringResource(R.string.calendar_load_failed)} ${error.toUiText().resolve()}", Modifier.testTag("calendar-error"))
+                OutlinedButton(onClick = actions.onRetry, modifier = Modifier.testTag("calendar-retry")) { Text(stringResource(R.string.retry)) }
+            }
+        }
+    }
+    if (state.noRider) {
+        item(key = "no-rider") { NoRider { actions.onOpenWeb("") } }
+        return false
+    }
+    val data = state.data ?: return false
+    if (state.garminStale) {
+        item(key = "garmin-outdated") {
+            Notice(stringResource(R.string.garmin_outdated_notice), Modifier.testTag("garmin-outdated"))
+        }
+    }
+    items(state.plans, key = { "plan-${it.id}" }) { plan ->
+        PlanCard(plan, data.plannedWorkouts, fmt, actions)
+    }
+    if (state.plans.isEmpty()) {
+        item(key = "no-plan") { NoPlan(onCreateBlock = actions.onNewTrainingBlock) }
+    }
+    return true
 }
 
 @Composable

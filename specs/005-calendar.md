@@ -37,7 +37,7 @@ Spec 003 left the calendar link of a ride's planned workout card for this spec, 
 
 ### Out of scope
 
-- The month grid of the web (desktop / tablet): the phone shows weeks; a wider layout can come later.
+- The month grid of the web: spec 015.
 - The AI coach parts, with the coach spec: "Ask the coach" of the suggestion and "Adjust plan" (the adjustment
   dialog), showing and accepting / rejecting the coach's proposal, "Create a training block", the plan's conversation
   link. Until then the suggestion and proposal banners carry "Open on climbra.app" (Custom Tab to

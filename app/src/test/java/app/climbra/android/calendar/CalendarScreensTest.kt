@@ -476,4 +476,108 @@ class CalendarScreensTest {
         compose.onNodeWithTag("nav-calendar").assertIsSelected()
         compose.onNodeWithTag("open-workout").assertIsDisplayed()
     }
+
+    // ---- Spec 015: the month view
+
+    private val extra = (20..22).joinToString(",") { id ->
+        PLANNED.replace("\"id\":2,", "\"id\":$id,").replace("\"date\":\"2026-11-14\"", "\"date\":\"2026-11-10\"")
+    }
+
+    private fun month(actions: CalendarActions = CalendarActions()) = content {
+        CalendarScreen(
+            CalendarUiState(
+                mode = CalendarMode.MONTH,
+                week = monday,
+                today = LocalDate.of(2026, 11, 12),
+                month = java.time.YearMonth.of(2026, 11),
+                loading = false,
+                data = data(
+                    calendar(
+                        from = "2026-10-26",
+                        to = "2026-12-06",
+                        workouts = "$COMPLETED,$REST,$PLANNED,$extra",
+                    ),
+                ),
+            ),
+            fmt,
+            actions,
+        )
+    }
+
+    private fun monthScrollTo(tag: String) {
+        compose.onNodeWithTag("calendar-month").performScrollToNode(hasTestTag(tag))
+    }
+
+    // AC2: the whole weeks covering the month, today marked, "+n more" over 3 tiles
+    @Test
+    fun theMonthShowsItsWholeWeeksWithTheirDays() {
+        month()
+
+        compose.onNodeWithText("November 2026").assertIsDisplayed()
+        compose.onNodeWithTag("calendar-mode-month").assertIsSelected()
+        monthScrollTo("month-week-2026-10-26")
+        compose.onNodeWithTag("month-day-2026-10-26").assertExists()
+        monthScrollTo("month-week-2026-11-30")
+        compose.onNodeWithTag("month-day-2026-12-06").assertExists()
+        monthScrollTo("month-week-2026-11-09")
+        compose.onNode(hasTestTag("month-today") and hasAnyAncestor(hasTestTag("month-day-2026-11-12")), useUnmergedTree = true).assertExists()
+        inside("month-day-2026-11-14", "Long endurance").assertExists()
+        inside("month-day-2026-11-11", "TSS").assertExists()
+        // 2026-11-10: the completed workout and 3 more planned ones
+        compose.onNodeWithTag("month-workout-1", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("month-workout-22", useUnmergedTree = true).assertDoesNotExist()
+        inside("month-more-2026-11-10", "+1 more").assertExists()
+    }
+
+    // AC3: each week row shows the backend's totals and plan week
+    @Test
+    fun eachWeekShowsTheBackendsFigures() {
+        month()
+
+        monthScrollTo("month-week-2026-11-09")
+        inside("month-week-figures-2026-11-09", "Week 2").assertExists()
+        inside("month-week-figures-2026-11-09", "Build").assertExists()
+        inside("month-week-figures-2026-11-09", "103 / 215 TSS").assertExists()
+        inside("month-week-figures-2026-11-09", "1:28 / 4:00").assertExists()
+    }
+
+    // AC5: a tile opens its workout or ride, a day its week; AC1: the switch changes the view
+    @Test
+    fun tilesOpenTheirWorkoutOrRideAndADayItsWeek() {
+        val calls = mutableListOf<String>()
+        month(
+            CalendarActions(
+                onOpenWorkout = { calls += "workout ${it.id}" },
+                onOpenRide = { calls += "ride $it" },
+                onOpenWeekOf = { calls += "week $it" },
+                onMode = { calls += "mode $it" },
+            ),
+        )
+
+        monthScrollTo("month-week-2026-11-09")
+        compose.onNodeWithTag("month-workout-2", useUnmergedTree = true).performClick()
+        compose.onNodeWithTag("month-ride-12", useUnmergedTree = true).performClick()
+        compose.onNodeWithTag("month-day-2026-11-13").performClick()
+        compose.onNodeWithTag("calendar-mode-week").performClick()
+
+        assertEquals(listOf("workout 2", "ride 12", "week 2026-11-13", "mode WEEK"), calls)
+    }
+
+    // AC1: a phone asks for the week, a wide window for the month
+    @Test
+    fun aPhoneAsksForTheWeek() {
+        val asked = mutableListOf<CalendarMode>()
+        content { CalendarScreen(week(), fmt, CalendarActions(onDefaultMode = { asked += it })) }
+
+        assertEquals(listOf(CalendarMode.WEEK), asked)
+    }
+
+    @Test
+    @org.robolectric.annotation.Config(qualifiers = "w800dp-h1280dp")
+    fun aWideWindowAsksForTheMonth() {
+        val asked = mutableListOf<CalendarMode>()
+        content { CalendarScreen(week(), fmt, CalendarActions(onDefaultMode = { asked += it })) }
+
+        assertEquals(listOf(CalendarMode.MONTH), asked)
+    }
 }

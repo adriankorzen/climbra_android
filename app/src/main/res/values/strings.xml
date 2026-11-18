@@ -893,4 +893,13 @@
     <string name="import_unreadable_file">Could not read the file %1$s. Check that the archive is not damaged.</string>
     <string name="import_no_ride_files">There are no FIT or TCX files in the chosen files.</string>
     <string name="import_channel">Ride imports</string>
+    <!-- Spec 015: the calendar's month view -->
+    <string name="calendar_mode_week">Week</string>
+    <string name="calendar_mode_month">Month</string>
+    <string name="calendar_previous_month">Previous month</string>
+    <string name="calendar_next_month">Next month</string>
+    <plurals name="calendar_more">
+        <item quantity="one">+%1$d more</item>
+        <item quantity="other">+%1$d more</item>
+    </plurals>
 </resources>

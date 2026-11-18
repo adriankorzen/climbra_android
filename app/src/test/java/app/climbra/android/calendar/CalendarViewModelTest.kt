@@ -311,4 +311,86 @@ class CalendarViewModelTest {
         assertTrue(state.noRider)
         assertTrue(calendarRanges().isEmpty())
     }
+
+    // ---- Spec 015: the month view
+
+    // AC1: the width picks the month; it asks for the whole weeks covering it
+    @Test
+    fun aWideWindowOpensTheMonthWithItsWholeWeeks() = runTest(dispatcher) {
+        standard()
+        val viewModel = viewModel()
+        viewModel.settled()
+
+        viewModel.defaultMode(CalendarMode.MONTH)
+        val state = viewModel.settled()
+
+        assertEquals(CalendarMode.MONTH, state.mode)
+        assertEquals(java.time.YearMonth.of(2026, 11), state.month)
+        assertEquals("2026-10-26" to "2026-12-06", calendarRanges().last())
+        assertEquals(6, state.monthWeeks.size)
+        assertEquals(LocalDate.of(2026, 10, 26), state.monthWeeks.first().first().date)
+        assertEquals(LocalDate.of(2026, 12, 6), state.monthWeeks.last().last().date)
+    }
+
+    // AC1: the rider's choice holds against the width
+    @Test
+    fun theRidersChoiceHolds() = runTest(dispatcher) {
+        standard()
+        val viewModel = viewModel()
+        viewModel.settled()
+
+        viewModel.setMode(CalendarMode.MONTH)
+        viewModel.settled()
+        viewModel.defaultMode(CalendarMode.WEEK)
+
+        assertEquals(CalendarMode.MONTH, viewModel.state.value.mode)
+        assertTrue(viewModel.state.value.modeChosen)
+    }
+
+    // AC4: arrows, Today and the picker change the month; back to the week keeps the date
+    @Test
+    fun theMonthIsSteppedAndTheWeekComesBack() = runTest(dispatcher) {
+        standard()
+        val viewModel = viewModel()
+        viewModel.settled()
+        viewModel.setMode(CalendarMode.MONTH)
+        viewModel.settled()
+
+        viewModel.next()
+        assertEquals(java.time.YearMonth.of(2026, 12), viewModel.settled().month)
+        viewModel.previous()
+        viewModel.previous()
+        assertEquals(java.time.YearMonth.of(2026, 10), viewModel.settled().month)
+        viewModel.showWeek(LocalDate.of(2027, 3, 18))
+        assertEquals(java.time.YearMonth.of(2027, 3), viewModel.settled().month)
+        assertEquals("2027-03-01" to "2027-04-04", calendarRanges().last())
+
+        // The week of the month's 1st (today is in another month)
+        viewModel.setMode(CalendarMode.WEEK)
+        assertEquals(LocalDate.of(2027, 3, 1), viewModel.settled().week)
+        viewModel.setMode(CalendarMode.MONTH)
+        viewModel.showToday()
+        assertEquals(java.time.YearMonth.of(2026, 11), viewModel.settled().month)
+        // Today's month: back to today's week
+        viewModel.setMode(CalendarMode.WEEK)
+        assertEquals(LocalDate.of(2026, 11, 9), viewModel.settled().week)
+        assertEquals("2026-11-09" to "2026-11-15", calendarRanges().last())
+    }
+
+    // AC5: a day opens the week view at its week
+    @Test
+    fun aDayOpensItsWeek() = runTest(dispatcher) {
+        standard()
+        val viewModel = viewModel()
+        viewModel.settled()
+        viewModel.setMode(CalendarMode.MONTH)
+        viewModel.settled()
+
+        viewModel.openWeekOf(LocalDate.of(2026, 11, 26))
+
+        val state = viewModel.settled()
+        assertEquals(CalendarMode.WEEK, state.mode)
+        assertEquals(LocalDate.of(2026, 11, 23), state.week)
+        assertEquals("2026-11-23" to "2026-11-29", calendarRanges().last())
+    }
 }

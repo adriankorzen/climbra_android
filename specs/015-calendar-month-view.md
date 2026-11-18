@@ -1,6 +1,6 @@
 # 015: The calendar's month view
 
-- **Status:** Draft
+- **Status:** Implemented
 - **Created:** 2026-11-18
 
 ## Problem
@@ -11,7 +11,7 @@ of the screen empty, and the rider cannot see the shape of a block (its build an
 
 ## Scope
 
-- A **Week / Month** switch in the calendar's top bar.
+- A **Week / Month** switch under the calendar's header.
 - **Month**: the web's grid of whole weeks (Monday to Sunday) covering the month, days outside the month faded, each
   day with its planned workouts and rides as compact tiles; each week row ends with the backend's week totals and
   plan week (cyclingapp spec 054), as the week view's summary.
@@ -35,7 +35,8 @@ of the screen empty, and the rider cannot see the shape of a block (its build an
 - **Week summary** at the end of each row (wide windows) or under it: planned / ridden TSS and time, plan week and
   focus, from the backend.
 - The plan cards, the suggestion and proposal banners (specs 005, 008) stay above the grid.
-- Switching Week ↔ Month keeps the shown date: the week of the month's first shown day, or the month of the week.
+- Switching Week ↔ Month keeps the shown date: the month of the week (its Thursday), or back the week of today when
+  today is in the month, else the week of its 1st.
 - Pull to refresh and the reload after data changes work as in the week view.
 
 ## Backend dependencies
@@ -45,7 +46,7 @@ change.
 
 ## Screens
 
-- `calendar.CalendarScreen`: `SegmentedButton` Week / Month in the top bar, a `MonthGrid` (7 columns, `LazyColumn` of
+- `calendar.CalendarScreen`: `SegmentedButton` Week / Month under the header, a `MonthPager` / grid (7 columns, `LazyColumn` of
   week rows), the existing tiles in a compact form.
 - Web mapping: `calendar-grid` (month mode), `monthRange`, `shiftMonth`.
 
@@ -56,13 +57,13 @@ change.
 
 ## Acceptance criteria
 
-- [ ] AC1: Wide windows open in Month, phones in Week; the switch changes the view and the choice holds.
-- [ ] AC2: Month loads the whole weeks covering it and shows each day's workouts and rides, days outside faded,
+- [x] AC1: Wide windows open in Month, phones in Week; the switch changes the view and the choice holds.
+- [x] AC2: Month loads the whole weeks covering it and shows each day's workouts and rides, days outside faded,
   today marked, "+{n} more" over 3 tiles.
-- [ ] AC3: Each week row shows the backend's totals and plan week.
-- [ ] AC4: Arrows, swipe, Today and the picker change the month; switching views keeps the date.
-- [ ] AC5: A tile opens its workout or ride; a day opens the week view at its week.
-- [ ] AC6: New strings exist in English and Polish.
+- [x] AC3: Each week row shows the backend's totals and plan week.
+- [x] AC4: Arrows, swipe, Today and the picker change the month; switching views keeps the date.
+- [x] AC5: A tile opens its workout or ride; a day opens the week view at its week.
+- [x] AC6: New strings exist in English and Polish.
 
 ## Open questions
 

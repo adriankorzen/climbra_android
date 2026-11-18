@@ -904,4 +904,15 @@
     <string name="import_unreadable_file">Nie udało się odczytać pliku %1$s. Sprawdź, czy archiwum nie jest uszkodzone.</string>
     <string name="import_no_ride_files">W wybranych plikach nie ma plików FIT ani TCX.</string>
     <string name="import_channel">Import jazd</string>
+    <!-- Spec 015: widok miesiąca w kalendarzu -->
+    <string name="calendar_mode_week">Tydzień</string>
+    <string name="calendar_mode_month">Miesiąc</string>
+    <string name="calendar_previous_month">Poprzedni miesiąc</string>
+    <string name="calendar_next_month">Następny miesiąc</string>
+    <plurals name="calendar_more">
+        <item quantity="one">+%1$d więcej</item>
+        <item quantity="few">+%1$d więcej</item>
+        <item quantity="many">+%1$d więcej</item>
+        <item quantity="other">+%1$d więcej</item>
+    </plurals>
 </resources>
