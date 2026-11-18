@@ -834,4 +834,21 @@
     </plurals>
     <string name="garmin_sync_nothing_new">No new activities since %1$s</string>
     <string name="garmin_sync_failed">Garmin sync failed: %1$s</string>
+    <!-- Spec 012: sorting and the sport filter of the training log (the web's column names) -->
+    <string name="activities_column_date">Date</string>
+    <string name="activities_column_name">Name</string>
+    <string name="activities_column_type">Type</string>
+    <string name="activities_column_duration">Duration</string>
+    <string name="activities_column_distance">Distance</string>
+    <string name="activities_column_elevation">Elevation</string>
+    <string name="activities_column_avg_power">Avg power</string>
+    <string name="activities_column_np">NP</string>
+    <string name="activities_column_if">IF</string>
+    <string name="activities_column_tss">TSS</string>
+    <string name="activities_column_avg_hr">Avg HR</string>
+    <string name="activities_column_intervals">Intervals</string>
+    <string name="activities_sort_ascending">Ascending</string>
+    <string name="activities_sort_descending">Descending</string>
+    <string name="activities_sport_all">All types</string>
+    <string name="activities_empty_sport">No rides of this type in this period.</string>
 </resources>

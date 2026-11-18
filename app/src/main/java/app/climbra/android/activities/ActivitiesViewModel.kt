@@ -51,10 +51,34 @@ data class Period(val preset: RangePreset, val from: LocalDate, val to: LocalDat
     }
 }
 
+/**
+ * The backend's sort columns (`RideList.Column`, spec 012); names and types start ascending, the rest descending, as
+ * `RideListController`.
+ */
+enum class RideColumn(val key: String, val ascendingFirst: Boolean = false) {
+    DATE("date"), NAME("name", ascendingFirst = true), TYPE("type", ascendingFirst = true), DURATION("duration"),
+    DISTANCE("distance"), ELEVATION("elevation"), AVG_POWER("avgPower"), NP("np"), IF("if"), TSS("tss"),
+    AVG_HR("avgHr"), INTERVALS("intervals"),
+}
+
+/** The order of the training log; the default is the newest first. */
+data class RideSort(val column: RideColumn = RideColumn.DATE, val ascending: Boolean = false) {
+    val dir: String get() = if (ascending) "asc" else "desc"
+
+    /** The column again flips the direction; another one starts with its own. */
+    fun then(column: RideColumn): RideSort =
+        if (column == this.column) copy(ascending = !ascending) else RideSort(column, column.ascendingFirst)
+}
+
 data class ActivitiesUiState(
     val period: Period,
     /** What the search field shows; the request follows it after a pause. */
     val text: String = "",
+    val sort: RideSort = RideSort(),
+    /** The sport type filter, `null` for all. */
+    val sport: String? = null,
+    /** The sport types of the period, from the backend. */
+    val types: List<String> = emptyList(),
     val rows: List<RideRow> = emptyList(),
     val totals: RideTotals? = null,
     val totalRows: Int = 0,
@@ -117,6 +141,19 @@ class ActivitiesViewModel @Inject constructor(
         reload()
     }
 
+    /** Spec 012: the order of the rides; the current column again flips it. */
+    fun selectSort(column: RideColumn) {
+        mutableState.update { it.copy(sort = it.sort.then(column)) }
+        reload()
+    }
+
+    /** Spec 012: one sport type, or `null` for all. */
+    fun selectSport(type: String?) {
+        if (type == state.value.sport) return
+        mutableState.update { it.copy(sport = type) }
+        reload()
+    }
+
     /** The request follows [SEARCH_DELAY] after the last change. */
     fun onTextChange(text: String) {
         mutableState.update { it.copy(text = text) }
@@ -157,6 +194,8 @@ class ActivitiesViewModel @Inject constructor(
         if (append) mutableState.update { it.copy(loadingMore = true, error = null) }
         val period = state.value.period
         val text = state.value.text.trim()
+        val sort = state.value.sort
+        val sport = state.value.sport
         request = viewModelScope.launch {
             val rider = rider ?: when (val result = riders.load()) {
                 is ApiResult.Failure -> return@launch failed(result.error)
@@ -169,7 +208,17 @@ class ActivitiesViewModel @Inject constructor(
             }
             loadedVersion = changes.version.value
             val result = apiCall(Network.json) {
-                api.rides(rider.id, period.from.toString(), period.to.toString(), text.ifEmpty { null }, page, PAGE_SIZE)
+                api.rides(
+                    riderId = rider.id,
+                    from = period.from.toString(),
+                    to = period.to.toString(),
+                    text = text.ifEmpty { null },
+                    type = sport,
+                    sort = sort.column.key,
+                    dir = sort.dir,
+                    page = page,
+                    size = PAGE_SIZE,
+                )
             }
             when (result) {
                 is ApiResult.Failure -> failed(result.error)
@@ -181,6 +230,7 @@ class ActivitiesViewModel @Inject constructor(
                             rows = if (append) it.rows + list.rows else list.rows,
                             totals = list.totals,
                             totalRows = list.totalRows,
+                            types = list.types,
                             hasRides = list.hasRides,
                             noRider = false,
                             loading = false,

@@ -16,13 +16,16 @@ import retrofit2.http.Streaming
 /** The training log and a ride (`analysis.RideListController`, `activity.ActivityController`, ... of the backend). */
 interface ActivityApi {
 
-    /** cyclingapp spec 052: rows, totals and paging come from the backend. */
+    /** cyclingapp spec 052: rows, totals and paging come from the backend; it sorts and filters too (spec 012). */
     @GET("api/riders/{id}/rides")
     suspend fun rides(
         @Path("id") riderId: Long,
         @Query("from") from: String,
         @Query("to") to: String,
         @Query("q") text: String?,
+        @Query("type") type: String? = null,
+        @Query("sort") sort: String? = null,
+        @Query("dir") dir: String? = null,
         @Query("page") page: Int,
         @Query("size") size: Int,
     ): RideListResponse
@@ -72,6 +75,7 @@ data class RideListResponse(
     val size: Int = 0,
     val totalRows: Int = 0,
     val totals: RideTotals = RideTotals(),
+    /** The sport types of the period, before the type filter (spec 012). */
     val types: List<String> = emptyList(),
     val hasRides: Boolean = true,
 )

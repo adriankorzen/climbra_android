@@ -15,6 +15,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -89,6 +90,8 @@ class ActivitiesScreensTest {
     private val opened = mutableListOf<Long>()
     private val presets = mutableListOf<RangePreset>()
     private val texts = mutableListOf<String>()
+    private val sorts = mutableListOf<RideColumn>()
+    private val sports = mutableListOf<String?>()
     private var webOpened = 0
     private var imports = 0
 
@@ -104,6 +107,8 @@ class ActivitiesScreensTest {
             onOpenRide = { opened += it },
             onOpenWeb = { webOpened++ },
             onImport = { imports++ },
+            onSort = { sorts += it },
+            onSport = { sports += it },
             sync = sync(),
         )
     }
@@ -443,5 +448,52 @@ class ActivitiesScreensTest {
         // Spec 011 AC5
         sync = SyncState(garminRunning = true)
         compose.onNodeWithTag("garmin-sync-progress").assertIsDisplayed()
+    }
+
+    // Spec 012 AC1, AC2: the sort shows its column and direction; its menu offers the backend's columns
+    @Test
+    fun theSortMenuOffersTheColumns() {
+        var state by mutableStateOf(log)
+        showLog { state }
+
+        compose.onNode(hasText("Date") and hasAnyAncestor(hasTestTag("activities-sort")), useUnmergedTree = true).assertExists()
+        compose.onNodeWithContentDescription("Descending", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("activities-sort").performClick()
+        compose.onNodeWithTag("sort-tss").performClick()
+        assertEquals(listOf(RideColumn.TSS), sorts)
+
+        state = log.copy(sort = RideSort(RideColumn.NAME, ascending = true))
+        compose.onNode(hasText("Name") and hasAnyAncestor(hasTestTag("activities-sort")), useUnmergedTree = true).assertExists()
+        compose.onNodeWithContentDescription("Ascending", useUnmergedTree = true).assertExists()
+    }
+
+    // Spec 012 AC3: the sport menu lists the period's types; hidden with one type and no filter
+    @Test
+    fun theSportMenuListsThePeriodsTypes() {
+        var state by mutableStateOf(log.copy(types = listOf("road_biking")))
+        showLog { state }
+        compose.onNodeWithTag("activities-sport").assertDoesNotExist()
+
+        state = log.copy(types = listOf("road_biking", "indoor_cycling"))
+        compose.onNodeWithTag("activities-sport").performClick()
+        compose.onNodeWithTag("sport-road_biking").assertExists()
+        compose.onNodeWithTag("sport-indoor_cycling").performClick()
+        compose.onNodeWithTag("activities-sport").performClick()
+        compose.onNodeWithTag("sport-all").performClick()
+        assertEquals(listOf("indoor_cycling", null), sports)
+
+        // A filter the period does not have any more stays, so it can be cleared
+        state = log.copy(types = listOf("road_biking"), sport = "gravel_cycling")
+        compose.onNodeWithTag("activities-sport").assertIsDisplayed()
+        compose.onNodeWithTag("activities-sport").performClick()
+        compose.onNodeWithTag("sport-gravel_cycling").assertExists()
+    }
+
+    // Spec 012 AC6: a filter that leaves nothing has its own text
+    @Test
+    fun anEmptyFilterHasItsOwnText() {
+        showLog { log.copy(rows = emptyList(), totalRows = 0, types = listOf("road_biking", "indoor_cycling"), sport = "indoor_cycling") }
+
+        compose.onNodeWithText("No rides of this type in this period.").assertExists()
     }
 }

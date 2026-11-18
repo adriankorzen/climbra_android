@@ -22,6 +22,9 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -101,6 +104,8 @@ fun ActivitiesRoute(
         onOpenRide = onOpenRide,
         onOpenWeb = { openWebPage(context, config.webPage("")) },
         onImport = onImport,
+        onSort = viewModel::selectSort,
+        onSport = viewModel::selectSport,
     )
 }
 
@@ -119,6 +124,8 @@ fun ActivitiesScreen(
     onOpenWeb: () -> Unit,
     sync: SyncState = SyncState(),
     onImport: () -> Unit = {},
+    onSort: (RideColumn) -> Unit = {},
+    onSport: (String?) -> Unit = {},
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
     val list = rememberLazyListState()
@@ -158,6 +165,9 @@ fun ActivitiesScreen(
             item(key = "filters") {
                 Filters(state, fmt, onPreset, onTextChange, onPickCustom = { picking = true })
             }
+            item(key = "sort") {
+                SortAndSport(state, onSort, onSport)
+            }
             if (state.loading) {
                 item(key = "loading") { LinearProgressIndicator(Modifier.fillMaxWidth().testTag("activities-loading")) }
             }
@@ -193,7 +203,11 @@ fun ActivitiesScreen(
                         item(key = "empty") {
                             Text(
                                 stringResource(
-                                    if (state.text.isBlank()) R.string.activities_empty else R.string.activities_empty_search,
+                                    when {
+                                        state.text.isNotBlank() -> R.string.activities_empty_search
+                                        state.sport != null -> R.string.activities_empty_sport
+                                        else -> R.string.activities_empty
+                                    },
                                 ),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -417,3 +431,99 @@ private fun RangePickerDialog(initial: Period, onDismiss: () -> Unit, onConfirm:
 }
 
 private const val LOAD_MORE_AHEAD = 5
+
+/** Spec 012: the order of the rides and the sport type filter, both done by the backend. */
+@Composable
+private fun SortAndSport(state: ActivitiesUiState, onSort: (RideColumn) -> Unit, onSport: (String?) -> Unit) {
+    if (state.noRider || !state.hasRides) return
+    var sorting by remember { mutableStateOf(false) }
+    var filtering by remember { mutableStateOf(false) }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box {
+            AssistChip(
+                onClick = { sorting = true },
+                label = { Text(rideColumnName(state.sort.column)) },
+                leadingIcon = { Icon(painterResource(R.drawable.ic_sort), null, Modifier.size(18.dp)) },
+                trailingIcon = {
+                    Icon(
+                        painterResource(if (state.sort.ascending) R.drawable.ic_arrow_upward else R.drawable.ic_arrow_downward),
+                        stringResource(if (state.sort.ascending) R.string.activities_sort_ascending else R.string.activities_sort_descending),
+                        Modifier.size(18.dp),
+                    )
+                },
+                modifier = Modifier.testTag("activities-sort"),
+            )
+            DropdownMenu(expanded = sorting, onDismissRequest = { sorting = false }) {
+                RideColumn.entries.forEach { column ->
+                    DropdownMenuItem(
+                        text = { Text(rideColumnName(column)) },
+                        onClick = {
+                            sorting = false
+                            onSort(column)
+                        },
+                        trailingIcon = if (column == state.sort.column) {
+                            {
+                                Icon(
+                                    painterResource(if (state.sort.ascending) R.drawable.ic_arrow_upward else R.drawable.ic_arrow_downward),
+                                    null,
+                                    Modifier.size(18.dp),
+                                )
+                            }
+                        } else null,
+                        modifier = Modifier.testTag("sort-${column.key}"),
+                    )
+                }
+            }
+        }
+        // Hidden while the period has one type and nothing is filtered; a filter stays, so it can be cleared
+        if (state.types.size > 1 || state.sport != null) {
+            Box {
+                FilterChip(
+                    selected = state.sport != null,
+                    onClick = { filtering = true },
+                    label = { Text(state.sport?.let { sportName(it) } ?: stringResource(R.string.activities_sport_all)) },
+                    trailingIcon = { Icon(painterResource(R.drawable.ic_expand_more), null, Modifier.size(18.dp)) },
+                    modifier = Modifier.testTag("activities-sport"),
+                )
+                DropdownMenu(expanded = filtering, onDismissRequest = { filtering = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.activities_sport_all)) },
+                        onClick = {
+                            filtering = false
+                            onSport(null)
+                        },
+                        modifier = Modifier.testTag("sport-all"),
+                    )
+                    (state.types + listOfNotNull(state.sport)).distinct().forEach { type ->
+                        DropdownMenuItem(
+                            text = { Text(sportName(type)) },
+                            onClick = {
+                                filtering = false
+                                onSport(type)
+                            },
+                            modifier = Modifier.testTag("sport-$type"),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun rideColumnName(column: RideColumn): String = stringResource(
+    when (column) {
+        RideColumn.DATE -> R.string.activities_column_date
+        RideColumn.NAME -> R.string.activities_column_name
+        RideColumn.TYPE -> R.string.activities_column_type
+        RideColumn.DURATION -> R.string.activities_column_duration
+        RideColumn.DISTANCE -> R.string.activities_column_distance
+        RideColumn.ELEVATION -> R.string.activities_column_elevation
+        RideColumn.AVG_POWER -> R.string.activities_column_avg_power
+        RideColumn.NP -> R.string.activities_column_np
+        RideColumn.IF -> R.string.activities_column_if
+        RideColumn.TSS -> R.string.activities_column_tss
+        RideColumn.AVG_HR -> R.string.activities_column_avg_hr
+        RideColumn.INTERVALS -> R.string.activities_column_intervals
+    },
+)

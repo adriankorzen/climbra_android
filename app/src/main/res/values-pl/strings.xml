@@ -841,4 +841,21 @@
     </plurals>
     <string name="garmin_sync_nothing_new">Brak nowych aktywności od %1$s</string>
     <string name="garmin_sync_failed">Synchronizacja z Garmin nie powiodła się: %1$s</string>
+    <!-- Spec 012: sortowanie i filtr typu w dzienniku treningów (nazwy kolumn weba) -->
+    <string name="activities_column_date">Data</string>
+    <string name="activities_column_name">Nazwa</string>
+    <string name="activities_column_type">Typ</string>
+    <string name="activities_column_duration">Czas</string>
+    <string name="activities_column_distance">Dystans</string>
+    <string name="activities_column_elevation">Przewyższenie</string>
+    <string name="activities_column_avg_power">Śr. moc</string>
+    <string name="activities_column_np">NP</string>
+    <string name="activities_column_if">IF</string>
+    <string name="activities_column_tss">TSS</string>
+    <string name="activities_column_avg_hr">Śr. tętno</string>
+    <string name="activities_column_intervals">Interwały</string>
+    <string name="activities_sort_ascending">Rosnąco</string>
+    <string name="activities_sort_descending">Malejąco</string>
+    <string name="activities_sport_all">Wszystkie typy</string>
+    <string name="activities_empty_sport">Brak jazd tego typu w tym okresie.</string>
 </resources>

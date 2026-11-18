@@ -289,4 +289,108 @@ class ActivitiesViewModelTest {
         }
         viewModel.settled()
     }
+
+    // ---- Spec 012: sorting and the sport filter
+
+    private fun typedPage(ids: IntRange, totalRows: Int, types: String = """["road_biking","indoor_cycling"]""") = json(
+        """{"from":"2026-10-15","to":"2026-11-11","rows":[${ids.joinToString(",") { row(it) }}],"page":0,"size":50,
+           "totalRows":$totalRows,"totals":{"rides":$totalRows,"seconds":3600,"meters":30000.0,"elevation":100.0,
+           "kj":700.0,"tss":70.0},"types":$types,"hasRides":true}""",
+    )
+
+    private fun order() = ridesRequests().map { listOf(it.queryParameter("sort"), it.queryParameter("dir"), it.queryParameter("type")) }
+
+    // Spec 012 AC1: newest first, all sports; the period's types come from the backend
+    @Test
+    fun theDefaultIsTheNewestFirstOfAllSports() = runTest(dispatcher) {
+        backend.on("GET /api/riders", json(rider))
+        backend.on("GET /api/riders/5/rides", typedPage(1..3, 3))
+
+        val state = viewModel().settled()
+
+        assertEquals(RideSort(RideColumn.DATE, ascending = false), state.sort)
+        assertNull(state.sport)
+        assertEquals(listOf("road_biking", "indoor_cycling"), state.types)
+        assertEquals(listOf(listOf("date", "desc", null)), order())
+    }
+
+    // Spec 012 AC2: a column starts with its own direction, again it flips; AC4: from page 0
+    @Test
+    fun aColumnSortsAndAgainFlips() = runTest(dispatcher) {
+        backend.on("GET /api/riders", json(rider))
+        backend.on("GET /api/riders/5/rides", typedPage(1..3, 3))
+        val viewModel = viewModel()
+        viewModel.settled()
+
+        viewModel.selectSort(RideColumn.TSS)
+        viewModel.settled()
+        viewModel.selectSort(RideColumn.TSS)
+        viewModel.settled()
+        viewModel.selectSort(RideColumn.NAME)
+        viewModel.settled()
+        viewModel.selectSort(RideColumn.DATE)
+        viewModel.settled()
+
+        assertEquals(
+            listOf(listOf("date", "desc", null), listOf("tss", "desc", null), listOf("tss", "asc", null), listOf("name", "asc", null), listOf("date", "desc", null)),
+            order(),
+        )
+        assertTrue(ridesRequests().all { it.queryParameter("page") == "0" })
+    }
+
+    // Spec 012 AC3: a sport sends its type, All sends none; AC4: more pages keep the order and the filter
+    @Test
+    fun aSportFiltersAndMorePagesKeepIt() = runTest(dispatcher) {
+        backend.on("GET /api/riders", json(rider))
+        backend.on("GET /api/riders/5/rides", typedPage(1..3, 3), typedPage(1..3, 3), typedPage(1..50, 60), typedPage(51..60, 60), typedPage(1..3, 3))
+        val viewModel = viewModel()
+        viewModel.settled()
+
+        viewModel.selectSort(RideColumn.AVG_POWER)
+        viewModel.settled()
+        viewModel.selectSport("indoor_cycling")
+        viewModel.settled()
+        viewModel.loadMore()
+        viewModel.settled()
+        viewModel.selectSport(null)
+        viewModel.settled()
+
+        assertEquals(
+            listOf(
+                listOf("date", "desc", null),
+                listOf("avgPower", "desc", null),
+                listOf("avgPower", "desc", "indoor_cycling"),
+                listOf("avgPower", "desc", "indoor_cycling"),
+                listOf("avgPower", "desc", null),
+            ),
+            order(),
+        )
+        assertEquals(listOf("0", "0", "0", "1", "0"), ridesRequests().map { it.queryParameter("page") })
+    }
+
+    // Spec 012 AC5: search, period and pull keep them
+    @Test
+    fun searchPeriodAndPullKeepTheSortAndTheFilter() = runTest(dispatcher) {
+        backend.on("GET /api/riders", json(rider))
+        backend.on("GET /api/riders/5/rides", typedPage(1..3, 3))
+        backend.on("GET /api/riders/5/intervals", json("""{"connected":false}"""))
+        val viewModel = viewModel()
+        viewModel.settled()
+        viewModel.selectSort(RideColumn.DISTANCE)
+        viewModel.selectSport("road_biking")
+        viewModel.settled()
+        val before = ridesRequests().size
+
+        viewModel.selectPreset(RangePreset.WEEK)
+        viewModel.settled()
+        viewModel.onTextChange("vo2")
+        viewModel.state.first { it.text == "vo2" }
+        waitFor { ridesRequests().size >= before + 2 }
+        viewModel.settled()
+        viewModel.refresh()
+        viewModel.settled()
+
+        assertTrue(order().drop(before).all { it == listOf("distance", "desc", "road_biking") })
+        assertEquals(before + 3, ridesRequests().size)
+    }
 }
