@@ -27,6 +27,8 @@ import app.climbra.android.coach.CoachFixtures.BLOCK
 import app.climbra.android.coach.CoachFixtures.PLAN_CHANGE
 import app.climbra.android.coach.CoachFixtures.REVIEW
 import app.climbra.android.coach.CoachFixtures.conversation
+import app.climbra.android.coach.CoachFixtures.latestProposal
+import app.climbra.android.coach.CoachFixtures.proposal
 import app.climbra.android.coach.CoachFixtures.message
 import app.climbra.android.coach.CoachFixtures.parse
 import app.climbra.android.coach.CoachFixtures.parseQuota
@@ -36,7 +38,14 @@ import app.climbra.android.coach.CoachFixtures.summary
 import app.climbra.android.dashboard.DashboardScreen
 import app.climbra.android.dashboard.DashboardUiState
 import app.climbra.android.data.api.CoachConversationSummary
+import app.climbra.android.data.api.PlanProposal
 import app.climbra.android.data.api.Rider
+import app.climbra.android.data.api.TrainingPlan
+import app.climbra.android.calendar.CalendarFixtures
+import app.climbra.android.shell.CoachConversationRoute
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.toRoute
 import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.Network
 import app.climbra.android.shell.Shell
@@ -386,19 +395,266 @@ class CoachScreensTest {
         inside("cost-line", "The coach is answering another request").assertExists()
     }
 
-    // AC19
+    // AC19; spec 008 AC10: a plan adjustment without a proposal is its chat, with nothing left for the web
     @Test
-    fun aPlanAdjustmentShowsItsChatAndTheProposalOnTheWeb() {
-        var path: String? = null
-        showConversation(
-            conversationState(conversation(type = "PLAN_ADJUSTMENT", planId = 9, activityId = null)),
-            ConversationActions(onOpenWeb = { path = it }),
-        )
+    fun aPlanAdjustmentWithoutAProposalShowsItsChat() {
+        showConversation(conversationState(conversation(type = "PLAN_ADJUSTMENT", planId = 7, activityId = null)))
 
         compose.onNodeWithTag("tab-panel").assertDoesNotExist()
         compose.onNodeWithTag("chat").assertExists()
-        inside("proposal-on-web", "Open on climbra.app").performClick()
-        assertEquals("coach/12", path)
+        compose.onNodeWithText("climbra.app", substring = true).assertDoesNotExist()
+    }
+
+    // ---- Spec 008: proposal, review's plan section, adjustment form
+
+    private fun proposalState(status: String = "PENDING", deciding: Boolean = false) =
+        conversationState(conversation(type = "PLAN_ADJUSTMENT", planId = 7, activityId = null, proposal = latestProposal(status = status)))
+            .copy(
+                tab = ConversationTab.PANEL,
+                proposal = Network.json.decodeFromString(PlanProposal.serializer(), proposal(status = status)),
+                deciding = deciding,
+            )
+
+    // Spec 008 AC5, AC10
+    @Test
+    fun theProposalTabShowsStatusSummaryChangedDaysAndWeeks() {
+        showConversation(proposalState())
+
+        compose.onNodeWithTag("tab-panel").assertIsSelected()
+        inside("tab-panel", "Proposal").assertExists()
+        inside("proposal-status", "Waiting for your decision").assertExists()
+        inside("proposal-from", "Changes from Nov 14, 2026").assertExists()
+        inside("proposal-summary", "intensity").assertExists()
+        // Only the changed days, with before → after
+        inside("proposal-day-2026-11-14", "Changed").assertExists()
+        inside("before-2026-11-14", "Sweet spot 3×12").assertExists()
+        inside("after-2026-11-14", "Easy spin").assertExists()
+        compose.onNodeWithTag("proposal-day-2026-11-15").assertDoesNotExist()
+        compose.onNodeWithTag("proposal-day-2026-11-16").performScrollTo()
+        inside("proposal-day-2026-11-16", "Removed").assertExists()
+        inside("completed-2026-11-16", "The completed workout stays").assertExists()
+        compose.onNodeWithTag("after-2026-11-16-none", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("proposal-day-2026-11-18").performScrollTo()
+        inside("proposal-day-2026-11-18", "New").assertExists()
+        compose.onNodeWithTag("before-2026-11-18-none", useUnmergedTree = true).assertExists()
+        // The weeks' planned TSS from the backend
+        compose.onNodeWithTag("proposal-weeks").performScrollTo()
+        inside("proposal-week-2", "320").assertExists()
+        inside("proposal-week-2", "250").assertExists()
+        inside("proposal-week-2", "Recover").assertExists()
+        inside("proposal-week-3", "Build").assertExists()
+        compose.onNodeWithText("climbra.app", substring = true).assertDoesNotExist()
+    }
+
+    // Spec 008 AC5: a tile opens the workout's detail
+    @Test
+    fun aProposalTileOpensTheWorkout() {
+        showConversation(proposalState())
+
+        compose.onNodeWithTag("after-2026-11-14").performScrollTo().performClick()
+        inside("workout-sheet", "Easy spin").assertExists()
+    }
+
+    // Spec 008 AC6: Accept; Reject asks first
+    @Test
+    fun aPendingProposalCanBeAcceptedOrRejectedAfterConfirmation() {
+        val calls = mutableListOf<String>()
+        var state by mutableStateOf(proposalState())
+        content {
+            ConversationScreen(
+                state,
+                fmt,
+                now,
+                ConversationActions(
+                    onAccept = { calls += "accept" },
+                    onAskReject = { calls += "ask"; state = state.copy(confirmingReject = true) },
+                    onReject = { calls += "reject" },
+                ),
+            )
+        }
+
+        compose.onNodeWithTag("accept-proposal").performScrollTo().performClick()
+        compose.onNodeWithTag("reject-proposal").performScrollTo().performClick()
+        compose.onNodeWithText("Reject the proposal? The plan stays as it is.").assertIsDisplayed()
+        compose.onNodeWithTag("confirm-reject").performClick()
+        assertEquals(listOf("accept", "ask", "reject"), calls)
+
+        state = proposalState(deciding = true)
+        compose.onNodeWithTag("accept-proposal").assertIsNotEnabled()
+        compose.onNodeWithTag("reject-proposal").assertIsNotEnabled()
+    }
+
+    // Spec 008 AC6: the decisions' snackbars; a decided proposal has no buttons
+    @Test
+    fun aDecidedProposalHasNoButtonsAndTheDecisionIsTold() {
+        showConversation(proposalState(status = "ACCEPTED").copy(message = ConversationMessage.ProposalAccepted))
+
+        compose.onNodeWithText("Plan updated").assertIsDisplayed()
+        inside("proposal-status", "Accepted").assertExists()
+        compose.onNodeWithTag("accept-proposal").assertDoesNotExist()
+        compose.onNodeWithTag("reject-proposal").assertDoesNotExist()
+        compose.onNodeWithTag("tab-chat").assertIsEnabled()
+    }
+
+    // Spec 008 AC6, AC11: an outdated proposal tells why
+    @Test
+    fun anOutdatedProposalTellsWhy() {
+        showConversation(
+            proposalState(status = "OUTDATED").copy(message = ConversationMessage.Failed(ApiError.Http(409, "PROPOSAL_OUTDATED"))),
+        )
+
+        compose.onNodeWithText("This proposal is outdated", substring = true).assertIsDisplayed()
+        inside("proposal-status", "Outdated").assertExists()
+    }
+
+    // Spec 008 AC5: a failed load offers a retry
+    @Test
+    fun aProposalThatFailedToLoadOffersARetry() {
+        var retries = 0
+        showConversation(
+            proposalState().copy(proposal = null, proposalError = ApiError.Http(503, null)),
+            ConversationActions(onRetryProposal = { retries++ }),
+        )
+
+        compose.onNodeWithTag("proposal-error").assertExists()
+        compose.onNodeWithTag("proposal-retry").performClick()
+        assertEquals(1, retries)
+    }
+
+    private val applicable = PLAN_CHANGE.replace("APPLIED", "APPLICABLE")
+
+    // Spec 008 AC8, AC9: an applicable change offers both actions; the adjustment is prefilled from the review
+    @Test
+    fun anApplicableChangeOffersReplaceAndAdjust() {
+        var replaced = 0
+        var args: AdjustmentArgs? = null
+        showConversation(
+            conversationState(conversation(review = REVIEW, planChange = applicable)).copy(tab = ConversationTab.PANEL),
+            ConversationActions(onReplaceInPlan = { replaced++ }, onAdjust = { args = it }),
+        )
+
+        compose.onNodeWithTag("replace-in-plan").performScrollTo().assertIsEnabled().performClick()
+        compose.onNodeWithTag("adjust-with-coach").performScrollTo().performClick()
+
+        assertEquals(1, replaced)
+        assertEquals(
+            AdjustmentArgs(9, "2026-11-17", fromDate = "2026-11-17", note = "Coach's review of Ride review: Legs need a lighter day."),
+            args,
+        )
+    }
+
+    // Spec 008 AC8: applied, "In your plan" and no replace; while it runs the button waits
+    @Test
+    fun anAppliedChangeHasNoReplaceAndARunningOneWaits() {
+        var state by mutableStateOf(
+            conversationState(conversation(review = REVIEW, planChange = applicable)).copy(tab = ConversationTab.PANEL, replacing = true),
+        )
+        content { ConversationScreen(state, fmt, now, ConversationActions()) }
+        compose.onNodeWithTag("replace-in-plan").performScrollTo().assertIsNotEnabled()
+
+        state = conversationState(conversation(review = REVIEW, planChange = PLAN_CHANGE))
+            .copy(tab = ConversationTab.PANEL, message = ConversationMessage.WorkoutReplaced)
+        compose.onNodeWithText("The planned workout was replaced.").assertExists()
+        compose.onNodeWithTag("in-plan").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("replace-in-plan").assertDoesNotExist()
+        compose.onNodeWithTag("adjust-with-coach").assertExists()
+    }
+
+    // Spec 008 AC8, AC11: the plan-change errors
+    @Test
+    fun aRefusedReplacementTellsWhy() {
+        showConversation(
+            conversationState(conversation(review = REVIEW, planChange = applicable))
+                .copy(tab = ConversationTab.PANEL, message = ConversationMessage.Failed(ApiError.Http(409, "PLAN_CHANGE_NOT_APPLICABLE"))),
+        )
+
+        compose.onNodeWithText("This workout can no longer be replaced", substring = true).assertIsDisplayed()
+    }
+
+    private val plan = Network.json.decodeFromString(TrainingPlan.serializer(), CalendarFixtures.PLAN)
+
+    private fun adjustmentState(
+        reasons: Set<String> = emptySet(),
+        limits: CoachLimits = this.limits,
+        fromSuggestion: Boolean = false,
+    ) = AdjustmentFormState(
+        today = LocalDate.of(2026, 11, 12),
+        loading = false,
+        plan = plan,
+        reasons = reasons,
+        fromSuggestion = fromSuggestion,
+        limits = limits,
+    )
+
+    // Spec 008 AC1, AC3: the form; Send needs a reason and the credits
+    @Test
+    fun theAdjustmentFormNeedsAReasonAndCredits() {
+        var state by mutableStateOf(adjustmentState())
+        val toggled = mutableListOf<String>()
+        content {
+            AdjustmentFormScreen(
+                state,
+                fmt,
+                object : AdjustmentFormActions {
+                    override fun toggleReason(reason: String) {
+                        toggled += reason
+                        state = state.copy(reasons = state.reasons + reason)
+                    }
+                },
+            )
+        }
+
+        compose.onNodeWithText("Adjust the plan: FTP build").assertIsDisplayed()
+        compose.onNodeWithTag("from-suggestion").assertDoesNotExist()
+        inside("from-date-value", "November 13, 2026").assertExists()
+        compose.onNodeWithTag("send-adjustment").performScrollTo().assertIsNotEnabled()
+
+        compose.onNodeWithTag("reason-fatigue").performScrollTo().performClick()
+        assertEquals(listOf("FATIGUE"), toggled)
+        compose.onNodeWithTag("send-adjustment").performScrollTo().assertIsEnabled()
+
+        state = state.copy(limits = CoachLimits(parseQuota(quota(remaining = 2))))
+        compose.onNodeWithTag("send-adjustment").performScrollTo().assertIsNotEnabled()
+    }
+
+    // Spec 008 AC2, AC3: from the suggestion its reasons are chosen; the days show when switched on
+    @Test
+    fun fromTheSuggestionTheReasonsAreChosenAndTheDaysShowWhenSwitchedOn() {
+        var state by mutableStateOf(adjustmentState(reasons = setOf("MISSED_WORKOUTS", "DEVIATION"), fromSuggestion = true))
+        content {
+            AdjustmentFormScreen(
+                state,
+                fmt,
+                object : AdjustmentFormActions {
+                    override fun setChangeDays(on: Boolean) {
+                        state = state.copy(changeDays = on)
+                    }
+                },
+            )
+        }
+
+        compose.onNodeWithTag("from-suggestion").assertIsDisplayed()
+        compose.onNodeWithTag("reason-missed_workouts").performScrollTo().assertIsSelected()
+        compose.onNodeWithTag("reason-deviation").performScrollTo().assertIsSelected()
+        compose.onNodeWithTag("day-monday").assertDoesNotExist()
+        compose.onNodeWithTag("change-days").performScrollTo().performClick()
+        compose.onNodeWithTag("day-monday").performScrollTo().assertIsDisplayed()
+    }
+
+    // Spec 008 AC4, AC9, AC11: errors under Send; a missing plan has no form
+    @Test
+    fun theFormShowsRefusalsAndAMissingPlan() {
+        var state by mutableStateOf(adjustmentState(reasons = setOf("FATIGUE")).copy(error = ApiError.Http(409, "PLAN_ADJUSTMENT_RUNNING")))
+        content { AdjustmentFormScreen(state, fmt, object : AdjustmentFormActions {}) }
+
+        compose.onNodeWithTag("adjustment-error").performScrollTo()
+        compose.onNodeWithText("The coach is already adjusting this plan", substring = true).assertExists()
+        state = state.copy(error = ApiError.Http(409, "PLAN_FINISHED"))
+        compose.onNodeWithText("The plan has no workouts left to change.", substring = true).assertExists()
+
+        state = AdjustmentFormState(today = LocalDate.of(2026, 11, 12), loading = false, planMissing = true)
+        compose.onNodeWithText("The plan is no longer in your calendar.").assertIsDisplayed()
+        compose.onNodeWithTag("send-adjustment").assertDoesNotExist()
     }
 
     // The menu leads to the ride and the plan
@@ -718,5 +974,60 @@ class CoachScreensTest {
         compose.onNodeWithTag("open-conversation").performClick()
         compose.onNodeWithTag("nav-coach").performClick()
         compose.onNodeWithTag("coach-list-screen").assertIsDisplayed()
+    }
+
+    /** The conversation route's tab, read from the back stack entry the slot is shown in. */
+    @Composable
+    private fun ConversationTabOfRoute() {
+        val entry = LocalViewModelStoreOwner.current as NavBackStackEntry
+        Text("tab ${entry.toRoute<CoachConversationRoute>().tab}", Modifier.testTag("conversation-screen"))
+    }
+
+    // Spec 008 AC7: "Show proposal" opens the conversation on the Coach tab, on its proposal tab
+    @Test
+    fun aProposalOpensOnTheCoachTabWithItsPanel() {
+        content {
+            Shell(
+                dashboard = { Text("dashboard") },
+                activities = { Text("activities") },
+                profile = { Text("profile") },
+                calendar = { nav -> Button(onClick = { nav.openProposal(21) }, modifier = Modifier.testTag("show-proposal")) { Text("calendar") } },
+                coach = { Text("coach list", Modifier.testTag("coach-list-screen")) },
+                conversation = { ConversationTabOfRoute() },
+            )
+        }
+
+        compose.onNodeWithTag("nav-calendar").performClick()
+        compose.onNodeWithTag("show-proposal").performClick()
+        compose.onNodeWithTag("nav-coach").assertIsSelected()
+        compose.onNodeWithText("tab PANEL").assertIsDisplayed()
+    }
+
+    // Spec 008 AC4: the form opens on the calendar's stack; accepted, its conversation opens on the Coach tab
+    @Test
+    fun anAcceptedAdjustmentOpensItsConversationOnTheCoachTab() {
+        content {
+            Shell(
+                dashboard = { Text("dashboard") },
+                activities = { Text("activities") },
+                profile = { Text("profile") },
+                calendar = { nav ->
+                    Button(onClick = { nav.openAdjustment(AdjustmentArgs(7, "2026-11-12")) }, modifier = Modifier.testTag("adjust")) { Text("calendar") }
+                },
+                coach = { Text("coach list", Modifier.testTag("coach-list-screen")) },
+                conversation = { ConversationTabOfRoute() },
+                adjustment = { nav -> Button(onClick = { nav.adjustmentAccepted(40) }, modifier = Modifier.testTag("send")) { Text("form") } },
+            )
+        }
+
+        compose.onNodeWithTag("nav-calendar").performClick()
+        compose.onNodeWithTag("adjust").performClick()
+        compose.onNodeWithTag("nav-calendar").assertIsSelected()
+        compose.onNodeWithTag("send").performClick()
+        compose.onNodeWithTag("nav-coach").assertIsSelected()
+        compose.onNodeWithText("tab null").assertIsDisplayed()
+        // The calendar's stack no longer holds the form
+        compose.onNodeWithTag("nav-calendar").performClick()
+        compose.onNodeWithTag("adjust").assertIsDisplayed()
     }
 }

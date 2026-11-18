@@ -65,6 +65,31 @@ interface CoachApi {
     @POST("api/coach/conversations/{id}/plan")
     suspend fun savePlan(@Path("id") conversationId: Long, @Body request: SavePlanRequest)
 
+    /** Asks the coach to adjust the rest of a plan (spec 008); `202` with the `PLAN_ADJUSTMENT` conversation. */
+    @POST("api/riders/{riderId}/plans/{planId}/adjustments")
+    suspend fun requestAdjustment(
+        @Path("riderId") riderId: Long,
+        @Path("planId") planId: Long,
+        @Body request: PlanAdjustmentRequest,
+    ): CoachConversation
+
+    @GET("api/riders/{riderId}/plans/{planId}/proposals/{proposalId}")
+    suspend fun proposal(@Path("riderId") riderId: Long, @Path("planId") planId: Long, @Path("proposalId") proposalId: Long): PlanProposal
+
+    /** `409 PROPOSAL_OUTDATED` when the plan changed after the proposal was made. */
+    @POST("api/riders/{riderId}/plans/{planId}/proposals/{proposalId}/accept")
+    suspend fun acceptProposal(@Path("riderId") riderId: Long, @Path("planId") planId: Long, @Path("proposalId") proposalId: Long)
+
+    @POST("api/riders/{riderId}/plans/{planId}/proposals/{proposalId}/reject")
+    suspend fun rejectProposal(@Path("riderId") riderId: Long, @Path("planId") planId: Long, @Path("proposalId") proposalId: Long)
+
+    /**
+     * Replaces the planned workout with the next session of the latest review (cyclingapp spec 020), no model call;
+     * `409 REVIEW_NO_PLAN_CHANGE`, `PLAN_CHANGE_NOT_APPLICABLE` or `CONVERSATION_BUSY`.
+     */
+    @POST("api/coach/conversations/{id}/review/plan-change")
+    suspend fun applyReviewPlanChange(@Path("id") conversationId: Long): ReviewPlanChange
+
     @GET("api/account/coach-quota")
     suspend fun coachQuota(): CoachQuota
 }
@@ -244,8 +269,67 @@ data class ReviewPlanChange(
 ) {
     companion object {
         const val STATUS_APPLIED = "APPLIED"
+        const val STATUS_APPLICABLE = "APPLICABLE"
+        const val VERDICT_ADJUST_PLAN = "ADJUST_PLAN"
     }
 }
+
+/** The reasons of an adjustment, in the web's order (`ADJUSTMENT_REASONS`). */
+val ADJUSTMENT_REASONS = listOf("FATIGUE", "ILLNESS", "LACK_OF_TIME", "MISSED_WORKOUTS", "DEVIATION", "OTHER")
+
+/** Mirrors the web's `PlanAdjustmentRequest` (cyclingapp spec 010); `availability: null` keeps the plan's days. */
+@Serializable
+data class PlanAdjustmentRequest(
+    val reasons: List<String>,
+    val fatigue: Int?,
+    val note: String?,
+    val fromDate: String?,
+    val availability: Availability?,
+    val includeSuggestion: Boolean,
+    val language: String,
+)
+
+/** Mirrors `plan.PlanProposalResponse`: the coach's adjustment of a plan, computed by the backend. */
+@Serializable
+data class PlanProposal(
+    val id: Long,
+    val planId: Long,
+    val conversationId: Long? = null,
+    /** `PENDING`, `ACCEPTED`, `REJECTED` or `OUTDATED`. */
+    val status: String = STATUS_PENDING,
+    val createdAt: String? = null,
+    val fromDate: String,
+    val summary: String? = null,
+    val days: List<ProposalDay> = emptyList(),
+    val weeks: List<ProposalWeek> = emptyList(),
+) {
+    companion object {
+        const val STATUS_PENDING = "PENDING"
+    }
+}
+
+/** [change] is `ADDED`, `REMOVED`, `CHANGED` or `UNCHANGED`; a [completed] day stays as it is. */
+@Serializable
+data class ProposalDay(
+    val date: String,
+    val change: String = CHANGE_UNCHANGED,
+    val before: PlannedWorkout? = null,
+    val after: PlannedWorkout? = null,
+    val completed: Boolean = false,
+) {
+    companion object {
+        const val CHANGE_UNCHANGED = "UNCHANGED"
+    }
+}
+
+@Serializable
+data class ProposalWeek(
+    val weekNumber: Int,
+    val plannedTssBefore: Int? = null,
+    val plannedTssAfter: Int? = null,
+    val focusBefore: String? = null,
+    val focusAfter: String? = null,
+)
 
 @Serializable
 data class TrainingWeek(

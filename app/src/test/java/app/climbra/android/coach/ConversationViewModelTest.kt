@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import app.climbra.android.coach.CoachFixtures.BLOCK
 import app.climbra.android.coach.CoachFixtures.REVIEW
 import app.climbra.android.coach.CoachFixtures.conversation
+import app.climbra.android.coach.CoachFixtures.latestProposal
+import app.climbra.android.coach.CoachFixtures.proposal
 import app.climbra.android.coach.CoachFixtures.pending
 import app.climbra.android.coach.CoachFixtures.quota
 import app.climbra.android.data.net.ApiError
@@ -319,5 +321,159 @@ class ConversationViewModelTest : CoachTestBase() {
         viewModel.send()
 
         assertTrue(viewModel.state.first { it.updated }.updated)
+    }
+
+    // ---- Spec 008: the proposal of a plan adjustment, the review's change of the plan
+
+    private val proposalRoute = "GET /api/riders/5/plans/7/proposals/9"
+    private val acceptRoute = "POST /api/riders/5/plans/7/proposals/9/accept"
+    private val rejectRoute = "POST /api/riders/5/plans/7/proposals/9/reject"
+
+    private fun adjustment(proposal: String = latestProposal()) =
+        conversation(type = "PLAN_ADJUSTMENT", planId = 7, activityId = null, proposal = proposal)
+
+    private suspend fun ConversationViewModel.withProposal(status: String = "PENDING") =
+        state.first { it.proposal?.status == status && !it.deciding }
+
+    // Spec 008 AC5: the proposal tab loads the conversation's latest proposal
+    @Test
+    fun aPlanAdjustmentLoadsItsProposal() = runTest(dispatcher) {
+        backend.on(route, json(adjustment()))
+        backend.on(proposalRoute, json(proposal()))
+
+        val state = viewModel().withProposal()
+
+        assertTrue(state.hasProposal)
+        assertTrue(state.hasPanel)
+        assertEquals(4, state.proposal!!.days.size)
+        assertEquals(ConversationTab.CHAT, state.tab)
+    }
+
+    // Spec 008 AC5: a follow-up's new proposal loads again; a failure offers a retry
+    @Test
+    fun aNewProposalLoadsAgainAndAFailureCanBeRetried() = runTest(dispatcher) {
+        backend.on(route, json(adjustment()), json(adjustment(latestProposal(id = 10))))
+        backend.on(proposalRoute, problem(503, null), json(proposal()))
+        backend.on("GET /api/riders/5/plans/7/proposals/10", json(proposal(id = 10)))
+        val viewModel = viewModel()
+
+        assertEquals(ApiError.Http(503, null), viewModel.state.first { it.proposalError != null }.proposalError)
+        viewModel.retryProposal()
+        viewModel.withProposal()
+
+        viewModel.retryLoad()
+        assertEquals(10L, viewModel.state.first { it.proposal?.id == 10L }.proposal!!.id)
+    }
+
+    // Spec 008 AC7: the calendar's banner opens the proposal tab
+    @Test
+    fun theProposalTabCanBeTheFirst() = runTest(dispatcher) {
+        backend.on(route, json(adjustment()))
+        backend.on(proposalRoute, json(proposal()))
+
+        val viewModel = ConversationViewModel(
+            SavedStateHandle(mapOf("id" to 12L, "tab" to "PANEL")), backend.coachApi, activity, quotas, files, changes, clock,
+        ).tracked()
+
+        assertEquals(ConversationTab.PANEL, viewModel.withProposal().tab)
+    }
+
+    // Spec 008 AC6: accepted, the plan changed and the proposal reloads
+    @Test
+    fun acceptingAdjustsThePlanAndReloads() = runTest(dispatcher) {
+        backend.on(route, json(adjustment()))
+        backend.on(proposalRoute, json(proposal()), json(proposal(status = "ACCEPTED")))
+        backend.on(acceptRoute, json("""{"id":7}"""))
+        val viewModel = viewModel()
+        viewModel.withProposal()
+        val version = changes.version.value
+
+        viewModel.acceptProposal()
+
+        val state = viewModel.withProposal("ACCEPTED")
+        assertEquals(ConversationMessage.ProposalAccepted, state.message)
+        assertEquals(1, count(acceptRoute))
+        assertEquals(version + 1, changes.version.value)
+        // Decided: nothing more is sent
+        viewModel.acceptProposal()
+        viewModel.askReject()
+        viewModel.rejectProposal()
+        assertEquals(1, count(acceptRoute))
+        assertEquals(0, count(rejectRoute))
+    }
+
+    // Spec 008 AC6: rejecting asks first
+    @Test
+    fun rejectingAsksFirstAndReloads() = runTest(dispatcher) {
+        backend.on(route, json(adjustment()))
+        backend.on(proposalRoute, json(proposal()), json(proposal(status = "REJECTED")))
+        backend.on(rejectRoute, json("""{"id":9}"""))
+        val viewModel = viewModel()
+        viewModel.withProposal()
+
+        viewModel.askReject()
+        assertTrue(viewModel.state.value.confirmingReject)
+        viewModel.cancelReject()
+        assertFalse(viewModel.state.value.confirmingReject)
+        assertEquals(0, count(rejectRoute))
+
+        viewModel.askReject()
+        viewModel.rejectProposal()
+
+        val state = viewModel.withProposal("REJECTED")
+        assertFalse(state.confirmingReject)
+        assertEquals(ConversationMessage.ProposalRejected, state.message)
+        assertEquals(1, count(rejectRoute))
+    }
+
+    // Spec 008 AC6: an outdated proposal tells why and reloads
+    @Test
+    fun anOutdatedProposalTellsWhyAndReloads() = runTest(dispatcher) {
+        backend.on(route, json(adjustment()))
+        backend.on(proposalRoute, json(proposal()), json(proposal(status = "OUTDATED")))
+        backend.on(acceptRoute, problem(409, "PROPOSAL_OUTDATED"))
+        val viewModel = viewModel()
+        viewModel.withProposal()
+        val version = changes.version.value
+
+        viewModel.acceptProposal()
+
+        val state = viewModel.withProposal("OUTDATED")
+        assertEquals(ConversationMessage.Failed(ApiError.Http(409, "PROPOSAL_OUTDATED")), state.message)
+        assertEquals(version, changes.version.value)
+    }
+
+    // Spec 008 AC8: the review's workout goes into the plan
+    @Test
+    fun replacingInThePlanAppliesTheReviewsChange() = runTest(dispatcher) {
+        val applicable = CoachFixtures.PLAN_CHANGE.replace("APPLIED", "APPLICABLE")
+        backend.on(route, json(conversation(review = REVIEW, planChange = applicable)), json(conversation(review = REVIEW, planChange = CoachFixtures.PLAN_CHANGE)))
+        backend.on("POST /api/coach/conversations/12/review/plan-change", json(CoachFixtures.PLAN_CHANGE))
+        val viewModel = viewModel()
+        viewModel.settled()
+        val version = changes.version.value
+
+        viewModel.replaceInPlan()
+
+        val state = viewModel.state.first { it.conversation?.reviewPlanChange?.status == "APPLIED" && !it.replacing }
+        assertEquals(ConversationMessage.WorkoutReplaced, state.message)
+        assertEquals(version + 1, changes.version.value)
+        assertEquals(2, count(route))
+    }
+
+    // Spec 008 AC8: the plan-change errors
+    @Test
+    fun aRefusedReplacementTellsWhy() = runTest(dispatcher) {
+        backend.on(route, json(conversation(review = REVIEW, planChange = CoachFixtures.PLAN_CHANGE.replace("APPLIED", "APPLICABLE"))))
+        backend.on("POST /api/coach/conversations/12/review/plan-change", problem(409, "PLAN_CHANGE_NOT_APPLICABLE"))
+        val viewModel = viewModel()
+        viewModel.settled()
+        val version = changes.version.value
+
+        viewModel.replaceInPlan()
+
+        val state = viewModel.state.first { it.message != null && !it.replacing }
+        assertEquals(ConversationMessage.Failed(ApiError.Http(409, "PLAN_CHANGE_NOT_APPLICABLE")), state.message)
+        assertEquals(version, changes.version.value)
     }
 }

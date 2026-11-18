@@ -34,7 +34,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import app.climbra.android.R
+import app.climbra.android.coach.AdjustmentArgs
 import app.climbra.android.coach.CoachFinished
+import app.climbra.android.coach.ConversationTab
 import app.climbra.android.ui.common.UiText
 import kotlin.reflect.KClass
 import kotlinx.coroutines.flow.Flow
@@ -78,6 +80,16 @@ data class CalendarWorkoutRoute(val id: Long, val date: String)
 @Serializable
 data class CalendarRideRoute(val id: Long)
 
+/** The adjustment form opened from a plan of the calendar (spec 008); the arguments are [AdjustmentArgs]'. */
+@Serializable
+data class CalendarAdjustmentRoute(
+    val planId: Long,
+    val date: String,
+    val suggestion: Boolean = false,
+    val fromDate: String? = null,
+    val note: String? = null,
+)
+
 @Serializable
 data object CoachGraph
 
@@ -85,8 +97,19 @@ data object CoachGraph
 @Serializable
 data object CoachRoute
 
+/** [tab] `PANEL` opens the conversation on its panel, e.g. a proposal (spec 008). */
 @Serializable
-data class CoachConversationRoute(val id: Long)
+data class CoachConversationRoute(val id: Long, val tab: String? = null)
+
+/** The adjustment form opened from a review (spec 008). */
+@Serializable
+data class CoachAdjustmentRoute(
+    val planId: Long,
+    val date: String,
+    val suggestion: Boolean = false,
+    val fromDate: String? = null,
+    val note: String? = null,
+)
 
 @Serializable
 data object CoachTrainingBlockRoute
@@ -169,6 +192,33 @@ class ShellNavigator internal constructor(private val nav: NavController) {
         }
     }
 
+    /** The adjustment form on the stack of the tab shown now: the calendar's, else the coach's (spec 008). */
+    fun openAdjustment(args: AdjustmentArgs) {
+        nav.navigate(
+            if (currentTab() == TopLevelDestination.CALENDAR) {
+                CalendarAdjustmentRoute(args.planId, args.date, args.suggestion, args.fromDate, args.note)
+            } else {
+                CoachAdjustmentRoute(args.planId, args.date, args.suggestion, args.fromDate, args.note)
+            },
+        )
+    }
+
+    /** The accepted adjustment's conversation on the Coach tab, in place of the form. */
+    fun adjustmentAccepted(conversationId: Long) {
+        if (currentTab() == TopLevelDestination.COACH) {
+            replaceWithConversation(conversationId)
+        } else {
+            back()
+            openConversation(conversationId)
+        }
+    }
+
+    /** A proposal: its conversation on the Coach tab, on the proposal tab (spec 008). */
+    fun openProposal(conversationId: Long) {
+        if (currentTab() != TopLevelDestination.COACH) openCoach()
+        nav.navigate(CoachConversationRoute(conversationId, ConversationTab.PANEL.name))
+    }
+
     fun newTrainingBlock() {
         if (currentTab() != TopLevelDestination.COACH) openCoach()
         nav.navigate(CoachTrainingBlockRoute)
@@ -203,6 +253,7 @@ fun Shell(
     conversation: @Composable (ShellNavigator) -> Unit = {},
     trainingBlock: @Composable (ShellNavigator) -> Unit = {},
     fileReview: @Composable (ShellNavigator) -> Unit = {},
+    adjustment: @Composable (ShellNavigator) -> Unit = {},
     coachEvents: Flow<CoachFinished> = emptyFlow(),
     notices: Flow<UiText> = emptyFlow(),
 ) {
@@ -262,6 +313,7 @@ fun Shell(
                 composable<CalendarRoute> { Screen { calendar(navigator) } }
                 composable<CalendarWorkoutRoute> { Screen { workout(navigator) } }
                 composable<CalendarRideRoute> { Screen { ride(navigator) } }
+                composable<CalendarAdjustmentRoute> { Screen { adjustment(navigator) } }
             }
             navigation<CoachGraph>(startDestination = CoachRoute) {
                 composable<CoachRoute> { Screen { coach(navigator) } }
@@ -269,6 +321,7 @@ fun Shell(
                 composable<CoachTrainingBlockRoute> { Screen { trainingBlock(navigator) } }
                 composable<CoachFileReviewRoute> { Screen { fileReview(navigator) } }
                 composable<CoachRideRoute> { Screen { ride(navigator) } }
+                composable<CoachAdjustmentRoute> { Screen { adjustment(navigator) } }
             }
             navigation<ProfileGraph>(startDestination = ProfileRoute) {
                 composable<ProfileRoute> { Screen { profile() } }

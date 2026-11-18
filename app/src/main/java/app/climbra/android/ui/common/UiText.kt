@@ -58,6 +58,11 @@ val TRANSLATED_ERROR_CODES: Map<String, Int> = mapOf(
     "CONVERSATION_READ_ONLY" to R.string.api_error_conversation_read_only,
     "PLAN_OVERLAP" to R.string.api_error_plan_overlap,
     "PLAN_NO_BLOCK" to R.string.api_error_plan_no_block,
+    "PLAN_FINISHED" to R.string.api_error_plan_finished,
+    "PLAN_ADJUSTMENT_RUNNING" to R.string.api_error_plan_adjustment_running,
+    "PROPOSAL_OUTDATED" to R.string.api_error_proposal_outdated,
+    "REVIEW_NO_PLAN_CHANGE" to R.string.api_error_review_no_plan_change,
+    "PLAN_CHANGE_NOT_APPLICABLE" to R.string.api_error_plan_change_not_applicable,
 )
 
 fun ApiError.toUiText(): UiText = when (this) {

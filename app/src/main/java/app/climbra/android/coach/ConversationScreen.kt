@@ -103,6 +103,7 @@ fun ConversationRoute(
     /** The calendar at the week of an ISO date, or where it was without one. */
     onOpenCalendar: (String?) -> Unit,
     onDeleted: () -> Unit,
+    onAdjust: (AdjustmentArgs) -> Unit = {},
     viewModel: ConversationViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -144,6 +145,13 @@ fun ConversationRoute(
             onOpenWeb = { path -> openWebPage(context, config.webPage(path)) },
             onOpenLink = { url -> openWebPage(context, url) },
             onMessageShown = viewModel::messageShown,
+            onAccept = viewModel::acceptProposal,
+            onAskReject = viewModel::askReject,
+            onCancelReject = viewModel::cancelReject,
+            onReject = viewModel::rejectProposal,
+            onRetryProposal = { viewModel.retryProposal() },
+            onReplaceInPlan = viewModel::replaceInPlan,
+            onAdjust = onAdjust,
         ),
     )
 }
@@ -174,6 +182,14 @@ data class ConversationActions(
     /** A link in an answer. */
     val onOpenLink: (String) -> Unit = {},
     val onMessageShown: () -> Unit = {},
+    // Spec 008
+    val onAccept: () -> Unit = {},
+    val onAskReject: () -> Unit = {},
+    val onCancelReject: () -> Unit = {},
+    val onReject: () -> Unit = {},
+    val onRetryProposal: () -> Unit = {},
+    val onReplaceInPlan: () -> Unit = {},
+    val onAdjust: (AdjustmentArgs) -> Unit = {},
 )
 
 /** The web's `conversation-view` (spec 006): the chat, and the latest review or training block next to it. */
@@ -184,6 +200,9 @@ fun ConversationScreen(state: ConversationUiState, fmt: Fmt, now: Instant, actio
     val message = when (val m = state.message) {
         ConversationMessage.PlanAdded -> stringResource(R.string.calendar_added)
         ConversationMessage.PlanUpdated -> stringResource(R.string.calendar_updated)
+        ConversationMessage.ProposalAccepted -> stringResource(R.string.proposal_accepted)
+        ConversationMessage.ProposalRejected -> stringResource(R.string.proposal_rejected)
+        ConversationMessage.WorkoutReplaced -> stringResource(R.string.review_replaced)
         is ConversationMessage.Failed -> m.error.toUiText().resolve()
         null -> null
     }
@@ -230,6 +249,18 @@ fun ConversationScreen(state: ConversationUiState, fmt: Fmt, now: Instant, actio
     workout?.let { WorkoutDetailSheet(it, fmt) { workout = null } }
     state.overlap?.let { name ->
         OverlapDialog(name, conversation?.latestTrainingBlock?.startDate, state.savingPlan, fmt, actions.onReplacePlan, actions.onCancelOverlap)
+    }
+    if (state.confirmingReject) {
+        AlertDialog(
+            onDismissRequest = actions.onCancelReject,
+            text = { Text(stringResource(R.string.proposal_confirm_reject)) },
+            confirmButton = {
+                TextButton(onClick = actions.onReject, modifier = Modifier.testTag("confirm-reject")) {
+                    Text(stringResource(R.string.proposal_reject))
+                }
+            },
+            dismissButton = { TextButton(onClick = actions.onCancelReject) { Text(stringResource(R.string.cancel)) } },
+        )
     }
     if (state.confirmingDelete && conversation != null) {
         AlertDialog(
@@ -310,13 +341,6 @@ private fun Header(conversation: CoachConversation, fmt: Fmt, actions: Conversat
             ConversationTypeBadge(conversation.type, Modifier.testTag("conversation-type"))
             Text(fmt.instant(conversation.createdAt), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.extendedColors.textFaint)
         }
-        // The proposal of a plan adjustment is spec 007's: decided on the web until then
-        if (conversation.type == ConversationType.PLAN_ADJUSTMENT) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("proposal-on-web")) {
-                Text(stringResource(R.string.coach_proposal_on_web), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                OpenOnWeb { actions.onOpenWeb("coach/${conversation.id}") }
-            }
-        }
     }
 }
 
@@ -334,7 +358,15 @@ private fun Tabs(state: ConversationUiState, conversation: CoachConversation, on
             onClick = { onTab(ConversationTab.PANEL) },
             text = {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(stringResource(if (conversation.latestTrainingBlock != null) R.string.coach_training_block else R.string.coach_review))
+                    Text(
+                        stringResource(
+                            when {
+                                state.hasProposal -> R.string.proposal_tab
+                                conversation.latestTrainingBlock != null -> R.string.coach_training_block
+                                else -> R.string.coach_review
+                            },
+                        ),
+                    )
                     if (state.updated) {
                         Pill(stringResource(R.string.coach_updated), MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary, Modifier.testTag("panel-updated"))
                     }
@@ -360,13 +392,41 @@ private fun Panel(
         val block = conversation.latestTrainingBlock
         val review = conversation.latestReview
         when {
+            state.hasProposal -> ProposalPanel(
+                proposal = state.proposal,
+                error = state.proposalError,
+                deciding = state.deciding,
+                fmt = fmt,
+                onAccept = actions.onAccept,
+                onReject = actions.onAskReject,
+                onRetry = actions.onRetryProposal,
+                onOpenWorkout = onOpenWorkout,
+            )
             block != null -> {
                 TrainingBlockPanel(block, fmt, onOpenWorkout)
                 if (conversation.type == ConversationType.TRAINING_BLOCK) {
                     PlanActions(conversation, state.savingPlan, actions.onSavePlan) { actions.onOpenCalendar(block.startDate) }
                 }
             }
-            review != null -> ReviewPanel(review, conversation.reviewPlanChange, fmt, onOpenWorkout)
+            review != null -> {
+                val change = conversation.reviewPlanChange
+                val adjustNote = review.planAssessment?.let { stringResource(R.string.review_adjust_note, conversation.title, it.reason) }
+                ReviewPanel(
+                    review,
+                    change,
+                    fmt,
+                    onOpenWorkout,
+                    ReviewPlanActions(
+                        replacing = state.replacing || state.busy,
+                        onReplace = actions.onReplaceInPlan,
+                        onAdjust = change?.planId?.let { planId ->
+                            change.workoutDate?.let { date ->
+                                { actions.onAdjust(AdjustmentArgs(planId, date, fromDate = review.planAssessment?.workoutDate ?: date, note = adjustNote)) }
+                            }
+                        },
+                    ),
+                )
+            }
         }
     }
 }

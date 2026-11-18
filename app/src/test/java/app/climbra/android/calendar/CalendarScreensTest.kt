@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
@@ -25,6 +26,7 @@ import androidx.compose.ui.test.swipeLeft
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.climbra.android.activities.PlannedWorkoutCard
 import app.climbra.android.calendar.CalendarFixtures.COMPLETED
+import app.climbra.android.calendar.CalendarFixtures.PLAN
 import app.climbra.android.calendar.CalendarFixtures.PLANNED
 import app.climbra.android.calendar.CalendarFixtures.REST
 import app.climbra.android.calendar.CalendarFixtures.SENT
@@ -188,13 +190,19 @@ class CalendarScreensTest {
 
     // AC6
     @Test
-    fun theSuggestionListsItsReasonsAndCanBeDismissedTheProposalLinksToTheWeb() {
+    // Spec 008 AC2, AC7, AC10: the suggestion asks the coach, the proposal opens in the app
+    fun theSuggestionListsItsReasonsAndCanBeDismissedTheProposalOpensInTheApp() {
         val calls = mutableListOf<String>()
         content {
             CalendarScreen(
                 week(),
                 fmt,
-                CalendarActions(onDismissSuggestion = { calls += "dismiss ${it.id}" }, onOpenWeb = { calls += "web $it" }),
+                CalendarActions(
+                    onDismissSuggestion = { calls += "dismiss ${it.id}" },
+                    onOpenWeb = { calls += "web $it" },
+                    onAdjust = { plan, suggestion -> calls += "adjust ${plan.id} $suggestion" },
+                    onOpenProposal = { calls += "proposal $it" },
+                ),
             )
         }
 
@@ -204,9 +212,29 @@ class CalendarScreensTest {
         inside("proposal-7", "The coach proposes changes to the plan").assertExists()
         inside("proposal-7", "from Nov 14, 2026").assertExists()
         compose.onNodeWithTag("dismiss-7").performScrollTo().performClick()
-        inside("proposal-7", "Open on climbra.app").performClick()
+        compose.onNodeWithTag("ask-coach-7").performScrollTo().performClick()
+        compose.onNodeWithTag("show-proposal-7").performScrollTo().performClick()
+        compose.onNodeWithText("climbra.app", substring = true).assertDoesNotExist()
 
-        assertEquals(listOf("dismiss 7", "web calendar?week=2026-11-09"), calls)
+        assertEquals(listOf("dismiss 7", "adjust 7 true", "proposal 21"), calls)
+    }
+
+    // Spec 008 AC1: "Adjust plan" on the plan card, hidden while the coach adjusts the plan
+    @Test
+    fun thePlanCardOffersAnAdjustmentUnlessOneRuns() {
+        val calls = mutableListOf<String>()
+        var state by mutableStateOf(week())
+        content {
+            CalendarScreen(state, fmt, CalendarActions(onAdjust = { plan, suggestion -> calls += "adjust ${plan.id} $suggestion" }))
+        }
+
+        compose.onNodeWithTag("adjust-plan-7").performScrollTo().performClick()
+        assertEquals(listOf("adjust 7 false"), calls)
+
+        state = week(data(calendar(plans = PLAN.replace("\"adjustmentRunning\":false", "\"adjustmentRunning\":true"))))
+        compose.onNodeWithTag("adjust-plan-7").assertDoesNotExist()
+        compose.onNodeWithTag("adjusting-7").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("ask-coach-7").performScrollTo().assertIsNotEnabled()
     }
 
     // AC6; spec 006 AC18: the note offers the coach's training block form

@@ -7,6 +7,7 @@ import app.climbra.android.data.api.CoachApi
 import app.climbra.android.data.api.CoachConversation
 import app.climbra.android.data.api.ConversationType
 import app.climbra.android.data.api.PendingCoachRequest
+import app.climbra.android.data.api.PlanProposal
 import app.climbra.android.data.api.SavePlanRequest
 import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.ApiResult
@@ -35,6 +36,11 @@ data class RefusedRequest(val text: String, val file: PickedFile?, val error: Ap
 sealed interface ConversationMessage {
     data object PlanAdded : ConversationMessage
     data object PlanUpdated : ConversationMessage
+
+    /** Spec 008: the proposal was accepted, rejected; the review's workout went into the plan. */
+    data object ProposalAccepted : ConversationMessage
+    data object ProposalRejected : ConversationMessage
+    data object WorkoutReplaced : ConversationMessage
     data class Failed(val error: ApiError) : ConversationMessage
 }
 
@@ -65,10 +71,24 @@ data class ConversationUiState(
     /** The conversation was deleted: the screen goes back to the list. */
     val deleted: Boolean = false,
     val message: ConversationMessage? = null,
+    /** The latest proposal of a `PLAN_ADJUSTMENT` conversation (spec 008), `null` until loaded. */
+    val proposal: PlanProposal? = null,
+    val proposalError: ApiError? = null,
+    /** An accept or reject is being sent. */
+    val deciding: Boolean = false,
+    /** Asking whether to reject the proposal. */
+    val confirmingReject: Boolean = false,
+    /** The review's workout is being put into the plan. */
+    val replacing: Boolean = false,
 ) {
     val busy: Boolean get() = conversation?.busy == true
     val pending: PendingCoachRequest? get() = conversation?.pendingRequest
-    val hasPanel: Boolean get() = conversation?.let { it.latestReview != null || it.latestTrainingBlock != null } == true
+    val hasPanel: Boolean
+        get() = conversation?.let { it.latestReview != null || it.latestTrainingBlock != null || hasProposal } == true
+
+    /** A plan adjustment with a proposal to show (spec 008). */
+    val hasProposal: Boolean
+        get() = conversation?.let { it.type == ConversationType.PLAN_ADJUSTMENT && it.latestProposal != null && it.planId != null } == true
 
     /** Nothing can be sent: read-only, the coach answers, a request is being sent, or another request runs. */
     val locked: Boolean get() = conversation?.readOnly != false || busy || submitting || limits.atCapacity
@@ -113,7 +133,10 @@ class ConversationViewModel @Inject constructor(
 
     private val id: Long = checkNotNull(savedState.get<Long>("id")) { "A conversation route has an id" }
 
-    private val mutableState = MutableStateFlow(ConversationUiState())
+    /** The calendar's proposal banner opens the proposal tab (spec 008). */
+    private val mutableState = MutableStateFlow(
+        ConversationUiState(tab = if (savedState.get<String>("tab") == ConversationTab.PANEL.name) ConversationTab.PANEL else ConversationTab.CHAT),
+    )
     val state: StateFlow<ConversationUiState> = mutableState.asStateFlow()
 
     /** Polls while the screen is shown and the coach answers. */
@@ -247,6 +270,72 @@ class ConversationViewModel @Inject constructor(
 
     fun cancelOverlap() = mutableState.update { it.copy(overlap = null) }
 
+    // Spec 008: the proposal of a plan adjustment, and the review's change of the plan
+
+    fun retryProposal() = viewModelScope.launch { loadProposal() }
+
+    fun acceptProposal() = decide(ConversationMessage.ProposalAccepted) { rider, plan, proposal -> api.acceptProposal(rider, plan, proposal) }
+
+    fun askReject() = mutableState.update { it.copy(confirmingReject = true) }
+
+    fun cancelReject() = mutableState.update { it.copy(confirmingReject = false) }
+
+    fun rejectProposal() {
+        mutableState.update { it.copy(confirmingReject = false) }
+        decide(ConversationMessage.ProposalRejected) { rider, plan, proposal -> api.rejectProposal(rider, plan, proposal) }
+    }
+
+    /** Accepts or rejects; an outdated proposal tells why. Either way the proposal loads again. */
+    private fun decide(done: ConversationMessage, request: suspend (Long, Long, Long) -> Unit) {
+        val current = state.value
+        val conversation = current.conversation ?: return
+        val proposal = current.proposal ?: return
+        val riderId = conversation.riderId ?: return
+        if (current.deciding || proposal.status != PlanProposal.STATUS_PENDING) return
+        mutableState.update { it.copy(deciding = true) }
+        viewModelScope.launch {
+            val result = apiCall(Network.json) { request(riderId, proposal.planId, proposal.id) }
+            when (result) {
+                is ApiResult.Success -> {
+                    changes.changed()
+                    mutableState.update { it.copy(message = done) }
+                }
+                is ApiResult.Failure -> mutableState.update { it.copy(message = ConversationMessage.Failed(result.error)) }
+            }
+            loadProposal()
+            mutableState.update { it.copy(deciding = false) }
+        }
+    }
+
+    private suspend fun loadProposal() {
+        val conversation = state.value.conversation ?: return
+        val latest = conversation.latestProposal ?: return
+        val planId = conversation.planId ?: return
+        val riderId = conversation.riderId ?: return
+        mutableState.update { it.copy(proposalError = null) }
+        when (val result = apiCall(Network.json) { api.proposal(riderId, planId, latest.id) }) {
+            is ApiResult.Success -> mutableState.update { it.copy(proposal = result.value) }
+            is ApiResult.Failure -> mutableState.update { it.copy(proposalError = result.error) }
+        }
+    }
+
+    /** Puts the review's next session into the plan in place of the planned workout (cyclingapp spec 020). */
+    fun replaceInPlan() {
+        if (state.value.replacing || state.value.busy) return
+        mutableState.update { it.copy(replacing = true) }
+        viewModelScope.launch {
+            when (val result = apiCall(Network.json) { api.applyReviewPlanChange(id) }) {
+                is ApiResult.Success -> {
+                    changes.changed()
+                    mutableState.update { it.copy(message = ConversationMessage.WorkoutReplaced) }
+                    load()
+                }
+                is ApiResult.Failure -> mutableState.update { it.copy(message = ConversationMessage.Failed(result.error)) }
+            }
+            mutableState.update { it.copy(replacing = false) }
+        }
+    }
+
     fun messageShown() = mutableState.update { it.copy(message = null) }
 
     private fun submit(text: String, file: PickedFile?) {
@@ -297,6 +386,12 @@ class ConversationViewModel @Inject constructor(
                         serverOffsetMillis = serverTime?.let { time -> time - clock.millis() } ?: it.serverOffsetMillis,
                     )
                 }
+                // A new proposal (a follow-up made one) or one decided elsewhere loads again
+                val latest = conversation.latestProposal
+                val loaded = state.value.proposal
+                if (latest != null && (loaded == null || loaded.id != latest.id || (latest.status != null && loaded.status != latest.status))) {
+                    loadProposal()
+                }
                 if (conversation.busy) {
                     activity.track(conversation)
                     schedulePoll()
@@ -334,7 +429,8 @@ class ConversationViewModel @Inject constructor(
         unwatch?.invoke()
     }
 
-    private fun panel(conversation: CoachConversation): Any = conversation.latestReview to conversation.latestTrainingBlock
+    private fun panel(conversation: CoachConversation): Any =
+        Triple(conversation.latestReview, conversation.latestTrainingBlock, conversation.latestProposal?.id)
 
     companion object {
         const val POLL_MILLIS = 5_000L

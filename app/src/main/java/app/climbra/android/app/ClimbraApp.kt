@@ -44,6 +44,7 @@ import app.climbra.android.session.SessionRepository
 import app.climbra.android.session.SessionState
 import app.climbra.android.shell.Shell
 import app.climbra.android.shell.ShellNavigator
+import app.climbra.android.coach.AdjustmentFormRoute
 import app.climbra.android.coach.CoachActivity
 import app.climbra.android.intervals.IntervalsSync
 import kotlinx.coroutines.flow.merge
@@ -115,6 +116,8 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                         onOpenWorkout = { nav.openWorkout(it.id, it.date) },
                         onOpenConversation = nav::openConversation,
                         onNewTrainingBlock = nav::newTrainingBlock,
+                        onAdjust = nav::openAdjustment,
+                        onOpenProposal = nav::openProposal,
                     )
                 },
                 workout = { nav -> WorkoutDetailRoute(config = config, onBack = nav::back, onOpenRide = nav::openRide) },
@@ -147,8 +150,10 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                             Toast.makeText(context, R.string.coach_deleted, Toast.LENGTH_SHORT).show()
                             nav.back()
                         },
+                        onAdjust = nav::openAdjustment,
                     )
                 },
+                adjustment = { nav -> AdjustmentFormRoute(config = config, onBack = nav::back, onAccepted = nav::adjustmentAccepted) },
                 trainingBlock = { nav -> TrainingBlockFormRoute(config = config, onBack = nav::back, onAccepted = nav::replaceWithConversation) },
                 fileReview = { nav -> FileReviewRoute(config = config, onBack = nav::back, onAccepted = nav::replaceWithConversation) },
                 coachEvents = viewModel.coachActivity.events,

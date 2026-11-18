@@ -216,7 +216,7 @@ data class SuggestionReason(
 )
 
 @Serializable
-data class PendingProposal(val id: Long, val fromDate: String)
+data class PendingProposal(val id: Long, val fromDate: String, val conversationId: Long? = null)
 
 @Serializable
 data class SkipRequest(val skipped: Boolean)

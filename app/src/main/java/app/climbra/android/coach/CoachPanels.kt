@@ -83,10 +83,16 @@ private fun Bullets(items: List<String>, tag: String) {
 
 /**
  * The latest review of a ride (the web's `review-panel`): RPEs, findings, recommendations by category, the next
- * session, and the coach's plan assessment read-only (its actions are spec 007's).
+ * session, and the coach's plan assessment with "Replace in plan" and "Adjust with coach" (spec 008).
  */
 @Composable
-fun ReviewPanel(review: ActivityReview, planChange: ReviewPlanChange?, fmt: Fmt, onOpenWorkout: (PlannedWorkout) -> Unit) {
+fun ReviewPanel(
+    review: ActivityReview,
+    planChange: ReviewPlanChange?,
+    fmt: Fmt,
+    onOpenWorkout: (PlannedWorkout) -> Unit,
+    plan: ReviewPlanActions = ReviewPlanActions(),
+) {
     Column(Modifier.fillMaxWidth().testTag("review-panel"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -118,7 +124,7 @@ fun ReviewPanel(review: ActivityReview, planChange: ReviewPlanChange?, fmt: Fmt,
         }
         val assessment = review.planAssessment
         when {
-            assessment != null -> PlanAssessmentSection(assessment, review.nextSession, planChange, fmt, onOpenWorkout)
+            assessment != null -> PlanAssessmentSection(assessment, review.nextSession, planChange, fmt, onOpenWorkout, plan)
             review.nextSession != null -> {
                 SectionTitle(stringResource(R.string.review_next_session))
                 WorkoutTile(review.nextSession, fmt, onOpenWorkout, tag = "next-session")
@@ -127,6 +133,13 @@ fun ReviewPanel(review: ActivityReview, planChange: ReviewPlanChange?, fmt: Fmt,
     }
 }
 
+/** What a review's plan section can do (spec 008); `null` hides the action. */
+data class ReviewPlanActions(
+    val replacing: Boolean = false,
+    val onReplace: (() -> Unit)? = null,
+    val onAdjust: (() -> Unit)? = null,
+)
+
 @Composable
 private fun PlanAssessmentSection(
     assessment: PlanAssessment,
@@ -134,6 +147,7 @@ private fun PlanAssessmentSection(
     change: ReviewPlanChange?,
     fmt: Fmt,
     onOpenWorkout: (PlannedWorkout) -> Unit,
+    actions: ReviewPlanActions,
 ) {
     Column(Modifier.testTag("plan-assessment"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (assessment.verdict == PlanAssessment.VERDICT_KEEP) {
@@ -156,6 +170,26 @@ private fun PlanAssessmentSection(
                     Modifier.testTag("in-plan"),
                 )
                 "NOT_APPLICABLE" -> Text(stringResource(R.string.review_not_applicable), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.extendedColors.textFaint)
+            }
+            // The verdict's own action is filled, the other outlined (the web's review panel)
+            val adjustFirst = assessment.verdict == ReviewPlanChange.VERDICT_ADJUST_PLAN
+            val replace = actions.onReplace.takeIf { change?.status == ReviewPlanChange.STATUS_APPLICABLE }
+            val adjust = actions.onAdjust.takeIf { change?.planId != null }
+            if (replace != null || adjust != null) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    replace?.let { onReplace ->
+                        val label: @Composable () -> Unit = { Text(stringResource(R.string.review_replace_in_plan)) }
+                        val modifier = Modifier.testTag("replace-in-plan")
+                        if (adjustFirst) OutlinedButton(onClick = onReplace, enabled = !actions.replacing, modifier = modifier) { label() }
+                        else Button(onClick = onReplace, enabled = !actions.replacing, modifier = modifier) { label() }
+                    }
+                    adjust?.let { onAdjust ->
+                        val label: @Composable () -> Unit = { Text(stringResource(R.string.review_adjust_with_coach)) }
+                        val modifier = Modifier.testTag("adjust-with-coach")
+                        if (adjustFirst) Button(onClick = onAdjust, modifier = modifier) { label() }
+                        else OutlinedButton(onClick = onAdjust, modifier = modifier) { label() }
+                    }
+                }
             }
         }
     }

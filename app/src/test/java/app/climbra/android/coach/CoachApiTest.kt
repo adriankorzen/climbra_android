@@ -133,6 +133,30 @@ class CoachApiTest {
         assertEquals("""{"replaceOverlapping":false}""", backend.requests.last().body!!.utf8())
     }
 
+    // Spec 008 AC5: the proposal as the backend writes it
+    @Test
+    fun readsAProposal() = runTest {
+        backend.on("GET /api/riders/5/plans/7/proposals/9", json(CoachFixtures.proposal()))
+
+        val proposal = (apiCall(Network.json) { backend.coachApi.proposal(5, 7, 9) } as ApiResult.Success).value
+
+        assertEquals("PENDING", proposal.status)
+        assertEquals("2026-11-14", proposal.fromDate)
+        assertEquals(listOf("CHANGED", "UNCHANGED", "REMOVED", "ADDED"), proposal.days.map { it.change })
+        assertEquals("Easy spin", proposal.days[0].after!!.title)
+        assertNull(proposal.days[2].after)
+        assertTrue(proposal.days[2].completed)
+        assertEquals(250, proposal.weeks[0].plannedTssAfter)
+        assertNull(proposal.weeks[1].focusAfter)
+    }
+
+    // Spec 008 AC11: the new error codes are translated
+    @Test
+    fun thePlanAdjustmentErrorCodesAreTranslated() {
+        listOf("PLAN_FINISHED", "PLAN_ADJUSTMENT_RUNNING", "PROPOSAL_OUTDATED", "REVIEW_NO_PLAN_CHANGE", "PLAN_CHANGE_NOT_APPLICABLE")
+            .forEach { assertTrue(it, it in app.climbra.android.ui.common.TRANSLATED_ERROR_CODES) }
+    }
+
     private fun problemWith(status: Int, fields: String): MockResponse = MockResponse.Builder()
         .code(status)
         .headers(headersOf("Content-Type", "application/problem+json"))

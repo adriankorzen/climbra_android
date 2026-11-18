@@ -61,6 +61,22 @@ object CoachFixtures {
                   {"weekNumber":2,"focus":"Recover","plannedTss":200,"isRecoveryWeek":true,"workouts":[]}]}
     """
 
+    /** A plan adjustment's proposal (spec 008): a changed, an unchanged, a completed removed and an added day. */
+    fun proposal(id: Long = 9, status: String = "PENDING") = """
+        {"id":$id,"planId":7,"conversationId":12,"status":"$status","createdAt":"2026-11-12T09:30:00Z","fromDate":"2026-11-14",
+         "summary":"Less **intensity** this week.",
+         "days":[{"date":"2026-11-14","change":"CHANGED","before":$WORKOUT,"after":${WORKOUT.replace("Sweet spot 3×12", "Easy spin")},"completed":false},
+                 {"date":"2026-11-15","change":"UNCHANGED","before":$WORKOUT,"after":$WORKOUT,"completed":false},
+                 {"date":"2026-11-16","change":"REMOVED","before":$WORKOUT,"after":null,"completed":true},
+                 {"date":"2026-11-18","change":"ADDED","before":null,"after":$WORKOUT,"completed":false}],
+         "weeks":[{"weekNumber":2,"plannedTssBefore":320,"plannedTssAfter":250,"focusBefore":"Build","focusAfter":"Recover"},
+                  {"weekNumber":3,"plannedTssBefore":300,"plannedTssAfter":300,"focusBefore":"Build","focusAfter":null}],
+         "unknown":1}
+    """.trimIndent()
+
+    /** A conversation's `latestProposal`. */
+    fun latestProposal(id: Long = 9, status: String = "PENDING") = """{"id":$id,"status":"$status"}"""
+
     fun message(id: Long, role: String, text: String, extra: String = "") =
         """{"id":$id,"sequence":$id,"role":"$role","text":${Network.json.encodeToString(JsonPrimitive(text))},"files":[],"createdAt":"2026-11-12T09:0$id:00Z","trainingBlock":false,"medicalReferral":false$extra}"""
 
@@ -75,6 +91,7 @@ object CoachFixtures {
         plan: String = "null",
         planChange: String = "null",
         pending: String = "null",
+        proposal: String = "null",
         activityId: Long? = 85,
         planId: Long? = null,
         title: String = "Ride review",
@@ -82,7 +99,7 @@ object CoachFixtures {
         {"id":$id,"riderId":5,"type":"$type","provider":"GEMINI","model":"gemini-pro","activityId":${activityId ?: "null"},
          "planId":${planId ?: "null"},"title":"$title","language":"en","createdAt":"2026-11-12T09:00:00Z",
          "updatedAt":"2026-11-12T09:02:00Z","busy":$busy,"readOnly":$readOnly,"messages":$messages,
-         "latestReview":$review,"latestTrainingBlock":$block,"plan":$plan,"latestProposal":null,
+         "latestReview":$review,"latestTrainingBlock":$block,"plan":$plan,"latestProposal":$proposal,
          "reviewPlanChange":$planChange,"meta":null,"pendingRequest":$pending,"unknownField":true}
     """.trimIndent()
 

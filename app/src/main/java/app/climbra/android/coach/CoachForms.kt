@@ -185,7 +185,12 @@ fun TrainingBlockFormScreen(
 }
 
 @Composable
-private fun DayRow(day: DayAvailability, fmt: Fmt, onDayChange: (DayOfWeek, (DayAvailability) -> DayAvailability) -> Unit) {
+internal fun DayRow(
+    day: DayAvailability,
+    fmt: Fmt,
+    onDayChange: (DayOfWeek, (DayAvailability) -> DayAvailability) -> Unit,
+    showIndoor: Boolean = true,
+) {
     val name = day.day.name.lowercase()
     Row(Modifier.fillMaxWidth().testTag("day-$name"), verticalAlignment = Alignment.CenterVertically) {
         Switch(
@@ -212,13 +217,15 @@ private fun DayRow(day: DayAvailability, fmt: Fmt, onDayChange: (DayOfWeek, (Day
                 enabled = day.minutes < TrainingBlockFormViewModel.MAX_MINUTES,
                 modifier = Modifier.size(32.dp).testTag("day-more-$name"),
             ) { SymbolText("+", stringResource(R.string.block_more)) }
-            Spacer(Modifier.weight(1f))
-            Checkbox(
-                checked = day.indoor,
-                onCheckedChange = { checked -> onDayChange(day.day) { it.copy(indoor = checked) } },
-                modifier = Modifier.testTag("day-indoor-$name"),
-            )
-            Text(stringResource(R.string.workout_indoor), style = MaterialTheme.typography.labelMedium)
+            if (showIndoor) {
+                Spacer(Modifier.weight(1f))
+                Checkbox(
+                    checked = day.indoor,
+                    onCheckedChange = { checked -> onDayChange(day.day) { it.copy(indoor = checked) } },
+                    modifier = Modifier.testTag("day-indoor-$name"),
+                )
+                Text(stringResource(R.string.workout_indoor), style = MaterialTheme.typography.labelMedium)
+            }
         }
     }
 }
@@ -302,19 +309,19 @@ fun LanguageChoice(language: String, onChange: (String) -> Unit) {
 }
 
 @Composable
-private fun Label(text: String) {
+internal fun Label(text: String) {
     Text(text, style = MaterialTheme.typography.labelLarge, modifier = Modifier.semantics { heading() })
 }
 
 @Composable
-private fun FieldError(text: String, tag: String) {
+internal fun FieldError(text: String, tag: String) {
     Text(text, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag(tag))
 }
 
 /** A day chosen in a date picker, today or later; [clearable] for an optional date. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DateField(
+internal fun DateField(
     label: String,
     value: LocalDate?,
     minDate: LocalDate,
@@ -322,6 +329,7 @@ private fun DateField(
     tag: String,
     onPick: (LocalDate?) -> Unit,
     clearable: Boolean = false,
+    maxDate: LocalDate? = null,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -346,11 +354,12 @@ private fun DateField(
     }
     if (open) {
         val min = minDate.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
+        val max = maxDate?.atStartOfDay()?.toInstant(ZoneOffset.UTC)?.toEpochMilli() ?: Long.MAX_VALUE
         val picker = rememberDatePickerState(
             initialSelectedDateMillis = (value ?: minDate).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli(),
             selectableDates = object : SelectableDates {
-                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= min
-                override fun isSelectableYear(year: Int) = year >= minDate.year
+                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis in min..max
+                override fun isSelectableYear(year: Int) = year >= minDate.year && (maxDate == null || year <= maxDate.year)
             },
         )
         DatePickerDialog(
@@ -371,7 +380,7 @@ private fun DateField(
 /** A coach form's frame: back, title, a progress bar while sending, a scrolling column. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FormScaffold(title: String, onBack: () -> Unit, sending: Boolean, content: @Composable () -> Unit) {
+internal fun FormScaffold(title: String, onBack: () -> Unit, sending: Boolean, content: @Composable () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(

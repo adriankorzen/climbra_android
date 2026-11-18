@@ -69,6 +69,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.climbra.android.AppConfig
 import app.climbra.android.R
+import app.climbra.android.coach.AdjustmentArgs
 import app.climbra.android.activities.complianceColor
 import app.climbra.android.activities.sportName
 import app.climbra.android.activities.workoutTypeName
@@ -99,6 +100,9 @@ fun CalendarRoute(
     /** A coach conversation and the training block form, on the Coach tab (spec 006). */
     onOpenConversation: (Long) -> Unit = {},
     onNewTrainingBlock: () -> Unit = {},
+    /** The adjustment form (spec 008) and a proposal on its conversation's proposal tab. */
+    onAdjust: (AdjustmentArgs) -> Unit = {},
+    onOpenProposal: (Long) -> Unit = {},
     viewModel: CalendarViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -126,6 +130,8 @@ fun CalendarRoute(
             onMessageShown = viewModel::messageShown,
             onOpenConversation = onOpenConversation,
             onNewTrainingBlock = onNewTrainingBlock,
+            onAdjust = { plan, suggestion -> onAdjust(AdjustmentArgs(plan.id, plan.endDate.take(10), suggestion = suggestion)) },
+            onOpenProposal = onOpenProposal,
         ),
     )
 }
@@ -151,6 +157,10 @@ data class CalendarActions(
     val onMessageShown: () -> Unit = {},
     val onOpenConversation: (Long) -> Unit = {},
     val onNewTrainingBlock: () -> Unit = {},
+    /** Spec 008: the adjustment form, from the plan card or ([suggestion]) the suggestion banner. */
+    val onAdjust: (plan: TrainingPlan, suggestion: Boolean) -> Unit = { _, _ -> },
+    /** The proposal's conversation, on its proposal tab. */
+    val onOpenProposal: (conversationId: Long) -> Unit = {},
 )
 
 /** The web calendar's phone layout (spec 005): one week as a list of days, swiped or stepped through. */
@@ -287,7 +297,7 @@ private fun WeekPage(state: CalendarUiState, fmt: Fmt, actions: CalendarActions)
                 }
             }
             items(state.plans, key = { "plan-${it.id}" }) { plan ->
-                PlanCard(plan, data.plannedWorkouts, state.week, fmt, actions)
+                PlanCard(plan, data.plannedWorkouts, fmt, actions)
             }
             if (state.plans.isEmpty()) {
                 item(key = "no-plan") { NoPlan(onCreateBlock = actions.onNewTrainingBlock) }
@@ -299,7 +309,7 @@ private fun WeekPage(state: CalendarUiState, fmt: Fmt, actions: CalendarActions)
 }
 
 @Composable
-private fun PlanCard(plan: TrainingPlan, workouts: List<CalendarWorkout>, week: LocalDate, fmt: Fmt, actions: CalendarActions) {
+private fun PlanCard(plan: TrainingPlan, workouts: List<CalendarWorkout>, fmt: Fmt, actions: CalendarActions) {
     ElevatedCard(Modifier.fillMaxWidth().testTag("plan-${plan.id}")) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(plan.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
@@ -315,15 +325,24 @@ private fun PlanCard(plan: TrainingPlan, workouts: List<CalendarWorkout>, week: 
             plan.goal?.takeIf { it.isNotBlank() }?.let { goal ->
                 Text("${stringResource(R.string.calendar_goal)}: $goal", style = MaterialTheme.typography.bodyMedium)
             }
-            val webWeek = "calendar?week=$week"
             if (plan.adjustmentRunning) {
                 StatusLine(stringResource(R.string.adjustment_running), Modifier.testTag("adjusting-${plan.id}"))
+            } else {
+                OutlinedButton(onClick = { actions.onAdjust(plan, false) }, modifier = Modifier.testTag("adjust-plan-${plan.id}")) {
+                    Icon(painterResource(R.drawable.ic_auto_awesome), null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.adjustment_adjust_plan))
+                }
             }
             plan.pendingProposal?.let { proposal ->
                 Banner(Modifier.testTag("proposal-${plan.id}")) {
                     Text(stringResource(R.string.proposal_banner), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                     Text(stringResource(R.string.proposal_from, fmt.date(proposal.fromDate, DateStyle.DAY_MONTH_YEAR)), style = MaterialTheme.typography.bodySmall)
-                    OpenOnWeb { actions.onOpenWeb(webWeek) }
+                    proposal.conversationId?.let { conversation ->
+                        TextButton(onClick = { actions.onOpenProposal(conversation) }, modifier = Modifier.testTag("show-proposal-${plan.id}")) {
+                            Text(stringResource(R.string.proposal_show))
+                        }
+                    }
                 }
             }
             plan.suggestion?.let { suggestion ->
@@ -333,7 +352,11 @@ private fun PlanCard(plan: TrainingPlan, workouts: List<CalendarWorkout>, week: 
                         Text("• ${reasonText(reason, workouts, fmt)}", style = MaterialTheme.typography.bodySmall)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OpenOnWeb { actions.onOpenWeb(webWeek) }
+                        TextButton(
+                            onClick = { actions.onAdjust(plan, true) },
+                            enabled = !plan.adjustmentRunning,
+                            modifier = Modifier.testTag("ask-coach-${plan.id}"),
+                        ) { Text(stringResource(R.string.adjustment_ask_coach)) }
                         TextButton(onClick = { actions.onDismissSuggestion(plan) }, modifier = Modifier.testTag("dismiss-${plan.id}")) {
                             Text(stringResource(R.string.adherence_dismiss))
                         }
