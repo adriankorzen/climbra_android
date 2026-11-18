@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<!-- Spec 013: the web's Turnstile widget (frontend auth/turnstile.ts) for the app. Loaded with the web app's address
+     as its base, so the site key's hostname matches; it only hands tokens to the app through `Climbra`. -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }</style>
+</head>
+<body>
+<div id="widget"></div>
+<script>
+  var widgetId = null;
+  function climbraToken(siteKey, language, theme) {
+    try {
+      if (widgetId === null) {
+        widgetId = turnstile.render('#widget', {
+          sitekey: siteKey,
+          execution: 'execute',
+          appearance: 'interaction-only',
+          retry: 'never',
+          size: 'flexible',
+          language: language,
+          theme: theme,
+          callback: function (token) { Climbra.token(token); },
+          'error-callback': function () { Climbra.failed(); return true; },
+          'timeout-callback': function () { Climbra.failed(); },
+          'expired-callback': function () { Climbra.failed(); },
+          'unsupported-callback': function () { Climbra.failed(); },
+          'before-interactive-callback': function () { Climbra.interactive(true); },
+          'after-interactive-callback': function () { Climbra.interactive(false); }
+        });
+      } else {
+        turnstile.reset(widgetId);
+      }
+      turnstile.execute(widgetId);
+    } catch (e) {
+      Climbra.failed();
+    }
+  }
+</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async
+        onload="Climbra.ready()" onerror="Climbra.unavailable()"></script>
+</body>
+</html>

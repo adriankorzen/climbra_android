@@ -82,6 +82,9 @@ them under "Backend dependencies" by number.
 - Ride import (spec 009): `activities.RideImport` follows the import job of several files, app-scoped; files shared
   from other apps reach `MainActivity` (`singleTask`, intent filters for ride MIME types) and wait in
   `activities.SharedRideFiles` until the shell opens the import screen.
+- Before login (spec 013): `auth.LoggedOutNavigation` (login → registration / forgot password); requests that send an
+  email take a Turnstile token from `auth.TurnstileController` (`assets/turnstile.html` in a WebView on the web's
+  address), asked for when sending, as the web's widget.
 - Garmin sync (spec 011): `garmin.GarminSync`, app-scoped, admins only (`AccountResponse.role`); a pull to refresh
   starts it next to `IntervalsSync` (the screens' `pullSync`), its `GarminApi` has a 120 s read timeout.
 - Packages by feature (`auth`, `profile`, `shell`, `dashboard`, `activities`, `calendar`, `coach`, …) plus `data/` (network, DTOs),

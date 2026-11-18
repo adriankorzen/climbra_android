@@ -135,6 +135,10 @@ data object ProfileRoute
 @Serializable
 data object ProfileFeedbackRoute
 
+/** The password reset of an account without a password (spec 013). */
+@Serializable
+data object ProfileForgotPasswordRoute
+
 /** Top-level destinations; the web app's sidebar / tab bar (spec 002 of cyclingapp) as a bottom navigation bar. */
 enum class TopLevelDestination(
     val graph: Any,
@@ -186,6 +190,11 @@ class ShellNavigator internal constructor(private val nav: NavController) {
     fun openActivities() = nav.openTab(TopLevelDestination.ACTIVITIES)
 
     fun openProfile() = nav.openTab(TopLevelDestination.PROFILE)
+
+    /** The password reset on the profile's stack (spec 013). */
+    fun openForgotPassword() {
+        nav.navigate(ProfileForgotPasswordRoute) { launchSingleTop = true }
+    }
 
     /** The feedback form on the profile's stack (spec 010). */
     fun openFeedback() {
@@ -284,6 +293,7 @@ fun Shell(
     adjustment: @Composable (ShellNavigator) -> Unit = {},
     rideImport: @Composable (ShellNavigator) -> Unit = {},
     feedback: @Composable (ShellNavigator) -> Unit = {},
+    forgotPassword: @Composable (ShellNavigator) -> Unit = {},
     coachEvents: Flow<CoachFinished> = emptyFlow(),
     notices: Flow<UiText> = emptyFlow(),
     /** Shared files wait for the import screen (spec 009). */
@@ -376,6 +386,7 @@ fun Shell(
             navigation<ProfileGraph>(startDestination = ProfileRoute) {
                 composable<ProfileRoute> { Screen { profile(navigator) } }
                 composable<ProfileFeedbackRoute> { Screen { feedback(navigator) } }
+                composable<ProfileForgotPasswordRoute> { Screen { forgotPassword(navigator) } }
             }
         }
     }

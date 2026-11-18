@@ -858,4 +858,25 @@
     <string name="activities_sort_descending">Malejąco</string>
     <string name="activities_sport_all">Wszystkie typy</string>
     <string name="activities_empty_sport">Brak jazd tego typu w tym okresie.</string>
+    <!-- Spec 013: rejestracja i reset hasła (teksty weba) -->
+    <string name="register_title">Załóż konto</string>
+    <string name="register_submit">Załóż konto</string>
+    <string name="register_repeat_password">Powtórz hasło</string>
+    <string name="register_email_invalid">Podaj poprawny adres e-mail</string>
+    <string name="register_terms_required">Zaakceptuj regulamin, aby kontynuować</string>
+    <string name="register_health_required">Ta zgoda jest potrzebna do analizy treningów</string>
+    <string name="register_have_account">Masz już konto?</string>
+    <string name="register_sent_title">Sprawdź skrzynkę</string>
+    <string name="register_sent">Jeśli adres %1$s może posłużyć do założenia konta, wysłaliśmy na niego link potwierdzający. Link jest ważny przez 24 godziny. Jeśli konto z tym adresem już istnieje, wysłaliśmy zamiast tego link do logowania i resetu hasła.</string>
+    <string name="register_resend">Wyślij link ponownie</string>
+    <string name="register_resent">Jeśli konto czeka na potwierdzenie, wysłaliśmy nowy link. Sprawdź skrzynkę.</string>
+    <string name="forgot_title">Reset hasła</string>
+    <string name="forgot_intro">Podaj adres e-mail konta, a wyślemy link do ustawienia nowego hasła.</string>
+    <string name="forgot_submit">Wyślij link</string>
+    <string name="forgot_sent">Jeśli istnieje konto dla %1$s, wysłaliśmy link do ustawienia nowego hasła. Jest ważny przez 1 godzinę.</string>
+    <string name="forgot_back">Wróć do logowania</string>
+    <string name="captcha_unavailable">Nie udało się sprawdzić, czy nie jesteś botem. Sprawdź połączenie i spróbuj ponownie albo użyj logowania przez Google.</string>
+    <string name="api_error_captcha_failed">Nie potwierdziliśmy, że nie jesteś botem. Spróbuj ponownie.</string>
+    <string name="api_error_email_limit_reached">Chwilowo nie możemy wysyłać e-maili. Spróbuj ponownie później albo użyj logowania przez Google.</string>
+    <string name="api_error_email_domain_not_allowed">Nie można założyć konta na jednorazowy adres e-mail. Użyj innego adresu.</string>
 </resources>

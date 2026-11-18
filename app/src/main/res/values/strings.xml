@@ -851,4 +851,25 @@
     <string name="activities_sort_descending">Descending</string>
     <string name="activities_sport_all">All types</string>
     <string name="activities_empty_sport">No rides of this type in this period.</string>
+    <!-- Spec 013: registration and password reset (the web's texts) -->
+    <string name="register_title">Create an account</string>
+    <string name="register_submit">Create account</string>
+    <string name="register_repeat_password">Repeat password</string>
+    <string name="register_email_invalid">Enter a valid email address</string>
+    <string name="register_terms_required">Accept the terms to continue</string>
+    <string name="register_health_required">This consent is needed to analyse your training</string>
+    <string name="register_have_account">Already have an account?</string>
+    <string name="register_sent_title">Check your inbox</string>
+    <string name="register_sent">If %1$s can be used for a new account, we have sent a confirmation link to it. The link is valid for 24 hours. If you already have an account, we have sent a link to log in or reset the password instead.</string>
+    <string name="register_resend">Send the link again</string>
+    <string name="register_resent">If the account is waiting for confirmation, we have sent a new link. Check your inbox.</string>
+    <string name="forgot_title">Reset password</string>
+    <string name="forgot_intro">Enter the email of your account and we will send you a link to set a new password.</string>
+    <string name="forgot_submit">Send link</string>
+    <string name="forgot_sent">If an account exists for %1$s, we have sent a link to set a new password. It is valid for 1 hour.</string>
+    <string name="forgot_back">Back to login</string>
+    <string name="captcha_unavailable">We could not check that you are not a bot. Check the connection and try again, or use Google login.</string>
+    <string name="api_error_captcha_failed">We could not confirm that you are not a bot. Please try again.</string>
+    <string name="api_error_email_limit_reached">We can\'t send emails right now. Please try again later or use Google login.</string>
+    <string name="api_error_email_domain_not_allowed">An account can\'t be created with a disposable email address. Please use another address.</string>
 </resources>

@@ -86,11 +86,16 @@ interface ProfileActions {
 }
 
 @Composable
-fun ProfileRoute(config: AppConfig, onOpenFeedback: () -> Unit = {}, viewModel: ProfileViewModel = hiltViewModel()) {
+fun ProfileRoute(
+    config: AppConfig,
+    onOpenFeedback: () -> Unit = {},
+    onForgotPassword: () -> Unit = {},
+    viewModel: ProfileViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResumed() }
-    val actions = remember(viewModel, config, context, onOpenFeedback) {
+    val actions = remember(viewModel, config, context, onOpenFeedback, onForgotPassword) {
         object : ProfileActions {
             override fun refresh() = viewModel.refresh()
             override fun retry(section: ProfileSection) = viewModel.retry(section)
@@ -114,7 +119,7 @@ fun ProfileRoute(config: AppConfig, onOpenFeedback: () -> Unit = {}, viewModel: 
             override fun setTheme(mode: ThemeMode) = viewModel.setTheme(mode)
             override fun passwordChange(form: PasswordForm) = viewModel.onPasswordChange(form)
             override fun changePassword() = viewModel.changePassword()
-            override fun forgotPassword() = openWebPage(context, config.webPage("forgot-password"))
+            override fun forgotPassword() = onForgotPassword()
             override fun openTerms() = openWebPage(context, config.webPage("terms"))
             override fun openPrivacy() = openWebPage(context, config.webPage("privacy"))
             override fun openDeleteAccount() = viewModel.openDeleteAccount()

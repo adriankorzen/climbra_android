@@ -29,7 +29,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.climbra.android.AppConfig
 import app.climbra.android.R
-import app.climbra.android.auth.LoginRoute
+import app.climbra.android.auth.ForgotPasswordRoute
+import app.climbra.android.auth.ForgotPasswordViewModel
+import app.climbra.android.auth.LoggedOutContent
 import app.climbra.android.activities.ActivitiesRoute
 import app.climbra.android.activities.ImportRoute
 import app.climbra.android.activities.RideImport
@@ -88,6 +90,9 @@ class AppViewModel @Inject constructor(
         viewModelScope.launch { session.start() }
     }
 
+    /** The logged-in account's email, for the password reset of the profile (spec 013). */
+    fun accountEmail(): String? = (state.value as? SessionState.LoggedIn)?.account?.email
+
     /** The calendar shows the week of [date] (an ISO date) when opened next (spec 005). */
     fun showCalendarWeek(date: String?) {
         date?.let { runCatching { LocalDate.parse(it.take(10)) }.getOrNull() }?.let(calendarRequests::show)
@@ -101,7 +106,7 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
         state = state,
         onRetry = viewModel::retry,
         login = { loggedOut ->
-            LoginRoute(expired = loggedOut.expired, config = viewModel.config, accountDeleted = loggedOut.accountDeleted)
+            LoggedOutContent(loggedOut, viewModel.config)
         },
         terms = { changed -> TermsRoute(documentsChanged = changed, config = viewModel.config) },
         shell = { _ ->
@@ -132,7 +137,12 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                         onOpenProfile = nav::openProfile,
                     )
                 },
-                profile = { nav -> ProfileRoute(config = config, onOpenFeedback = nav::openFeedback) },
+                profile = { nav -> ProfileRoute(config = config, onOpenFeedback = nav::openFeedback, onForgotPassword = nav::openForgotPassword) },
+                forgotPassword = { nav ->
+                    val forgot: ForgotPasswordViewModel = hiltViewModel()
+                    forgot.prefill(viewModel.accountEmail())
+                    ForgotPasswordRoute(config = config, onBack = nav::back, viewModel = forgot)
+                },
                 feedback = { nav ->
                     FeedbackRoute(
                         onBack = nav::back,

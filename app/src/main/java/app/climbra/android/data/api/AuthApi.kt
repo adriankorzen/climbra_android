@@ -30,6 +30,18 @@ interface AuthApi {
     @POST("api/auth/google/id-token")
     suspend fun googleLogin(@Body request: GoogleIdTokenRequest): AccountResponse
 
+    /** `202`; a taken address gets the same answer (its owner gets an email). Spec 013. */
+    @POST("api/auth/register")
+    suspend fun register(@Body request: RegisterRequest)
+
+    /** `202`; spec 013. */
+    @POST("api/auth/resend-verification")
+    suspend fun resendVerification(@Body request: EmailRequest)
+
+    /** `202` whether the account exists or not; spec 013. */
+    @POST("api/auth/password-reset")
+    suspend fun requestPasswordReset(@Body request: EmailRequest)
+
     /** `204`; the account is read again with [me]. */
     @POST("api/account/accept-terms")
     suspend fun acceptTerms(@Body request: AcceptTermsRequest)
@@ -90,3 +102,18 @@ data class GoogleIdTokenRequest(val idToken: String)
 
 @Serializable
 data class AcceptTermsRequest(val acceptTerms: Boolean, val acceptHealthData: Boolean)
+
+/** Mirrors `account.AccountRequests.RegisterRequest`; [captchaToken] is `null` while the backend asks for none. */
+@Serializable
+data class RegisterRequest(
+    val email: String,
+    val password: String,
+    val language: String,
+    val acceptTerms: Boolean,
+    val acceptHealthData: Boolean,
+    val captchaToken: String?,
+)
+
+/** Mirrors `account.AccountRequests.EmailRequest`. */
+@Serializable
+data class EmailRequest(val email: String, val captchaToken: String?)

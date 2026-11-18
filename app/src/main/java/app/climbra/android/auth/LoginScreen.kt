@@ -29,6 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -54,18 +55,23 @@ import app.climbra.android.AppConfig
 import app.climbra.android.R
 import app.climbra.android.auth.google.CredentialManagerGoogleSource
 import app.climbra.android.ui.common.ErrorBanner
-import app.climbra.android.ui.common.openWebPage
 
 @Composable
 fun LoginRoute(
     expired: Boolean,
     config: AppConfig,
     accountDeleted: Boolean = false,
+    /** Spec 013: the app's registration and password reset; [onForgotPassword] gets the typed email. */
+    onRegister: () -> Unit = {},
+    onForgotPassword: (email: String) -> Unit = {},
+    /** An email to show, e.g. after a registration. */
+    prefillEmail: String? = null,
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val google = remember(context) { CredentialManagerGoogleSource(context, config.googleServerClientId) }
+    LaunchedEffect(prefillEmail) { prefillEmail?.let(viewModel::onEmailChange) }
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { viewModel.onScreenPaused() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onScreenResumed() }
     LoginScreen(
@@ -76,8 +82,8 @@ fun LoginRoute(
         onTogglePassword = viewModel::togglePasswordVisible,
         onLogin = viewModel::login,
         onGoogle = { viewModel.loginWithGoogle(google) },
-        onRegister = { openWebPage(context, config.webPage("register")) },
-        onForgotPassword = { openWebPage(context, config.webPage("forgot-password")) },
+        onRegister = onRegister,
+        onForgotPassword = { onForgotPassword(state.email.trim()) },
         accountDeleted = accountDeleted,
     )
 }

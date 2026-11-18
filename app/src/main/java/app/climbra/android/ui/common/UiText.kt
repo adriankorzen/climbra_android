@@ -81,6 +81,9 @@ val TRANSLATED_ERROR_CODES: Map<String, Int> = mapOf(
     "PLAN_CHANGE_NOT_APPLICABLE" to R.string.api_error_plan_change_not_applicable,
     "IMPORT_RUNNING" to R.string.api_error_import_running,
     "IMPORT_QUEUE_FULL" to R.string.api_error_import_queue_full,
+    "CAPTCHA_FAILED" to R.string.api_error_captcha_failed,
+    "EMAIL_LIMIT_REACHED" to R.string.api_error_email_limit_reached,
+    "EMAIL_DOMAIN_NOT_ALLOWED" to R.string.api_error_email_domain_not_allowed,
 )
 
 fun ApiError.toUiText(): UiText = when (this) {

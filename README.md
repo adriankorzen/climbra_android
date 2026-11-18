@@ -21,8 +21,9 @@ Built spec first: see [`specs/`](specs) and [`CLAUDE.md`](CLAUDE.md).
 | [010](specs/010-feedback.md) | Feedback: "Send feedback" in the profile's account card opens the web's form (name, type, message) and sends it to the author of the app, with the app's version |
 | [011](specs/011-garmin-sync.md) | Garmin sync for the admin: "Sync from Garmin" in the profile and an admin's pull to refresh on the dashboard and the training log fetch the owner's new activities (Garmin Personal API); others see nothing of it |
 | [012](specs/012-training-log-sort-and-filter.md) | Training log: sorting by the backend's columns (date, name, type, duration, distance, elevation, power, NP, IF, TSS, HR, intervals; again flips the direction) and the sport type filter of the period's types, done by the backend with its totals |
+| [013](specs/013-native-registration.md) | Registration (email, password and its repeat, the terms and health data consents) and "Forgot password" as the app's screens, from the login and the profile, with the backend's Turnstile check in a WebView; "Check your inbox" with the link again |
 
-Registration and password reset open the web pages in a Custom Tab.
+Registration and the password reset request are the app's screens (spec 013, Turnstile in a WebView); the links in their emails (confirming the address, setting a new password) open the web pages.
 
 ## Requirements
 

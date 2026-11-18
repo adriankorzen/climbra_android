@@ -1,6 +1,6 @@
 # 013: Registration and password reset in the app
 
-- **Status:** Draft
+- **Status:** Implemented
 - **Created:** 2026-11-18
 
 ## Problem
@@ -34,15 +34,16 @@ first contact with the app is a web form.
 Full screen above the login screen (no shell yet), title "Create an account", back to the login.
 
 - **Email**, required, an email address; **password** with the backend's rules (cyclingapp spec 045 / the web's
-  `password-rules`: the same checks and texts as the profile's password change, spec 004) and its show / hide.
-- **Language**: Polish / English, the app's language preselected (the account's language, as the web's).
+  `password-rules`: the same checks and texts as the profile's password change, spec 004) and its show / hide;
+  **Repeat password** (the same, not the email), as the web's form.
+- **Language**: not asked, as on the web: the app's language goes along (`pl` / `en`).
 - **Consents**, both required to send: "I accept the terms and the privacy policy" (links open them, spec 001) and
   "I agree to the processing of my health data (heart rate, power, training load)" (cyclingapp spec 014), the web's
   texts.
 - **Captcha**, when the backend asks for one (`GET /api/auth/providers` gives its site key; none → no widget and
   no token): see "Captcha" below.
-- **Create account** → `202` → "Check your email: we sent a link to {email}. Open it to activate the account, then
-  log in here." with **Send the link again** (`resend-verification`, at most once per 60 s in the app; the backend
+- **Create account** → `202` → the web's "Check your inbox" text with the address (a taken address gets the same:
+  its owner gets a login link) with **Send the link again** (`resend-verification` with a new token, at most once per 60 s in the app; the backend
   throttles too) and **Back to login** (email prefilled).
 - Errors under the button, the backend's codes translated as the web does (`EMAIL_DOMAIN_NOT_ALLOWED`,
   `PASSWORD_TOO_SHORT` / `PASSWORD_TOO_LONG` / `PASSWORD_EQUALS_EMAIL`, `HEALTH_CONSENT_REQUIRED`, `CAPTCHA_FAILED`,
@@ -66,12 +67,13 @@ Cloudflare has no Android SDK, so the app shows the web's Turnstile widget in a 
   site key from `/api/auth/providers`, the app's language and theme), loaded with `loadDataWithBaseURL` and the web
   app's address (`AppConfig.webBaseUrl`, `https://climbra.app` in release) as its base, so the hostname matches the
   site key's allowed hostnames. JavaScript on, nothing else of the page reaches the app but the token.
-- The widget sits above the send button as on the web (managed mode: usually a checkmark the rider does not have to
-  tap). Its callback hands the token to the form through a `JavascriptInterface`; expired or failed → no token, and
-  the button waits for a new one ("Confirm that you are not a robot").
-- A token is used once: after every answer of the backend the widget is reset (`turnstile.reset`).
-- The widget cannot load (offline, Cloudflare down): "The check could not load. Check the connection and try
-  again." with Retry; the form keeps its values.
+- As the web's widget (`execution: 'execute'`, `appearance: 'interaction-only'`): nothing is visible and no token is
+  asked for until the rider sends; then a fresh token is asked for (`turnstile.execute`, `turnstile.reset` for every
+  later request: a token works once), and the widget shows above the send button only while Cloudflare needs an
+  interaction. Its callback hands the token to the request through a `JavascriptInterface`.
+- The script cannot load within 15 s, or the check fails or expires: nothing is sent, "We could not check that you
+  are not a bot. Check the connection and try again, or use Google login."; sending again is the retry (the page
+  loads again); the form keeps its values.
 - No site key (the local backend, `auth.turnstile.required: false`): no widget, no token.
 - If Cloudflare stops accepting the WebView, the fallback is a backend spec for Google Play Integrity tokens (not
   part of this spec).
@@ -86,9 +88,10 @@ Existing: `GET /api/auth/providers` (`turnstileSiteKey`, `null` when off), `POST
 ## Screens
 
 - `auth.RegisterRoute` / `RegisterScreen`, `auth.ForgotPasswordRoute` / `ForgotPasswordScreen`: `OutlinedTextField`s,
-  the password field and rules of spec 004, `Checkbox` rows with links, `SegmentedButton` for the language, `auth.TurnstileView` (an `AndroidView` with the
+  the password field and rules of spec 004, `Checkbox` rows with links, `auth.TurnstileView` (an `AndroidView` with the
   `WebView`) and the page `assets/turnstile.html`.
-- `app.ClimbraContent`: the logged-out state gets a small back stack (login → registration / forgot password).
+- `auth.LoggedOutNavigation`: the logged-out state's small back stack (login → registration / forgot password); the
+  profile's "Forgot password" is `ProfileForgotPasswordRoute` on the profile's stack.
 
 ## Data and storage
 
@@ -97,18 +100,18 @@ Existing: `GET /api/auth/providers` (`turnstileSiteKey`, `null` when off), `POST
 
 ## Acceptance criteria
 
-- [ ] AC1: "Create an account" and "Forgot password" on the login screen open the app's screens, not Custom Tabs.
-- [ ] AC2: Registration checks the email, the password rules and both consents before sending, and sends the
+- [x] AC1: "Create an account" and "Forgot password" on the login screen open the app's screens, not Custom Tabs.
+- [x] AC2: Registration checks the email, the password rules and both consents before sending, and sends the
   web's body with the language and the captcha token.
-- [ ] AC3: `202` shows "Check your email" with the address; "Send the link again" sends `resend-verification`, at
+- [x] AC3: `202` shows "Check your email" with the address; "Send the link again" sends `resend-verification`, at
   most once per 60 s.
-- [ ] AC4: The backend's errors show the web's messages and keep the values (the captcha is asked again).
-- [ ] AC5: Forgot password sends the email and the captcha and shows the same answer whether the account exists.
-- [ ] AC6: "Back to login" returns with the email filled in.
-- [ ] AC7: With a site key the Turnstile widget shows in a WebView on the web's address, its token goes with the
-  request and the widget is reset after every answer; no token, no send; a widget that cannot load offers Retry;
+- [x] AC4: The backend's errors show the web's messages and keep the values (the captcha is asked again).
+- [x] AC5: Forgot password sends the email and the captcha and shows the same answer whether the account exists.
+- [x] AC6: "Back to login" returns with the email filled in.
+- [x] AC7: With a site key a fresh Turnstile token is asked for when sending (the WebView on the web's address), it goes with the
+  request; no token, no send and the check's message;
   without a site key there is no widget.
-- [ ] AC8: New strings exist in English and Polish.
+- [x] AC8: New strings exist in English and Polish.
 
 ## Open questions
 

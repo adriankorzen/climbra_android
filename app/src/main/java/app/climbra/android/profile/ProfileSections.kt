@@ -678,7 +678,7 @@ private fun PasswordChange(state: ProfileUiState, email: String, actions: Profil
 }
 
 @Composable
-private fun passwordProblemText(problem: PasswordProblem) = stringResource(
+internal fun passwordProblemText(problem: PasswordProblem) = stringResource(
     when (problem) {
         PasswordProblem.REQUIRED -> R.string.password_required
         PasswordProblem.TOO_SHORT -> R.string.password_too_short
