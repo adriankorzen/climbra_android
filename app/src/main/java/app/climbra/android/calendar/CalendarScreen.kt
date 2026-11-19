@@ -26,7 +26,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -350,7 +349,7 @@ internal fun LazyListScope.top(state: CalendarUiState, fmt: Fmt, actions: Calend
 
 @Composable
 private fun PlanCard(plan: TrainingPlan, workouts: List<CalendarWorkout>, fmt: Fmt, actions: CalendarActions) {
-    ElevatedCard(Modifier.fillMaxWidth().testTag("plan-${plan.id}")) {
+    OutlinedCard(Modifier.fillMaxWidth().testTag("plan-${plan.id}")) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(plan.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -562,7 +561,7 @@ private fun NoPlan(onCreateBlock: () -> Unit) {
 
 @Composable
 private fun NoRider(onOpenWeb: () -> Unit) {
-    ElevatedCard(Modifier.fillMaxWidth().testTag("calendar-no-rider")) {
+    OutlinedCard(Modifier.fillMaxWidth().testTag("calendar-no-rider")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.dashboard_no_rider_title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.dashboard_no_rider_hint), style = MaterialTheme.typography.bodyMedium)

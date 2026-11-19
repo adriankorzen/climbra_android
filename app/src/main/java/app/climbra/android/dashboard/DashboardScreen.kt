@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
@@ -326,7 +326,7 @@ internal fun formColor(form: FormRange): Color = when (form) {
 @Composable
 private fun PmcCard(state: DashboardUiState, fmt: Fmt, onSelectRange: (Int) -> Unit, modifier: Modifier = Modifier) {
     val title = stringResource(R.string.dashboard_pmc)
-    ElevatedCard(modifier = modifier.fillMaxWidth()) {
+    OutlinedCard(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             CardTitle(title)
             val rangeLabel = stringResource(R.string.dashboard_range)
@@ -360,7 +360,7 @@ private fun PmcCard(state: DashboardUiState, fmt: Fmt, onSelectRange: (Int) -> U
 private fun WeeklyCard(state: DashboardUiState, fmt: Fmt, modifier: Modifier = Modifier) {
     val title = stringResource(R.string.dashboard_weekly)
     val weeks = state.load?.weeks.orEmpty()
-    ElevatedCard(modifier = modifier.fillMaxWidth()) {
+    OutlinedCard(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CardTitle(title, Modifier.weight(1f))
@@ -381,7 +381,7 @@ private fun WeeklyCard(state: DashboardUiState, fmt: Fmt, modifier: Modifier = M
 
 @Composable
 private fun RecentRides(state: DashboardUiState, fmt: Fmt, onOpenRide: (Long) -> Unit) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp)) {
             CardTitle(stringResource(R.string.dashboard_recent_rides))
             if (state.rides.isEmpty() && !state.loading) {
@@ -485,7 +485,7 @@ private fun Legend(vararg entries: Pair<String, Color>) {
 
 @Composable
 private fun Hint(title: String, text: String, onClick: () -> Unit, tag: String, button: String = stringResource(R.string.dashboard_open_web)) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth().testTag(tag)) {
+    OutlinedCard(modifier = Modifier.fillMaxWidth().testTag(tag)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -513,7 +513,7 @@ private fun CoachCard(
     coach: CoachNavigation,
     onOpenCoach: () -> Unit,
 ) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth().testTag("dashboard-coach")) {
+    OutlinedCard(modifier = Modifier.fillMaxWidth().testTag("dashboard-coach")) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CardTitle(stringResource(R.string.nav_coach), Modifier.weight(1f))

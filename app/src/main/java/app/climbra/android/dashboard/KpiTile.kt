@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,7 +46,7 @@ fun KpiTile(
     spark: List<Double> = emptyList(),
     tag: String? = null,
 ) {
-    ElevatedCard(modifier = modifier.then(if (tag != null) Modifier.testTag(tag) else Modifier)) {
+    OutlinedCard(modifier = modifier.then(if (tag != null) Modifier.testTag(tag) else Modifier)) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 label,

@@ -23,7 +23,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
@@ -355,7 +355,7 @@ private fun StatusText(text: String, color: androidx.compose.ui.graphics.Color, 
 /** The web's welcome with the three ways to start. */
 @Composable
 private fun Welcome(navigation: CoachNavigation) {
-    ElevatedCard(Modifier.fillMaxWidth().padding(16.dp).testTag("coach-welcome")) {
+    OutlinedCard(Modifier.fillMaxWidth().padding(16.dp).testTag("coach-welcome")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.coach_welcome_title), style = MaterialTheme.typography.titleLarge)
             Text(stringResource(R.string.coach_welcome), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -381,7 +381,7 @@ private fun WelcomeAction(icon: Int, title: Int, hint: Int, tag: String, onClick
 /** As the other tabs for an account without a rider. */
 @Composable
 fun NoRiderHint(onOpenWeb: () -> Unit) {
-    ElevatedCard(Modifier.fillMaxWidth().padding(16.dp).testTag("coach-no-rider")) {
+    OutlinedCard(Modifier.fillMaxWidth().padding(16.dp).testTag("coach-no-rider")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.dashboard_no_rider_title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.dashboard_no_rider_hint), style = MaterialTheme.typography.bodyMedium)

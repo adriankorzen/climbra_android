@@ -527,6 +527,8 @@ class CalendarScreensTest {
         compose.onNodeWithTag("month-workout-1", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("month-workout-22", useUnmergedTree = true).assertDoesNotExist()
         inside("month-more-2026-11-10", "+1 more").assertExists()
+        // The ride linked to the completed workout shows under it with its TSS
+        inside("month-ride-11", "62 TSS").assertExists()
     }
 
     // AC3: each week row shows the backend's totals and plan week
