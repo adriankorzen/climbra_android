@@ -51,6 +51,11 @@ internal fun labels(values: List<String>) = CartesianValueFormatter { _, x, _ ->
 internal fun label(values: List<String>, x: Double): String =
     if (values.isEmpty()) "–" else values[x.toInt().coerceIn(0, values.lastIndex)].ifBlank { "–" }
 
+/** The value axes' labels in the locale (`Fmt`): whole numbers as they are, others with one decimal (the hours). */
+internal fun axisNumbers(fmt: Fmt) = CartesianValueFormatter { _, value, _ -> axisNumber(fmt, value) }
+
+internal fun axisNumber(fmt: Fmt, value: Double): String = fmt.num(value, if (value % 1.0 == 0.0) 0 else 1)
+
 @Composable
 private fun marker() = rememberDefaultCartesianMarker(
     label = rememberTextComponent(
@@ -100,8 +105,8 @@ fun PmcChart(days: List<DailyLoad>, fmt: Fmt, description: String, modifier: Mod
                 ),
                 verticalAxisPosition = Axis.Position.Vertical.Start,
             ),
-            startAxis = VerticalAxis.rememberStart(),
-            endAxis = VerticalAxis.rememberEnd(guideline = null),
+            startAxis = VerticalAxis.rememberStart(valueFormatter = axisNumbers(fmt)),
+            endAxis = VerticalAxis.rememberEnd(guideline = null, valueFormatter = axisNumbers(fmt)),
             bottomAxis = HorizontalAxis.rememberBottom(guideline = null, valueFormatter = labels(dates)),
             marker = marker(),
         ),
@@ -140,8 +145,8 @@ fun WeeklyChart(weeks: List<WeekLoad>, fmt: Fmt, description: String, modifier: 
                 ),
                 verticalAxisPosition = Axis.Position.Vertical.End,
             ),
-            startAxis = VerticalAxis.rememberStart(),
-            endAxis = VerticalAxis.rememberEnd(guideline = null),
+            startAxis = VerticalAxis.rememberStart(valueFormatter = axisNumbers(fmt)),
+            endAxis = VerticalAxis.rememberEnd(guideline = null, valueFormatter = axisNumbers(fmt)),
             bottomAxis = HorizontalAxis.rememberBottom(guideline = null, valueFormatter = labels(dates)),
             marker = marker(),
         ),
