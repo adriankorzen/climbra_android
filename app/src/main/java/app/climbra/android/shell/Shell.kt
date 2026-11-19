@@ -3,6 +3,7 @@ package app.climbra.android.shell
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -358,7 +359,8 @@ fun Shell(
         NavHost(
             navController = navController,
             startDestination = DashboardGraph,
-            modifier = Modifier.padding(padding),
+            // The bars inset is applied here: nested Scaffolds and TopAppBars must not add it again
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
         ) {
             navigation<DashboardGraph>(startDestination = DashboardRoute) {
                 composable<DashboardRoute> { Screen { dashboard(navigator) } }

@@ -7,6 +7,7 @@ import app.climbra.android.data.api.AccountResponse
 import app.climbra.android.coach.CoachQuotaRepository
 import app.climbra.android.data.api.CoachQuota
 import app.climbra.android.data.api.GarminConnection
+import app.climbra.android.data.api.GarminStatus
 import app.climbra.android.data.api.IntervalsConnectRequest
 import app.climbra.android.data.api.IntervalsConnection
 import app.climbra.android.data.api.IntervalsThresholds
@@ -19,6 +20,7 @@ import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
+import app.climbra.android.garmin.GarminConnectFlow
 import app.climbra.android.garmin.GarminSync
 import app.climbra.android.intervals.IntervalsSync
 import app.climbra.android.intervals.SyncOrigin
@@ -114,6 +116,7 @@ class ProfileViewModel @Inject constructor(
     private val quotas: CoachQuotaRepository,
     private val sync: IntervalsSync,
     private val garminSync: GarminSync,
+    private val garminConnect: GarminConnectFlow,
 ) : ViewModel() {
 
     /** The device's zone decides "today" for the date picker; the backend's rider zone follows it (spec 002). */
@@ -146,6 +149,10 @@ class ProfileViewModel @Inject constructor(
         }
         viewModelScope.launch {
             sync.finished.drop(1).collect { state.value.rider?.let { loadIntervals(it.id) } }
+        }
+        // Connecting Garmin Connect ended (spec 016): the card shows the new status
+        viewModelScope.launch {
+            garminConnect.completed.drop(1).collect { state.value.rider?.let { loadGarmin(it.id) } }
         }
         load()
     }
@@ -515,6 +522,12 @@ class ProfileViewModel @Inject constructor(
     }
 
     // Garmin Connect
+
+    /** The consent dialog, then Garmin's page (spec 016); "Connect again" for a status that needs it. */
+    fun connectGarmin() {
+        val riderId = state.value.rider?.id ?: return
+        garminConnect.ask(riderId, state.value.garmin.value?.status ?: GarminStatus.NOT_CONNECTED)
+    }
 
     fun askDisconnectGarmin() = mutableState.update { it.copy(confirmation = Confirmation.DisconnectGarmin) }
 

@@ -26,7 +26,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -130,6 +129,7 @@ fun CalendarRoute(
             onOpenWeb = { path -> openWebPage(context, config.webPage(path)) },
             onImportGarmin = viewModel::sendPlanToGarmin,
             onCloseGarminDialog = viewModel::closeGarminDialog,
+            onConnectGarmin = viewModel::connectGarmin,
             onMessageShown = viewModel::messageShown,
             onOpenConversation = onOpenConversation,
             onNewTrainingBlock = onNewTrainingBlock,
@@ -161,6 +161,8 @@ data class CalendarActions(
     val onOpenWeb: (String) -> Unit = {},
     val onImportGarmin: () -> Unit = {},
     val onCloseGarminDialog: () -> Unit = {},
+    /** Connect in the dialog of a send without a connection: the consent dialog (spec 016). */
+    val onConnectGarmin: () -> Unit = {},
     val onMessageShown: () -> Unit = {},
     val onOpenConversation: (Long) -> Unit = {},
     val onNewTrainingBlock: () -> Unit = {},
@@ -244,7 +246,7 @@ fun CalendarScreen(state: CalendarUiState, fmt: Fmt, actions: CalendarActions) {
         )
     }
     state.connectingGarmin?.let { status ->
-        GarminConnectDialog(status, onConnect = { actions.onCloseGarminDialog(); actions.onOpenWeb("profile") }, onDismiss = actions.onCloseGarminDialog)
+        GarminConnectDialog(status, onConnect = actions.onConnectGarmin, onDismiss = actions.onCloseGarminDialog)
     }
 }
 
@@ -350,7 +352,7 @@ internal fun LazyListScope.top(state: CalendarUiState, fmt: Fmt, actions: Calend
 
 @Composable
 private fun PlanCard(plan: TrainingPlan, workouts: List<CalendarWorkout>, fmt: Fmt, actions: CalendarActions) {
-    ElevatedCard(Modifier.fillMaxWidth().testTag("plan-${plan.id}")) {
+    OutlinedCard(Modifier.fillMaxWidth().testTag("plan-${plan.id}")) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(plan.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -562,7 +564,7 @@ private fun NoPlan(onCreateBlock: () -> Unit) {
 
 @Composable
 private fun NoRider(onOpenWeb: () -> Unit) {
-    ElevatedCard(Modifier.fillMaxWidth().testTag("calendar-no-rider")) {
+    OutlinedCard(Modifier.fillMaxWidth().testTag("calendar-no-rider")) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.dashboard_no_rider_title), style = MaterialTheme.typography.titleMedium)
             Text(stringResource(R.string.dashboard_no_rider_hint), style = MaterialTheme.typography.bodyMedium)
@@ -606,7 +608,7 @@ fun Notice(text: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** A send without a connection: why, and where to connect (on the web, spec 004). */
+/** A send without a connection: why, and Connect, which opens the consent (spec 016). */
 @Composable
 fun GarminConnectDialog(status: GarminStatus, onConnect: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
@@ -614,7 +616,7 @@ fun GarminConnectDialog(status: GarminStatus, onConnect: () -> Unit, onDismiss: 
         title = { Text(stringResource(R.string.garmin_connect_title)) },
         text = { Text(garminStatusText(status)) },
         confirmButton = {
-            TextButton(onClick = onConnect, modifier = Modifier.testTag("garmin-connect-web")) { Text(stringResource(R.string.garmin_connect_web)) }
+            TextButton(onClick = onConnect, modifier = Modifier.testTag("garmin-connect-start")) { Text(stringResource(R.string.garmin_connect)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
         modifier = Modifier.testTag("garmin-connect-dialog"),

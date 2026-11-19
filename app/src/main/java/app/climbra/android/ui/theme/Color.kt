@@ -5,7 +5,8 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
-// Tokens of the web app (cyclingapp frontend/src/styles.scss), mapped to Material 3 roles in spec 001.
+// Tokens of the web app (cyclingapp frontend/src/styles.scss), mapped to Material 3 roles in spec 001. The light
+// background and containers are a step darker than the web so the white, outlined cards stand out on a phone.
 
 internal val LightColors = lightColorScheme(
     primary = Color(0xFFE2531F),
@@ -14,15 +15,15 @@ internal val LightColors = lightColorScheme(
     onPrimaryContainer = Color(0xFFA93A0B),
     secondaryContainer = Color(0xFFFDE7DD),
     onSecondaryContainer = Color(0xFFA93A0B),
-    background = Color(0xFFF4F5F7),
+    background = Color(0xFFE9ECF0),
     onBackground = Color(0xFF161B22),
     surface = Color(0xFFFFFFFF),
     onSurface = Color(0xFF161B22),
     surfaceContainerLowest = Color(0xFFFFFFFF),
     surfaceContainerLow = Color(0xFFFFFFFF),
-    surfaceContainer = Color(0xFFF0F2F5),
-    surfaceContainerHigh = Color(0xFFE6E9EE),
-    surfaceContainerHighest = Color(0xFFE6E9EE),
+    surfaceContainer = Color(0xFFE4E7EC),
+    surfaceContainerHigh = Color(0xFFDCE0E6),
+    surfaceContainerHighest = Color(0xFFDCE0E6),
     onSurfaceVariant = Color(0xFF5B6573),
     outlineVariant = Color(0xFFE1E4E9),
     outline = Color(0xFFC9CFD7),

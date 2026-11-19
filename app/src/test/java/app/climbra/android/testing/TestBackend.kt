@@ -103,6 +103,10 @@ class TestBackend(
         clock: Clock = Clock.systemUTC(),
     ) = GarminSync(garminApi, changes, clock, session, scope)
 
+    /** Connecting Garmin Connect from the app (spec 016). */
+    fun garminConnect(session: SessionRepository, scope: CoroutineScope) =
+        app.climbra.android.garmin.GarminConnectFlow(profileApi, session, scope)
+
     /** The app's import of several rides (spec 009). */
     fun rideImport(
         session: SessionRepository,

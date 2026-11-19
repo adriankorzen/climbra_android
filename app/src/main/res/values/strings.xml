@@ -373,11 +373,11 @@
 
     <!-- Garmin Connect (web: garmin.section.*, garmin.status.*) -->
     <string name="profile_garmin_failed">Cannot load the Garmin Connect connection.</string>
-    <string name="garmin_intro">Send your planned workouts to the Garmin Connect calendar from the calendar on climbra.app. Power targets are sent in watts of your current FTP. Rides are not imported from Garmin Connect.</string>
+    <string name="garmin_intro">Send your planned workouts to the Garmin Connect calendar from the calendar. Power targets are sent in watts of your current FTP. Rides are not imported from Garmin Connect.</string>
     <string name="garmin_connected_at">Connected</string>
     <string name="garmin_on_garmin">Upcoming workouts in Garmin Connect</string>
     <string name="garmin_outdated">Workouts in Garmin Connect differ from the plan. Send them again to update them.</string>
-    <string name="garmin_connect_web">Connect on climbra.app</string>
+    <string name="garmin_connect">Connect Garmin Connect</string>
     <string name="garmin_disconnect">Disconnect</string>
     <string name="garmin_confirm_disconnect">Disconnect Garmin Connect? Upcoming workouts sent from Climbra will be removed from it; past ones stay.</string>
     <string name="garmin_disconnected">Garmin Connect disconnected</string>
@@ -504,7 +504,20 @@
     <string name="garmin_workout_status_sent">Sent to Garmin Connect</string>
     <string name="garmin_workout_status_outdated">Changed since it was sent</string>
     <string name="garmin_connect_title">Connect Garmin Connect</string>
-    <string name="garmin_connect_first">Connect Garmin Connect on climbra.app first: the connection needs your consent in the browser.</string>
+    <string name="garmin_connect_first">Connect Garmin Connect first: sending workouts needs your consent.</string>
+    <!-- Spec 016: connecting Garmin Connect in the app (web: garmin.dialog.*, garmin.outcome.*) -->
+    <string name="garmin_dialog_what">Climbra will transfer the planned workouts you send to Garmin: name, description, date, steps and power and cadence targets. They then appear on your Garmin Connect calendar and can reach your device.</string>
+    <string name="garmin_dialog_garmin_use">Garmin is a separate controller of what it receives. It may use this data for its own purposes and does not have to remove it from its services.</string>
+    <string name="garmin_dialog_restricted">Do not send this data if you are restricted from uploading it to Garmin Connect.</string>
+    <string name="garmin_dialog_on_click">Workouts are sent only when you click. Climbra does not read your rides or any other data from Garmin Connect.</string>
+    <string name="garmin_dialog_privacy_link">Garmin Connect privacy notice</string>
+    <string name="garmin_dialog_consent">I agree to my planned workouts being transferred to Garmin</string>
+    <string name="garmin_dialog_continue">Continue to Garmin Connect</string>
+    <string name="garmin_outcome_connected">Connected to Garmin Connect</string>
+    <string name="garmin_outcome_no_permission">Connected, but workout import is switched off, so nothing can be sent.</string>
+    <string name="garmin_outcome_denied">You did not agree in Garmin Connect, so nothing was connected.</string>
+    <string name="garmin_outcome_in_use">This Garmin Connect account is already linked to another Climbra account.</string>
+    <string name="garmin_outcome_failed">Connecting to Garmin Connect failed. Try again.</string>
     <string name="zwift_download">Download for Zwift (.zwo)</string>
     <string name="zwift_import_hint">On a PC or Mac, copy the file to Documents\\Zwift\\Workouts\\&lt;your Zwift ID&gt; and restart Zwift. The workout is under Custom Workouts. Watts come from the FTP set in Zwift.</string>
     <string name="api_error_garmin_not_configured">Garmin Connect is not available.</string>

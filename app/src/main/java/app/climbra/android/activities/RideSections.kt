@@ -21,7 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -67,7 +67,7 @@ import app.climbra.android.ui.theme.extendedColors
 
 @Composable
 fun SectionCard(title: String, modifier: Modifier = Modifier, tag: String? = null, content: @Composable () -> Unit) {
-    ElevatedCard(modifier = modifier.fillMaxWidth().then(if (tag != null) Modifier.testTag(tag) else Modifier)) {
+    OutlinedCard(modifier = modifier.fillMaxWidth().then(if (tag != null) Modifier.testTag(tag) else Modifier)) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
             content()

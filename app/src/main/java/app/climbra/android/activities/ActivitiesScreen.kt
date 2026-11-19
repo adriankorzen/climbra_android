@@ -20,7 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.DropdownMenu
@@ -305,7 +305,7 @@ private fun Filters(
 @Composable
 private fun Totals(totals: app.climbra.android.data.api.RideTotals, fmt: Fmt) {
     val label = stringResource(R.string.activities_totals)
-    ElevatedCard(modifier = Modifier.fillMaxWidth().testTag("activities-totals").semantics { contentDescription = label }) {
+    OutlinedCard(modifier = Modifier.fillMaxWidth().testTag("activities-totals").semantics { contentDescription = label }) {
         // Three per row: six figures in one row do not fit a phone
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth()) {
@@ -395,7 +395,7 @@ private fun RideListItem(row: RideRow, fmt: Fmt, onOpenRide: (Long) -> Unit) {
 
 @Composable
 private fun Hint(title: String, text: String, onClick: () -> Unit, tag: String, button: String = stringResource(R.string.dashboard_open_web)) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth().testTag(tag)) {
+    OutlinedCard(modifier = Modifier.fillMaxWidth().testTag(tag)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

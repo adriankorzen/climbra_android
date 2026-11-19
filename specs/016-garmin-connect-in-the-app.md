@@ -1,6 +1,6 @@
 # 016: Connecting Garmin Connect in the app
 
-- **Status:** Draft
+- **Status:** Implemented
 - **Created:** 2026-11-18
 
 ## Problem
@@ -31,16 +31,19 @@ does not share. cyclingapp spec 055 adds a flow the app can finish in its own se
    agree to my planned workouts being transferred to Garmin"; **Continue to Garmin Connect** is enabled only when it
    is checked.
 2. Continue → `POST /api/riders/{id}/garmin-connection/authorization` `{"consent": true, "returnTo": "APP"}`; the
-   answer's `authorizationUrl` opens in a Custom Tab. `503` → "Garmin Connect is not available right now."; `409`
-   (already connected) → the status loads again. While the request runs the button shows progress.
+   answer's `authorizationUrl` opens in a Custom Tab. An error shows in the dialog, as on the web (`503` →
+   "Garmin Connect is not available." of `GARMIN_NOT_CONFIGURED`), and Continue can be tried again; `409`
+   (already connected) → the dialog closes and the status loads again. While the request runs the button shows progress.
 3. Garmin's consent ends in the backend's callback, which redirects to `climbra://garmin-connect?state=…`;
    `MainActivity` takes it (an intent filter for the scheme and host), and `garmin.GarminConnectFlow` (app-scoped)
    completes it: `POST /api/garmin-connection/authorization/complete` `{"state": …}`.
 4. **Outcome** (the web's `garmin.outcome` texts) in the shell's snackbar: `connected` "Connected to Garmin Connect",
-   `no-permission`, `denied`, `in-use`, `failed`; then `DataChanges.changed()` so the profile's card and the calendar's
-   Garmin status load again.
-5. A redirect that arrives while logged out (the session ended meanwhile) waits until the shell shows, as the shared
-   files of spec 009, then completes; a state the backend does not know any more gives `failed`.
+   `no-permission`, `denied`, `in-use`, `failed` (also for an outcome the app does not know); then
+   `GarminConnectFlow.completed` is bumped and the profile's card, the calendar and the workout detail load the
+   Garmin status again.
+5. A redirect that arrives while logged out (the session ended meanwhile) waits in memory until the account is
+   logged in again, then completes; a state the backend does not know any more (expired after 10 minutes) gives
+   `failed`.
 6. The rider closes the Custom Tab without finishing: nothing arrives; the card stays as it was (no error).
 
 ## Backend dependencies
@@ -51,8 +54,10 @@ does not share. cyclingapp spec 055 adds a flow the app can finish in its own se
 
 ## Screens
 
-- `garmin.GarminConsentDialog` (`AlertDialog` with the texts, a `Checkbox` row, the privacy link), used by the profile
-  card and the calendar's dialogs.
+- `garmin.GarminConsentDialog` (`AlertDialog` with the texts, the `NO_PERMISSION` / `NEEDS_RECONNECT` notice as the
+  web's, a `Checkbox` row, the privacy link, an error), shown by `garmin.GarminConnectHost` above the shell when a
+  screen calls `GarminConnectFlow.ask`: the profile card's Connect and Connect in the calendar's and the workout
+  detail's "Connect Garmin Connect first" dialog. The host also opens Garmin's page in the Custom Tab.
 - Manifest: an intent filter on `MainActivity` for `climbra://garmin-connect` (`VIEW`, `BROWSABLE`).
 
 ## Data and storage
@@ -63,15 +68,15 @@ does not share. cyclingapp spec 055 adds a flow the app can finish in its own se
 
 ## Acceptance criteria
 
-- [ ] AC1: Connect in the profile and in the calendar's dialogs opens the consent dialog; Continue needs the checkbox.
-- [ ] AC2: Continue sends `consent: true, returnTo: APP` and opens the returned URL in a Custom Tab; `503` and `409`
+- [x] AC1: Connect in the profile and in the calendar's dialogs opens the consent dialog; Continue needs the checkbox.
+- [x] AC2: Continue sends `consent: true, returnTo: APP` and opens the returned URL in a Custom Tab; `503` and `409`
   are handled.
-- [ ] AC3: `climbra://garmin-connect?state=…` completes with that state, shows the outcome's text and reloads the
+- [x] AC3: `climbra://garmin-connect?state=…` completes with that state, shows the outcome's text and reloads the
   Garmin status.
-- [ ] AC4: A redirect while logged out completes after the next login.
-- [ ] AC5: "Connect on climbra.app" is gone from the profile and the calendar.
-- [ ] AC6: New strings exist in English and Polish.
+- [x] AC4: A redirect while logged out completes after the next login.
+- [x] AC5: "Connect on climbra.app" is gone from the profile and the calendar.
+- [x] AC6: New strings exist in English and Polish.
 
 ## Open questions
 
-- Depends on cyclingapp spec 055 being approved and deployed first.
+- None. Works only against a backend with cyclingapp spec 055 deployed (implemented 2026-11-19).

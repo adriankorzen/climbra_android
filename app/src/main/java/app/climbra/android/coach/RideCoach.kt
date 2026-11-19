@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -64,7 +64,7 @@ fun RideCoachButton(state: AskCoachState, actions: RideCoachActions) {
 /** The coach card at the end of a ride detail: the latest review's summary, session type and RPE. */
 @Composable
 fun RideCoachCard(state: AskCoachState, fmt: Fmt, actions: RideCoachActions) {
-    ElevatedCard(Modifier.fillMaxWidth().testTag("ride-coach-card")) {
+    OutlinedCard(Modifier.fillMaxWidth().testTag("ride-coach-card")) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.nav_coach), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f).semantics { heading() })

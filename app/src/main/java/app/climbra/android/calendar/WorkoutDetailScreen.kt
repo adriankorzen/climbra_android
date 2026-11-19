@@ -48,7 +48,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -60,7 +59,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.climbra.android.AppConfig
 import app.climbra.android.R
 import app.climbra.android.activities.complianceColor
 import app.climbra.android.activities.complianceName
@@ -71,7 +69,6 @@ import app.climbra.android.data.api.CalendarWorkout
 import app.climbra.android.data.api.WorkoutComparison
 import app.climbra.android.data.api.WorkoutStep
 import app.climbra.android.ui.common.ErrorBanner
-import app.climbra.android.ui.common.openWebPage
 import app.climbra.android.ui.common.toUiText
 import app.climbra.android.ui.format.DateStyle
 import app.climbra.android.ui.format.Fmt
@@ -83,13 +80,11 @@ import app.climbra.android.ui.workout.WorkoutStepsTable
 
 @Composable
 fun WorkoutDetailRoute(
-    config: AppConfig,
     onBack: () -> Unit,
     onOpenRide: (Long) -> Unit,
     viewModel: WorkoutDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     WorkoutDetailScreen(
         state = state,
         fmt = rememberFmt(),
@@ -102,7 +97,7 @@ fun WorkoutDetailRoute(
             onSkip = viewModel::skip,
             onSendToGarmin = viewModel::sendToGarmin,
             onCloseGarminDialog = viewModel::closeGarminDialog,
-            onConnectGarmin = { openWebPage(context, config.webPage("profile")) },
+            onConnectGarmin = viewModel::connectGarmin,
             onDownloadZwift = viewModel::downloadZwift,
             onMessageShown = viewModel::messageShown,
         ),
@@ -167,14 +162,7 @@ fun WorkoutDetailScreen(state: WorkoutDetailUiState, fmt: Fmt, actions: WorkoutA
         }
     }
     state.connectingGarmin?.let { status ->
-        GarminConnectDialog(
-            status,
-            onConnect = {
-                actions.onCloseGarminDialog()
-                actions.onConnectGarmin()
-            },
-            onDismiss = actions.onCloseGarminDialog,
-        )
+        GarminConnectDialog(status, onConnect = actions.onConnectGarmin, onDismiss = actions.onCloseGarminDialog)
     }
 }
 

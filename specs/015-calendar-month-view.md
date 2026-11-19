@@ -29,7 +29,8 @@ of the screen empty, and the rider cannot see the shape of a block (its build an
   picker chooses a month; the title is "November 2026".
 - **Loading**: `GET /api/riders/{id}/calendar?from&to` for the month's whole weeks (up to 6 weeks), the web's
   `monthRange`; the backend returns the weeks' totals with it. Nothing is computed on the device.
-- **Day cell**: the day number (today marked), up to 3 tiles (workout type color and short title, or a ride with its
+- **Day cell**: the day number (today marked), up to 3 tiles (workout status color and short title, the ride linked
+  to it with its TSS underneath in the same tile; or an unplanned ride with its
   TSS), "+{n} more" when there are more. A tap on a tile opens the workout or the ride as in the week view (spec 005,
   spec 003); a tap on the day opens the week view at that week.
 - **Week summary** at the end of each row (wide windows) or under it: planned / ridden TSS and time, plan week and

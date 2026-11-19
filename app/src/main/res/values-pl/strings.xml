@@ -372,11 +372,11 @@
 
     <!-- Garmin Connect (web: garmin.section.*, garmin.status.*) -->
     <string name="profile_garmin_failed">Nie można wczytać połączenia z Garmin Connect.</string>
-    <string name="garmin_intro">Wysyłaj zaplanowane treningi do kalendarza Garmin Connect z kalendarza na climbra.app. Cele mocy są wysyłane w watach według Twojego aktualnego FTP. Jazdy nie są importowane z Garmin Connect.</string>
+    <string name="garmin_intro">Wysyłaj zaplanowane treningi do kalendarza Garmin Connect z kalendarza. Cele mocy są wysyłane w watach według Twojego aktualnego FTP. Jazdy nie są importowane z Garmin Connect.</string>
     <string name="garmin_connected_at">Połączono</string>
     <string name="garmin_on_garmin">Nadchodzące treningi w Garmin Connect</string>
     <string name="garmin_outdated">Treningi w Garmin Connect różnią się od planu. Wyślij je ponownie, aby je zaktualizować.</string>
-    <string name="garmin_connect_web">Połącz na climbra.app</string>
+    <string name="garmin_connect">Połącz z Garmin Connect</string>
     <string name="garmin_disconnect">Odłącz</string>
     <string name="garmin_confirm_disconnect">Odłączyć Garmin Connect? Nadchodzące treningi wysłane z Climbry zostaną stamtąd usunięte, a przeszłe zostaną.</string>
     <string name="garmin_disconnected">Odłączono Garmin Connect</string>
@@ -503,7 +503,20 @@
     <string name="garmin_workout_status_sent">Wysłano do Garmin Connect</string>
     <string name="garmin_workout_status_outdated">Zmieniony od wysłania</string>
     <string name="garmin_connect_title">Połącz z Garmin Connect</string>
-    <string name="garmin_connect_first">Najpierw połącz Garmin Connect na climbra.app: połączenie wymaga Twojej zgody w przeglądarce.</string>
+    <string name="garmin_connect_first">Najpierw połącz Garmin Connect: wysyłanie treningów wymaga Twojej zgody.</string>
+    <!-- Spec 016: łączenie Garmin Connect w aplikacji (web: garmin.dialog.*, garmin.outcome.*) -->
+    <string name="garmin_dialog_what">Climbra przekaże Garminowi zaplanowane treningi, które wyślesz: nazwę, opis, datę, kroki oraz cele mocy i kadencji. Pojawią się one w Twoim kalendarzu Garmin Connect i mogą trafić na Twoje urządzenie.</string>
+    <string name="garmin_dialog_garmin_use">Garmin jest odrębnym administratorem otrzymanych danych. Może używać ich do własnych celów i nie musi usuwać ich ze swoich usług.</string>
+    <string name="garmin_dialog_restricted">Nie wysyłaj tych danych, jeśli obowiązuje Cię zakaz przesyłania ich do Garmin Connect.</string>
+    <string name="garmin_dialog_on_click">Treningi są wysyłane tylko po Twoim kliknięciu. Climbra nie czyta Twoich jazd ani innych danych z Garmin Connect.</string>
+    <string name="garmin_dialog_privacy_link">Informacja o prywatności Garmin Connect</string>
+    <string name="garmin_dialog_consent">Zgadzam się na przekazywanie moich zaplanowanych treningów do Garmina</string>
+    <string name="garmin_dialog_continue">Przejdź do Garmin Connect</string>
+    <string name="garmin_outcome_connected">Połączono z Garmin Connect</string>
+    <string name="garmin_outcome_no_permission">Połączono, ale import treningów jest wyłączony, więc nic nie można wysłać.</string>
+    <string name="garmin_outcome_denied">Nie wyrażono zgody w Garmin Connect, więc nic nie połączono.</string>
+    <string name="garmin_outcome_in_use">To konto Garmin Connect jest już połączone z innym kontem Climbra.</string>
+    <string name="garmin_outcome_failed">Nie udało się połączyć z Garmin Connect. Spróbuj ponownie.</string>
     <string name="zwift_download">Pobierz do Zwift (.zwo)</string>
     <string name="zwift_import_hint">Na PC lub Macu skopiuj plik do Dokumenty\\Zwift\\Workouts\\&lt;Twoje ID Zwift&gt; i uruchom Zwift ponownie. Trening znajdziesz w Custom Workouts. Waty liczą się z FTP ustawionego w Zwift.</string>
     <string name="api_error_garmin_not_configured">Garmin Connect jest niedostępny.</string>

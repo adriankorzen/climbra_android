@@ -15,6 +15,7 @@ import app.climbra.android.coach.CoachActivity
 import app.climbra.android.data.api.FeedbackApi
 import app.climbra.android.data.api.ImportApi
 import app.climbra.android.data.api.GarminApi
+import app.climbra.android.garmin.GarminConnectFlow
 import app.climbra.android.garmin.GarminSync
 import app.climbra.android.coach.CoachQuotaRepository
 import app.climbra.android.coach.ContentResolverFileSource
@@ -223,4 +224,10 @@ object AppModule {
         session: SessionRepository,
         scope: CoroutineScope,
     ): GarminSync = GarminSync(api, changes, clock, session, scope)
+
+    /** Connecting Garmin Connect from the app (spec 016). */
+    @Provides
+    @Singleton
+    fun garminConnectFlow(api: ProfileApi, session: SessionRepository, scope: CoroutineScope): GarminConnectFlow =
+        GarminConnectFlow(api, session, scope)
 }

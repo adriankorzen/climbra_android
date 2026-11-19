@@ -18,7 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,7 +67,7 @@ import app.climbra.android.ui.theme.extendedColors
 /** A titled card of the profile. */
 @Composable
 internal fun ProfileCard(title: String, tag: String, content: @Composable ColumnScope.() -> Unit) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth().testTag(tag)) {
+    OutlinedCard(modifier = Modifier.fillMaxWidth().testTag(tag)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
             content()
@@ -519,9 +519,9 @@ internal fun GarminCard(state: ProfileUiState, fmt: Fmt, actions: ProfileActions
                 GarminStatus.NEEDS_RECONNECT -> ErrorBanner(stringResource(R.string.garmin_status_needs_reconnect), Modifier.testTag("garmin-problem"))
                 else -> Unit
             }
-            Button(onClick = actions::connectGarminOnWeb, modifier = Modifier.testTag("garmin-connect")) {
-                Icon(painterResource(R.drawable.ic_open_in_new), contentDescription = null, modifier = Modifier.size(18.dp))
-                Text(stringResource(R.string.garmin_connect_web), modifier = Modifier.padding(start = 8.dp))
+            // Spec 016: the consent, then Garmin's page in a Custom Tab
+            Button(onClick = actions::connectGarmin, modifier = Modifier.testTag("garmin-connect")) {
+                Text(stringResource(R.string.garmin_connect))
             }
         }
     }

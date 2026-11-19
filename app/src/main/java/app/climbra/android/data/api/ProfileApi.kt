@@ -70,7 +70,32 @@ interface ProfileApi {
 
     @DELETE("api/riders/{id}/garmin-connection")
     suspend fun disconnectGarmin(@Path("id") riderId: Long)
+
+    /** Starts connecting Garmin Connect after the rider's consent (spec 016, cyclingapp spec 055). */
+    @POST("api/riders/{id}/garmin-connection/authorization")
+    suspend fun authorizeGarmin(@Path("id") riderId: Long, @Body request: GarminAuthorizationRequest): GarminAuthorization
+
+    /** Completes the connection in the app's session after Garmin sent the rider back. */
+    @POST("api/garmin-connection/authorization/complete")
+    suspend fun completeGarmin(@Body request: GarminCompleteRequest): GarminOutcome
 }
+
+/**
+ * Mirrors `garminconnect.GarminConnectController.AuthorizationRequest`; the app always returns to itself (`APP`).
+ * No defaults: `Network.json` does not send them.
+ */
+@Serializable
+data class GarminAuthorizationRequest(val consent: Boolean, val returnTo: String)
+
+@Serializable
+data class GarminAuthorization(val authorizationUrl: String)
+
+@Serializable
+data class GarminCompleteRequest(val state: String)
+
+/** `connected`, `no-permission`, `denied`, `in-use` or `failed`, as the web's `garminConnect` parameter. */
+@Serializable
+data class GarminOutcome(val outcome: String = "failed")
 
 /** Mirrors `rider.RiderRequest`; [timeZone] only when creating the rider (cyclingapp spec 049). */
 @Serializable

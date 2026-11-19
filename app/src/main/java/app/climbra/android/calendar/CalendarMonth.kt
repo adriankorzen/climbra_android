@@ -180,7 +180,15 @@ private fun WeekFigures(figures: CalendarWeek?, fmt: Fmt, modifier: Modifier) {
 @Composable
 private fun DayCell(day: CalendarDay, inMonth: Boolean, fmt: Fmt, actions: CalendarActions, modifier: Modifier) {
     val tiles: List<@Composable () -> Unit> = buildList {
-        day.workouts.forEach { item -> add { CompactWorkout(item.workout) { actions.onOpenWorkout(item.workout) } } }
+        // A ride linked to a workout shows under it with its TSS, in the workout's tile (the web's `linked-ride`)
+        day.workouts.forEach { item ->
+            add {
+                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    CompactWorkout(item.workout) { actions.onOpenWorkout(item.workout) }
+                    item.ride?.let { ride -> CompactRide(ride, fmt) { actions.onOpenRide(ride.activityId) } }
+                }
+            }
+        }
         day.unplannedRides.forEach { ride -> add { CompactRide(ride, fmt) { actions.onOpenRide(ride.activityId) } } }
     }
     Column(

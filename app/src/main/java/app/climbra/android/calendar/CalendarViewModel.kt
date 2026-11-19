@@ -14,6 +14,7 @@ import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
+import app.climbra.android.garmin.GarminConnectFlow
 import app.climbra.android.rider.DataChanges
 import app.climbra.android.rider.RiderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +29,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -96,6 +98,7 @@ class CalendarViewModel @Inject constructor(
     private val changes: DataChanges,
     private val requests: CalendarRequests,
     private val clock: Clock,
+    private val garminConnect: GarminConnectFlow,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(
@@ -120,6 +123,10 @@ class CalendarViewModel @Inject constructor(
                 requests.consumed()
                 showWeek(week)
             }
+        }
+        // Connecting Garmin Connect ended (spec 016): what can be sent changes
+        viewModelScope.launch {
+            garminConnect.completed.drop(1).collect { if (rider != null) load(withGarmin = true) }
         }
     }
 
@@ -317,6 +324,13 @@ class CalendarViewModel @Inject constructor(
     }
 
     fun closeGarminDialog() = mutableState.update { it.copy(connectingGarmin = null) }
+
+    /** Connect in the dialog: the app's consent dialog takes over (spec 016). */
+    fun connectGarmin() {
+        val status = state.value.connectingGarmin ?: GarminStatus.NOT_CONNECTED
+        closeGarminDialog()
+        rider?.let { garminConnect.ask(it.id, status) }
+    }
 
     fun messageShown() = mutableState.update { it.copy(message = null) }
 
