@@ -80,10 +80,12 @@ class ProfileViewModelTest {
         backend.quotas(session, scope),
         sync,
         garminSync,
+        garminConnect,
     ).apply { zone = { ZoneId.of("Europe/Warsaw") } }
 
     private val sync by lazy { backend.intervalsSync(session, scope, changes, clock) }
     private val garminSync by lazy { backend.garminSync(session, scope, changes, clock) }
+    private val garminConnect by lazy { backend.garminConnect(session, scope) }
 
     /** Nothing loading or running (the backend answers on OkHttp's threads, so states are awaited). */
     private suspend fun ProfileViewModel.settled() = state.first { s ->
@@ -542,6 +544,25 @@ class ProfileViewModelTest {
 
         assertEquals(1, count("DELETE /api/riders/5/garmin-connection"))
         eventually { assertEquals(GarminStatus.NOT_CONNECTED, viewModel.state.value.garmin.value?.status) }
+    }
+
+    // Spec 016 AC1, AC3: Connect asks for the consent with the status; a completed connection reloads the card
+    @Test
+    fun connectingGarminAsksForTheConsentAndReloadsAfterIt() = runTest(dispatcher) {
+        loggedIn()
+        withProfile()
+        backend.replace("GET /api/riders/5/garmin-connection", json("""{"available":true,"status":"NEEDS_RECONNECT"}"""))
+        backend.on("POST /api/garmin-connection/authorization/complete", json("""{"outcome":"connected"}"""))
+        val viewModel = viewModel()
+        viewModel.settled()
+
+        viewModel.connectGarmin()
+        assertEquals(app.climbra.android.garmin.GarminConsent(5, GarminStatus.NEEDS_RECONNECT), garminConnect.consent.value)
+
+        backend.replace("GET /api/riders/5/garmin-connection", json(garmin))
+        garminConnect.returned("state-1")
+
+        eventually { assertEquals(GarminStatus.CONNECTED, viewModel.state.value.garmin.value?.status) }
     }
 
     // AC9: connecting happens on the web; back in the app the status is read again

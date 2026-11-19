@@ -263,7 +263,9 @@ class CalendarScreensTest {
 
         state = state.copy(connectingGarmin = GarminStatus.NO_PERMISSION)
         inside("garmin-connect-dialog", "Workout import is switched off").assertExists()
-        compose.onNodeWithTag("garmin-connect-web").assertExists()
+        // Spec 016 AC5: Connect in the app, nothing of climbra.app
+        inside("garmin-connect-start", "Connect Garmin Connect").assertExists()
+        compose.onNodeWithText("climbra.app", substring = true).assertDoesNotExist()
 
         state = week(garmin = connection(garmin(available = false, stale = 1)))
         compose.onNodeWithTag("garmin-import").assertDoesNotExist()
@@ -417,7 +419,7 @@ class CalendarScreensTest {
         state = detail(status = "NOT_SENT").copy(connectingGarmin = GarminStatus.NOT_CONNECTED)
         inside("garmin-send", "Send to Garmin Connect").assertExists()
         compose.onNodeWithTag("garmin-status").assertDoesNotExist()
-        inside("garmin-connect-dialog", "Connect Garmin Connect on climbra.app first").assertExists()
+        inside("garmin-connect-dialog", "Connect Garmin Connect first").assertExists()
     }
 
     // AC12

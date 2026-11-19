@@ -18,6 +18,7 @@ import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
 import app.climbra.android.data.net.httpError
+import app.climbra.android.garmin.GarminConnectFlow
 import app.climbra.android.rider.DataChanges
 import app.climbra.android.rider.RiderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,6 +30,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -71,6 +73,7 @@ class WorkoutDetailViewModel @Inject constructor(
     private val api: CalendarApi,
     private val changes: DataChanges,
     private val files: FileSaver,
+    private val garminConnect: GarminConnectFlow,
 ) : ViewModel() {
 
     private val id: Long = checkNotNull(savedState.get<Long>("id")) { "A workout route has an id" }
@@ -83,6 +86,10 @@ class WorkoutDetailViewModel @Inject constructor(
 
     init {
         load()
+        // Connecting Garmin Connect ended (spec 016): the connection and the workout's status load again
+        viewModelScope.launch {
+            garminConnect.completed.drop(1).collect { if (rider != null) load() }
+        }
     }
 
     fun retry() = load()
@@ -177,6 +184,13 @@ class WorkoutDetailViewModel @Inject constructor(
     }
 
     fun closeGarminDialog() = mutableState.update { it.copy(connectingGarmin = null) }
+
+    /** Connect in the dialog: the app's consent dialog takes over (spec 016). */
+    fun connectGarmin() {
+        val status = state.value.connectingGarmin ?: GarminStatus.NOT_CONNECTED
+        closeGarminDialog()
+        rider?.let { garminConnect.ask(it.id, status) }
+    }
 
     // Zwift
 

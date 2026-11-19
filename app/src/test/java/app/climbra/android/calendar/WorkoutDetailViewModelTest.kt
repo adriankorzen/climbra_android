@@ -15,8 +15,11 @@ import app.climbra.android.rider.RiderRepository
 import app.climbra.android.testing.TestBackend
 import app.climbra.android.testing.TestBackend.Companion.json
 import app.climbra.android.testing.TestBackend.Companion.problem
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -41,12 +44,15 @@ class WorkoutDetailViewModelTest {
     private val changes = DataChanges()
     private val saved = mutableListOf<Triple<String, String, ByteArray>>()
     private val files = FileSaver { name, mime, content -> saved += Triple(name, mime, content.readBytes()) }
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val garminConnect by lazy { backend.garminConnect(backend.session(scope), scope) }
 
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
 
     @After
     fun tearDown() {
+        scope.cancel()
         Dispatchers.resetMain()
         backend.close()
     }
@@ -57,6 +63,7 @@ class WorkoutDetailViewModelTest {
         backend.calendarApi,
         changes,
         files,
+        garminConnect,
     )
 
     private suspend fun WorkoutDetailViewModel.settled() =
@@ -197,6 +204,11 @@ class WorkoutDetailViewModelTest {
 
         assertEquals(GarminStatus.NOT_CONNECTED, viewModel.state.value.connectingGarmin)
         assertTrue(backend.requests("POST /api/riders/5/planned-workouts/1/garmin").isEmpty())
+
+        // Spec 016 AC1: Connect opens the app's consent dialog
+        viewModel.connectGarmin()
+        assertNull(viewModel.state.value.connectingGarmin)
+        assertEquals(app.climbra.android.garmin.GarminConsent(5, GarminStatus.NOT_CONNECTED), garminConnect.consent.value)
     }
 
     // AC9

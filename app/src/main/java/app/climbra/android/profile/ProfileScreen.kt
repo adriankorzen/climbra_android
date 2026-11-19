@@ -67,7 +67,7 @@ interface ProfileActions {
     fun syncIntervals() {}
     fun proposeThresholds(proposal: IntervalsThresholds) {}
     fun askDisconnectGarmin() {}
-    fun connectGarminOnWeb() {}
+    fun connectGarmin() {}
     fun setLanguage(language: String) {}
     fun setTheme(mode: ThemeMode) {}
     fun passwordChange(form: PasswordForm) {}
@@ -114,7 +114,7 @@ fun ProfileRoute(
             override fun syncIntervals() = viewModel.syncIntervals()
             override fun proposeThresholds(proposal: IntervalsThresholds) = viewModel.proposeThresholds(proposal)
             override fun askDisconnectGarmin() = viewModel.askDisconnectGarmin()
-            override fun connectGarminOnWeb() = openWebPage(context, config.webPage("profile"))
+            override fun connectGarmin() = viewModel.connectGarmin()
             override fun setLanguage(language: String) = viewModel.setLanguage(language)
             override fun setTheme(mode: ThemeMode) = viewModel.setTheme(mode)
             override fun passwordChange(form: PasswordForm) = viewModel.onPasswordChange(form)

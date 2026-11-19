@@ -65,6 +65,18 @@
                 <data android:mimeType="application/xml" />
                 <data android:mimeType="text/xml" />
             </intent-filter>
+
+            <!-- The backend sends the browser back here after Garmin Connect's consent (spec 016) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="garmin-connect"
+                    android:scheme="climbra" />
+            </intent-filter>
         </activity>
 
         <!-- Spec 014: keeps a large ride import going while the app is not shown -->

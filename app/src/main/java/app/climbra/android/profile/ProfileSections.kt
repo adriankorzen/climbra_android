@@ -519,9 +519,9 @@ internal fun GarminCard(state: ProfileUiState, fmt: Fmt, actions: ProfileActions
                 GarminStatus.NEEDS_RECONNECT -> ErrorBanner(stringResource(R.string.garmin_status_needs_reconnect), Modifier.testTag("garmin-problem"))
                 else -> Unit
             }
-            Button(onClick = actions::connectGarminOnWeb, modifier = Modifier.testTag("garmin-connect")) {
-                Icon(painterResource(R.drawable.ic_open_in_new), contentDescription = null, modifier = Modifier.size(18.dp))
-                Text(stringResource(R.string.garmin_connect_web), modifier = Modifier.padding(start = 8.dp))
+            // Spec 016: the consent, then Garmin's page in a Custom Tab
+            Button(onClick = actions::connectGarmin, modifier = Modifier.testTag("garmin-connect")) {
+                Text(stringResource(R.string.garmin_connect))
             }
         }
     }

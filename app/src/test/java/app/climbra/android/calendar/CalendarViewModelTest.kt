@@ -17,8 +17,11 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -41,6 +44,8 @@ class CalendarViewModelTest {
     private val changes = DataChanges()
     private val requests = CalendarRequests()
     private val saved = SavedStateHandle()
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val garminConnect by lazy { backend.garminConnect(backend.session(scope), scope) }
 
     /** Thursday noon in UTC: the same day in every zone the tests may run in. */
     private val clock = Clock.fixed(Instant.parse("2026-11-12T12:00:00Z"), ZoneId.of("UTC"))
@@ -50,6 +55,7 @@ class CalendarViewModelTest {
 
     @After
     fun tearDown() {
+        scope.cancel()
         Dispatchers.resetMain()
         backend.close()
     }
@@ -61,6 +67,7 @@ class CalendarViewModelTest {
         changes,
         requests,
         clock,
+        garminConnect,
     )
 
     private suspend fun CalendarViewModel.settled() = state.first { !it.loading && !it.refreshing && !it.deleting && !it.sendingPlan }
@@ -232,6 +239,20 @@ class CalendarViewModelTest {
         assertTrue(backend.requests("POST /api/riders/5/garmin-connection/send").isEmpty())
         viewModel.closeGarminDialog()
         assertNull(viewModel.state.value.connectingGarmin)
+    }
+
+    // Spec 016 AC1: Connect in the dialog opens the app's consent dialog
+    @Test
+    fun connectInTheDialogAsksForTheConsent() = runTest(dispatcher) {
+        standard(garmin(status = "NO_PERMISSION"))
+        val viewModel = viewModel()
+        viewModel.settled()
+        viewModel.sendPlanToGarmin()
+
+        viewModel.connectGarmin()
+
+        assertNull(viewModel.state.value.connectingGarmin)
+        assertEquals(app.climbra.android.garmin.GarminConsent(5, GarminStatus.NO_PERMISSION), garminConnect.consent.value)
     }
 
     // AC9

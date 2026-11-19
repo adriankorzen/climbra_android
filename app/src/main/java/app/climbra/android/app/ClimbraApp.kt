@@ -52,6 +52,8 @@ import app.climbra.android.shell.Shell
 import app.climbra.android.shell.ShellNavigator
 import app.climbra.android.coach.AdjustmentFormRoute
 import app.climbra.android.coach.CoachActivity
+import app.climbra.android.garmin.GarminConnectFlow
+import app.climbra.android.garmin.GarminConnectHost
 import app.climbra.android.garmin.GarminSync
 import app.climbra.android.intervals.IntervalsSync
 import kotlinx.coroutines.flow.merge
@@ -78,6 +80,7 @@ class AppViewModel @Inject constructor(
     val rideImport: RideImport,
     val sharedRideFiles: SharedRideFiles,
     val garminSync: GarminSync,
+    val garminConnect: GarminConnectFlow,
 ) : ViewModel() {
 
     val state: StateFlow<SessionState> = session.state
@@ -120,6 +123,8 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                     openActivities = nav::openActivities,
                 )
             }
+            // The consent dialog and Garmin's page, asked for by the profile and the calendar (spec 016)
+            GarminConnectHost(viewModel.garminConnect)
             Shell(
                 dashboard = { nav ->
                     DashboardRoute(config = config, onOpenRide = nav::openRide, coach = coachNavigation(nav), onOpenCoach = nav::openCoach, onImport = nav::openImport)
@@ -163,7 +168,7 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                         onOpenProposal = nav::openProposal,
                     )
                 },
-                workout = { nav -> WorkoutDetailRoute(config = config, onBack = nav::back, onOpenRide = nav::openRide) },
+                workout = { nav -> WorkoutDetailRoute(onBack = nav::back, onOpenRide = nav::openRide) },
                 ride = { nav ->
                     RideDetailRoute(
                         onBack = nav::back,
@@ -206,6 +211,7 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                         viewModel.intervalsSync.messages,
                         viewModel.sharedRideFiles.notices,
                         viewModel.garminSync.messages,
+                        viewModel.garminConnect.messages,
                     )
                 },
                 importRequests = remember(viewModel) {

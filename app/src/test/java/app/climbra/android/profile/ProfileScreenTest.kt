@@ -115,7 +115,7 @@ class ProfileScreenTest {
         override fun askDisconnectIntervals() { calls += "askDisconnectIntervals" }
         override fun proposeThresholds(proposal: IntervalsThresholds) { calls += "propose:${proposal.ftpWatts}" }
         override fun askDisconnectGarmin() { calls += "askDisconnectGarmin" }
-        override fun connectGarminOnWeb() { calls += "connectGarminOnWeb" }
+        override fun connectGarmin() { calls += "connectGarmin" }
         override fun setLanguage(language: String) { calls += "language:$language" }
         override fun setTheme(mode: ThemeMode) { calls += "theme:$mode" }
         override fun changePassword() { calls += "changePassword" }
@@ -357,13 +357,14 @@ class ProfileScreenTest {
 
     // AC9
     @Test
-    fun garminNotConnectedOpensTheWebAndIsHiddenWhenNotOffered() {
+    fun garminNotConnectedConnectsInTheAppAndIsHiddenWhenNotOffered() {
         var state by mutableStateOf(ready.copy(garmin = Section(value = GarminConnection(available = true, status = GarminStatus.NEEDS_RECONNECT))))
         compose.setContent { ClimbraTheme(darkTheme = false) { ProfileScreen(state, polish, today, actions) } }
 
         scrolled("garmin-problem").assertIsDisplayed()
-        scrolled("garmin-connect").performClick()
-        assertEquals(listOf("connectGarminOnWeb"), actions.calls)
+        // Spec 016 AC5: connecting is in the app, not on climbra.app
+        scrolled("garmin-connect").assertTextContains("Connect Garmin Connect").performClick()
+        assertEquals(listOf("connectGarmin"), actions.calls)
 
         state = ready.copy(garmin = Section(value = GarminConnection(available = false)))
         tag("profile-garmin").assertDoesNotExist()
