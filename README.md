@@ -55,7 +55,46 @@ Optional settings in `local.properties` (not committed):
 ```bash
 ./gradlew testDebugUnitTest   # all tests, including the Compose screen tests (Robolectric), no emulator needed
 ./gradlew lintDebug
+./gradlew :buildSrc:test      # the version from git tags
 ```
+
+CI (`.github/workflows/ci.yml`) runs these and an unsigned release build on every push and pull request.
+
+## Release builds
+
+Release builds (spec 017) talk to `https://climbra.app` and go through R8 over the whole app. The version comes from
+the latest `vX.Y.Z` git tag: `versionName` `X.Y.Z`, `versionCode` `X * 10000 + Y * 100 + Z` (no tag: `0.0.0`).
+
+Signing settings, in `local.properties` or the environment (never committed); without them the APK is unsigned:
+
+| `local.properties` | Environment |
+|--------------------|-------------|
+| `climbra.release.storeFile` (path from the repository root, or absolute) | `CLIMBRA_RELEASE_STORE_FILE` |
+| `climbra.release.storePassword` | `CLIMBRA_RELEASE_STORE_PASSWORD` |
+| `climbra.release.keyAlias` | `CLIMBRA_RELEASE_KEY_ALIAS` |
+| `climbra.release.keyPassword` | `CLIMBRA_RELEASE_KEY_PASSWORD` |
+
+```bash
+./gradlew assembleRelease     # app/build/outputs/apk/release/, R8's mapping in app/build/outputs/mapping/release/
+```
+
+Publishing: push a tag (`git tag v0.1.0 && git push origin v0.1.0`). `.github/workflows/release.yml` builds the
+signed APK and AAB and attaches them, with `mapping.txt`, to a GitHub Release. It needs the repository's secrets
+`CLIMBRA_RELEASE_KEYSTORE_BASE64` (the keystore file in base64), `CLIMBRA_RELEASE_STORE_PASSWORD`,
+`CLIMBRA_RELEASE_KEY_ALIAS` and `CLIMBRA_RELEASE_KEY_PASSWORD`, and optionally the variables
+`CLIMBRA_GOOGLE_SERVER_CLIENT_ID` (Google login) and `CLIMBRA_RELEASE_CERT_SHA256` (the certificate the APK must be
+signed with). Google login in a release build also needs an Android OAuth client with the release key's SHA-1.
+
+Keep the keystore and its passwords safe outside the repository: an app signed with a lost key cannot be updated.
+
+### Smoke test of a release build
+
+R8 can remove what is only reached by reflection or serialization, which no unit test sees. Before publishing, install
+the release APK (`adb install app-release.apk`; uninstall a debug build first, its key differs) and go through, against
+the production backend: log in (email and Google), the dashboard with its charts, the training log and a ride (map,
+charts, intervals), the calendar's week and month, the coach (a question and its answer), the profile (thresholds, FTP
+trend, sync), an import of a `.fit` file, log out. Read a crash's stack trace with `retrace` and the build's
+`mapping.txt`.
 
 ## Licenses
 

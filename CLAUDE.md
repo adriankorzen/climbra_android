@@ -105,6 +105,8 @@ Run from the repository root (Windows; use `./gradlew` in bash, `.\gradlew` in P
 ./gradlew testDebugUnitTest        # all tests (JVM + Robolectric Compose tests), no emulator needed
 ./gradlew testDebugUnitTest --tests '*SessionRepositoryTest'   # one class
 ./gradlew lintDebug                # Android lint
+./gradlew :buildSrc:test           # the version from git tags (spec 017)
+./gradlew assembleRelease          # R8 over the whole app; signed only with the climbra.release.* settings (README)
 ./gradlew assembleDebug            # debug APK; installDebug to put it on the emulator
 adb reverse tcp:8080 tcp:8080      # before running against the local backend (../cyclingapp/backend: ./mvnw spring-boot:run)
 ```

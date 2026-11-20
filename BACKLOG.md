@@ -5,6 +5,10 @@ spec in `../cyclingapp/specs/` first). Updated on 2026-11-19.
 
 ## To check
 
+- **Spec 017, first release:** create the release keystore (`keytool`), put it and its passwords in the repository's
+  secrets (README, "Release builds"), add the release key's SHA-1 to an Android OAuth client for Google login, check the
+  first CI run on GitHub, then tag `v0.1.0` and go through the README's smoke test with the signed APK against the
+  production backend (the release build was only seen starting to the login screen on the emulator).
 - **Manual test of spec 016** against a backend with cyclingapp spec 055 deployed and `GARMIN_CONNECT_*` set (the
   production one, or a local one with the Developer Portal app): Connect from the profile and from a send in the
   calendar, Garmin's consent in the Custom Tab, the return to the app and its snackbar; refusing in Garmin; closing the

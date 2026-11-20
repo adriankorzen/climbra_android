@@ -75,6 +75,8 @@ class CoachFormsViewModelTest : CoachTestBase() {
     // AC14: the web's body; accepted, the conversation replaces the form
     @Test
     fun theBlockFormSendsTheWebsBodyAndOpensTheConversation() = runTest(dispatcher) {
+        // No polling: while the test waits for real HTTP calls, virtual time runs and a poll would forget the request
+        foreground.value = false
         withRider()
         backend.on("POST /api/riders/5/coach/conversations/training-block", json(conversation(id = 40, type = "TRAINING_BLOCK", busy = true), 202))
         val viewModel = blockForm()
