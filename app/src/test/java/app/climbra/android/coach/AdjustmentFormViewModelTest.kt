@@ -206,6 +206,8 @@ class AdjustmentFormViewModelTest : CoachTestBase() {
     // AC4: accepted, the conversation is tracked, data changed, and it replaces the form
     @Test
     fun anAcceptedRequestOpensItsConversation() = runTest(dispatcher) {
+        // No polling: while the test waits for real HTTP calls, virtual time runs and a poll would forget the request
+        foreground.value = false
         withPlan()
         backend.on(adjustRoute, json(conversation(id = 40, type = "PLAN_ADJUSTMENT", busy = true, planId = 7, activityId = null, title = "Plan adjustment"), 202))
         backend.on("GET /api/account/coach-quota", json(quota()))
