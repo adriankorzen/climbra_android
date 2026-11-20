@@ -23,6 +23,7 @@ import com.patrykandpatrick.vico.compose.cartesian.Zoom
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
@@ -52,6 +53,28 @@ fun ftpSteps(entries: List<ThresholdEntry>, today: LocalDate): List<FtpStep> {
     }.sortedBy { it.day }
     val last = steps.lastOrNull() ?: return steps
     return if (last.day.isBefore(today)) steps + FtpStep(today, last.watts) else steps
+}
+
+/** The FTP axis: from [min] to [max] watts, labelled every [step]. */
+data class FtpAxis(val min: Int, val max: Int, val step: Int)
+
+private val AXIS_STEPS = listOf(10, 20, 25, 50, 100, 200)
+
+/**
+ * An axis around the trend's watts rather than from zero: headroom of a tenth of the span (at least 10 W) on both
+ * sides, rounded out to the smallest step that leaves at most five intervals, so the line never runs along the top
+ * edge (299 W reads under the 300 W label).
+ */
+fun ftpAxis(steps: List<FtpStep>): FtpAxis {
+    val low = steps.minOf { it.watts }
+    val high = steps.maxOf { it.watts }
+    val pad = maxOf(10, (high - low) / 10)
+    fun around(step: Int) = FtpAxis(
+        min = maxOf(0, Math.floorDiv(low - pad, step) * step),
+        max = Math.floorDiv(high + pad + step - 1, step) * step,
+        step = step,
+    )
+    return AXIS_STEPS.map(::around).firstOrNull { (it.max - it.min) / it.step <= 5 } ?: around(AXIS_STEPS.last())
 }
 
 @Composable
@@ -95,6 +118,7 @@ private fun FtpChart(steps: List<FtpStep>, fmt: Fmt, description: String) {
         DateTimeFormatter.ofPattern(android.text.format.DateFormat.getBestDateTimePattern(fmt.locale, "MMM yy"), fmt.locale)
     }
     val color = MaterialTheme.extendedColors.power
+    val axis = remember(steps) { ftpAxis(steps) }
     CartesianChartHost(
         chart = rememberCartesianChart(
             rememberLineCartesianLayer(
@@ -104,8 +128,14 @@ private fun FtpChart(steps: List<FtpStep>, fmt: Fmt, description: String) {
                         areaFill = LineCartesianLayer.AreaFill.single(Fill(color.copy(alpha = 0.12f))),
                     ),
                 ),
+                rangeProvider = remember(axis) {
+                    CartesianLayerRangeProvider.fixed(minY = axis.min.toDouble(), maxY = axis.max.toDouble())
+                },
             ),
-            startAxis = VerticalAxis.rememberStart(valueFormatter = CartesianValueFormatter { _, value, _ -> fmt.num(value) }),
+            startAxis = VerticalAxis.rememberStart(
+                valueFormatter = CartesianValueFormatter { _, value, _ -> fmt.num(value) },
+                itemPlacer = remember(axis) { VerticalAxis.ItemPlacer.step({ axis.step.toDouble() }) },
+            ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 guideline = null,
                 valueFormatter = CartesianValueFormatter { _, value, _ -> monthYear.format(LocalDate.ofEpochDay(value.toLong())) },

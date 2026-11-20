@@ -77,4 +77,13 @@ class ProfileFormsTest {
         // An entry of today is not repeated
         assertEquals(listOf(FtpStep(today, 300)), ftpSteps(listOf(ThresholdEntry(effectiveFrom = "2026-11-12", resolved = ThresholdValues(300))), today))
     }
+
+    @Test
+    fun `the FTP axis surrounds the watts with headroom and round steps`() {
+        val day = LocalDate.of(2026, 11, 19)
+        // One FTP of 299 W sits under the 300 W label, not on the chart's top edge
+        assertEquals(FtpAxis(280, 310, 10), ftpAxis(listOf(FtpStep(day, 299))))
+        assertEquals(FtpAxis(240, 320, 20), ftpAxis(listOf(FtpStep(day, 250), FtpStep(day, 299))))
+        assertEquals(FtpAxis(0, 500, 100), ftpAxis(listOf(FtpStep(day, 120), FtpStep(day, 380))))
+    }
 }
