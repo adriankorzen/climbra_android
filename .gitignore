@@ -17,3 +17,7 @@ local.properties
 # IDE
 /.idea/
 /.kotlin/
+
+# Release signing (spec 017): never committed
+*.jks
+*.keystore

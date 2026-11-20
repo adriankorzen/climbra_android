@@ -19,6 +19,23 @@ fun setting(name: String, default: String): String =
 
 fun String.quoted() = "\"" + replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
+/** The version from the latest `vX.Y.Z` tag (spec 017, `buildSrc/AppVersion.kt`); without git or a tag 0.0.0. */
+val appVersion = appVersion(
+    providers.exec {
+        commandLine("git", "describe", "--tags", "--match", "v*", "--abbrev=0")
+        isIgnoreExitValue = true
+    }.standardOutput.asText.orNull,
+)
+
+/**
+ * A release signing setting (spec 017): `climbra.release.<name>` in local.properties, or `CLIMBRA_RELEASE_<NAME>` in
+ * the environment (CI). The keystore and its passwords are never committed.
+ */
+fun releaseSigning(name: String): String? =
+    localProperties.getProperty("climbra.release.$name")
+        ?: providers.environmentVariable("CLIMBRA_RELEASE_" + name.replace(Regex("([a-z])([A-Z])"), "$1_$2").uppercase()).orNull
+            ?.takeIf { it.isNotBlank() }
+
 android {
     namespace = "app.climbra.android"
     compileSdk {
@@ -29,8 +46,8 @@ android {
         applicationId = "app.climbra.android"
         minSdk = 29
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersion.code
+        versionName = appVersion.name
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -38,6 +55,19 @@ android {
         val googleClientId = setting("climbra.googleServerClientId", "")
         buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", googleClientId.quoted())
         buildConfigField("boolean", "GOOGLE_LOGIN_ENABLED", googleClientId.isNotBlank().toString())
+    }
+
+    // Without the settings the release build stays unsigned, so a fresh clone and CI on a pull request still build
+    val storeFile = releaseSigning("storeFile")
+    if (storeFile != null) {
+        signingConfigs {
+            create("release") {
+                this.storeFile = rootProject.file(storeFile)
+                storePassword = releaseSigning("storePassword")
+                keyAlias = releaseSigning("keyAlias")
+                keyPassword = releaseSigning("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -50,9 +80,10 @@ android {
         release {
             buildConfigField("String", "API_BASE_URL", "https://climbra.app".quoted())
             buildConfigField("String", "WEB_BASE_URL", "https://climbra.app".quoted())
+            signingConfig = signingConfigs.findByName("release")
+            // R8 over the whole app (spec 017); the libraries' own consumer rules are enough so far
             optimization {
                 enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
             }
         }
     }
