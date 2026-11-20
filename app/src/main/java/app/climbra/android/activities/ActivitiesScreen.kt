@@ -71,6 +71,7 @@ import app.climbra.android.intervals.SyncProgress
 import app.climbra.android.intervals.SyncState
 import app.climbra.android.intervals.shown
 import app.climbra.android.ui.common.ErrorBanner
+import app.climbra.android.ui.common.LocalOffline
 import app.climbra.android.ui.common.LocalPaneItem
 import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.common.openWebPage
@@ -161,7 +162,7 @@ fun ActivitiesScreen(
                         modifier = Modifier.weight(1f).semantics { heading() },
                     )
                     // Spec 009
-                    IconButton(onClick = onImport, modifier = Modifier.testTag("activities-import")) {
+                    IconButton(onClick = onImport, enabled = !LocalOffline.current, modifier = Modifier.testTag("activities-import")) {
                         Icon(painterResource(R.drawable.ic_upload_file), stringResource(R.string.import_button))
                     }
                 }

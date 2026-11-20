@@ -56,6 +56,8 @@ class IntervalsSync(
     session: SessionRepository,
     private val scope: CoroutineScope,
     private val pollMillis: Long = POLL_MILLIS,
+    /** Offline (spec 018) a pull starts no sync. */
+    private val offline: () -> Boolean = { false },
 ) {
     private val mutableState = MutableStateFlow(SyncState())
     val state: StateFlow<SyncState> = mutableState.asStateFlow()
@@ -90,6 +92,7 @@ class IntervalsSync(
      */
     fun sync(riderId: Long, origin: SyncOrigin) {
         if (job?.isActive == true) return
+        if (origin == SyncOrigin.PULL && offline()) return
         if (origin == SyncOrigin.PULL) {
             val ended = lastEnded
             if (ended != null && Duration.between(ended, clock.instant()) < THROTTLE) return

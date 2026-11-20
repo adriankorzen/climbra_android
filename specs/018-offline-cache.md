@@ -1,6 +1,6 @@
 # 018: Reading saved data offline
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-11-20
 
 ## Problem
@@ -46,15 +46,24 @@ plan for today exactly where the signal is bad.
   screen.
 - **Banner**: while offline, a banner under the top of the shell says "Offline · data from {date time}". The time is
   the oldest save among the answers served from the cache since the app went offline. The banner has a Retry.
-- **Back online**: the first request that reaches the backend ends offline mode. A network returning (Android's
-  network callback) also retries. Either way the banner disappears and `DataChanges.changed()` makes the shown
-  screens load again.
-- **Disabled while offline**, with a short "Not available offline" text where the action is:
-  - pull to refresh starts no sync (it only retries the loads),
-  - the ride: reanalyse, delete, link to a workout, coach review, save the file,
-  - the calendar and its workouts: send a workout or the plan to Garmin, skip, link and unlink a ride, delete a plan,
-    dismiss a suggestion, plan adjustment, save the `.zwo`,
-  - the training log: import.
+- The app is offline only once a saved answer was served. A request with nothing saved fails as before and shows no
+  banner.
+- **Back online**: the first request that reaches the backend, with any answer, ends offline mode. The banner then
+  disappears and the shown screens load again: the dashboard, the training log and the calendar through
+  `DataChanges.changed()`, the ride and the workout through `Connectivity.reloads`.
+- **Retry**: the banner's Retry, and a network that comes back (Android's default network callback), make the
+  shown screens load again while offline. Whether they reach the backend decides whether offline mode ends.
+- **Disabled while offline**:
+  - pull to refresh starts no sync (it only retries the loads); the profile's "Sync now" still tries,
+  - the ride: reanalyse, delete, save the file (the menu starts with "Not available offline"), the interval source,
+    the ad hoc detection, linking to a workout, the coach review,
+  - the workout: skip and undo, link and unlink a ride, send to Garmin, save the `.zwo`,
+  - the calendar's plan cards: adjust, ask the coach about the suggestion, dismiss it, remove the plan; sending the
+    plan to Garmin,
+  - the training log's import button. The empty dashboard's and training log's "Import rides" still open the import
+    screen, which shows its own error.
+- "Not available offline" (`ui.common.OfflineNote`) shows where the actions are: the ride's menu, its link and
+  coach cards, the workout's actions and each plan card.
 - **Size**: at most 50 MB of saved answers. Past that, the answers read least recently are deleted first. Recordings
   are the largest, so they are the first to go in practice.
 - **Deleting**: everything saved is deleted when the session ends (logout, `401`, account deleted) and when another
@@ -67,39 +76,49 @@ None. Only the existing `GET` endpoints above. They need no cache headers, becau
 
 ## Screens
 
-- `shell.Shell`: the offline banner (`ic_cloud_off`, Material Symbols Rounded), with the `testTag` `offline-banner`.
-- The action buttons listed above: `enabled = !offline` and the "Not available offline" supporting text or a
-  snackbar.
+- `shell.Shell`: the offline banner (`shell.OfflineBanner`, `ic_cloud_off`, Material Symbols Rounded) above the
+  tabs' content, with the `testTag` `offline-banner` and Retry. The shell provides `ui.common.LocalOffline` to the
+  screens.
+- The action buttons listed above: `enabled = … && !LocalOffline.current`, and `OfflineNote`.
 - No new screens. The web app has no offline mode.
 
 ## Data and storage
 
-- `data.net.OfflineCache`: an OkHttp application interceptor in `Network`, after the session interceptors. It saves
-  and reads the listed `GET`s. Each answer goes in its own file under `noBackupFilesDir/offline/` (the name is a hash
-  of the request), encrypted with the `ByteCipher` (Tink AEAD, the Keystore key in its own keyset, as
-  `EncryptedFileCookieStore`). The file holds the body, its content type and the time it was received.
+- `data.net.OfflineInterceptor`: an OkHttp application interceptor in `Network`, innermost, after the session and
+  CSRF interceptors. It saves and serves the listed `GET`s. A cancelled call is not offline.
+- `data.net.OfflineCache`: each answer goes in its own file under `noBackupFilesDir/offline/`. The file name is a
+  hash of the request's path and query. The file is encrypted with a `KeystoreCipher` of its own
+  (`KeystoreCipher.Key.OFFLINE`: Tink AES-256-GCM, its keyset wrapped by its own Keystore key). It holds the time
+  the answer was received, the content type and the body. The least recently read files go past 50 MB: reading
+  touches the file's time.
 - `data.net.Connectivity`, app-scoped: `offline: StateFlow<OfflineState?>` (`null` online, otherwise the oldest time
-  of the shown data). The interceptor and Android's `ConnectivityManager` callback set it.
-- `SessionRepository`: clears `OfflineCache` wherever it clears the cookies.
+  of the shown data) and `reloads`. The interceptor sets it, and `di.AppModule` registers the network callback.
+- The manifest gains `ACCESS_NETWORK_STATE` for the network callback.
+- `SessionRepository`: clears `OfflineCache` and `Connectivity` wherever it clears the cookies, and after a login
+  (email or Google).
 - No DTO changes.
 
 ## Acceptance criteria
 
-- [ ] AC1: A successful `GET` from the list is saved encrypted. A `GET` outside the list, a write and an HTTP error
+Tested by `OfflineCacheTest` (the HTTP stack and the session against `TestBackend`, which can go offline), the
+ViewModel tests of the dashboard, the training log, the ride and the calendar, `IntervalsSyncTest`, `OfflineShellTest`
+and the screen tests (`LocalOffline`).
+
+- [x] AC1: A successful `GET` from the list is saved encrypted. A `GET` outside the list, a write and an HTTP error
   are not saved.
-- [ ] AC2: Without a connection, a saved request returns the saved answer and the app is offline. An HTTP error from
+- [x] AC2: Without a connection, a saved request returns the saved answer and the app is offline. An HTTP error from
   the backend is not replaced, and `401` still ends the session.
-- [ ] AC3: Starting without a connection with a saved account opens the shell. Without one it shows "backend
+- [x] AC3: Starting without a connection with a saved account opens the shell. Without one it shows "backend
   unavailable".
-- [ ] AC4: The dashboard, the training log, a ride opened before and the calendar show their saved data offline. A
+- [x] AC4: The dashboard, the training log, a ride opened before and the calendar show their saved data offline. A
   request never saved shows the usual error.
-- [ ] AC5: The banner shows offline with the oldest time of the served data. It disappears when a request reaches
-  the backend or the network returns, and the screens load again.
-- [ ] AC6: The listed actions are disabled while offline, and pull to refresh starts no sync.
-- [ ] AC7: Past 50 MB the least recently read answers are deleted.
-- [ ] AC8: Logout, `401`, account deletion and the login of another account delete everything saved. A file that
+- [x] AC5: The banner shows offline with the oldest time of the served data. It disappears when a request reaches
+  the backend (also after a retry when the network returns), and the screens load again.
+- [x] AC6: The listed actions are disabled while offline, and pull to refresh starts no sync.
+- [x] AC7: Past 50 MB the least recently read answers are deleted.
+- [x] AC8: Logout, `401`, account deletion and the login of another account delete everything saved. A file that
   cannot be decrypted counts as not saved.
-- [ ] AC9: New strings exist in English and Polish.
+- [x] AC9: New strings exist in English and Polish.
 
 ## Open questions
 

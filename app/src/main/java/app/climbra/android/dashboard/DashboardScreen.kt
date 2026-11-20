@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,19 +17,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,17 +52,14 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.climbra.android.AppConfig
 import app.climbra.android.R
-import app.climbra.android.intervals.SyncProgress
-import app.climbra.android.intervals.SyncState
 import app.climbra.android.coach.CoachNavigation
 import app.climbra.android.coach.ConversationTypeBadge
 import app.climbra.android.coach.rememberNow
-import app.climbra.android.data.api.CoachConversationSummary
-import java.time.Instant
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.material3.TextButton
 import app.climbra.android.data.api.AnalysisSummary
+import app.climbra.android.data.api.CoachConversationSummary
 import app.climbra.android.data.api.FormRange
+import app.climbra.android.intervals.SyncProgress
+import app.climbra.android.intervals.SyncState
 import app.climbra.android.ui.common.ErrorBanner
 import app.climbra.android.ui.common.openWebPage
 import app.climbra.android.ui.format.DateStyle
@@ -67,6 +67,7 @@ import app.climbra.android.ui.format.Fmt
 import app.climbra.android.ui.format.rememberFmt
 import app.climbra.android.ui.theme.MonoFamily
 import app.climbra.android.ui.theme.extendedColors
+import java.time.Instant
 
 @Composable
 fun DashboardRoute(
@@ -81,6 +82,9 @@ fun DashboardRoute(
     val sync by viewModel.sync.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onShown() }
+    // Back online, or rides changed elsewhere while shown (spec 018)
+    val dataVersion by viewModel.dataVersion.collectAsStateWithLifecycle()
+    LaunchedEffect(dataVersion) { viewModel.onShown() }
     DashboardScreen(
         state = state,
         sync = sync,

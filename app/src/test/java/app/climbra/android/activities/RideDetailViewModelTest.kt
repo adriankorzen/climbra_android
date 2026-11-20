@@ -349,4 +349,21 @@ class RideDetailViewModelTest {
             {"id":32,"date":"2026-11-09","title":"Done","type":"ENDURANCE","status":"COMPLETED"},
             {"id":34,"date":"2026-11-10","title":"Tempo","type":"TEMPO","status":"PLANNED"}]}"""
     }
+
+    // Spec 018 AC4: a ride opened before shows offline with its analysis and recording
+    @Test
+    fun withoutTheBackendARideOpenedBeforeShowsItsSavedData() = runTest(dispatcher) {
+        standard()
+        val online = viewModel().loaded()
+
+        backend.goOffline()
+        val offline = viewModel().loaded()
+
+        assertEquals(online.activity, offline.activity)
+        assertEquals(online.analysis, offline.analysis)
+        assertEquals(online.recording, offline.recording)
+        assertNull(offline.error)
+        // A ride never opened has nothing saved
+        assertNotNull(viewModel(id = 86).state.first { !it.loading }.error)
+    }
 }

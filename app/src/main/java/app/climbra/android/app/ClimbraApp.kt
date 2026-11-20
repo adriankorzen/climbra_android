@@ -29,45 +29,46 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.climbra.android.AppConfig
 import app.climbra.android.R
+import app.climbra.android.activities.ActivitiesRoute
+import app.climbra.android.activities.ImportRoute
+import app.climbra.android.activities.RideDetailRoute
+import app.climbra.android.activities.RideImport
+import app.climbra.android.activities.SharedRideFiles
 import app.climbra.android.auth.ForgotPasswordRoute
 import app.climbra.android.auth.ForgotPasswordViewModel
 import app.climbra.android.auth.LoggedOutContent
-import app.climbra.android.activities.ActivitiesRoute
-import app.climbra.android.activities.ImportRoute
-import app.climbra.android.activities.RideImport
-import app.climbra.android.activities.SharedRideFiles
-import app.climbra.android.activities.RideDetailRoute
 import app.climbra.android.auth.TermsRoute
 import app.climbra.android.calendar.CalendarRequests
 import app.climbra.android.calendar.CalendarRoute
 import app.climbra.android.calendar.WorkoutDetailRoute
-import java.time.LocalDate
+import app.climbra.android.coach.AdjustmentFormRoute
+import app.climbra.android.coach.CoachActivity
+import app.climbra.android.coach.CoachListRoute
+import app.climbra.android.coach.CoachNavigation
+import app.climbra.android.coach.ConversationRoute
+import app.climbra.android.coach.FileReviewRoute
+import app.climbra.android.coach.TrainingBlockFormRoute
 import app.climbra.android.dashboard.DashboardRoute
 import app.climbra.android.data.api.AccountResponse
+import app.climbra.android.data.net.Connectivity
+import app.climbra.android.garmin.GarminConnectFlow
+import app.climbra.android.garmin.GarminConnectHost
+import app.climbra.android.garmin.GarminSync
+import app.climbra.android.intervals.IntervalsSync
 import app.climbra.android.profile.FeedbackRoute
 import app.climbra.android.profile.ProfileRoute
 import app.climbra.android.session.SessionRepository
 import app.climbra.android.session.SessionState
 import app.climbra.android.shell.Shell
 import app.climbra.android.shell.ShellNavigator
-import app.climbra.android.coach.AdjustmentFormRoute
-import app.climbra.android.coach.CoachActivity
-import app.climbra.android.garmin.GarminConnectFlow
-import app.climbra.android.garmin.GarminConnectHost
-import app.climbra.android.garmin.GarminSync
-import app.climbra.android.intervals.IntervalsSync
-import kotlinx.coroutines.flow.merge
-import app.climbra.android.coach.CoachListRoute
-import app.climbra.android.coach.CoachNavigation
-import app.climbra.android.coach.ConversationRoute
-import app.climbra.android.coach.FileReviewRoute
-import app.climbra.android.coach.TrainingBlockFormRoute
 import app.climbra.android.ui.common.openWebPage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -81,6 +82,8 @@ class AppViewModel @Inject constructor(
     val sharedRideFiles: SharedRideFiles,
     val garminSync: GarminSync,
     val garminConnect: GarminConnectFlow,
+    /** Offline or not (spec 018): the shell's banner. */
+    val connectivity: Connectivity,
 ) : ViewModel() {
 
     val state: StateFlow<SessionState> = session.state
@@ -218,6 +221,8 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                     merge(viewModel.sharedRideFiles.pending.filterNotNull().map { }, viewModel.sharedRideFiles.opens)
                 },
                 importNotices = viewModel.rideImport.notices,
+                offline = viewModel.connectivity.offline.collectAsStateWithLifecycle().value,
+                onRetryOffline = viewModel.connectivity::retry,
             )
         },
     )

@@ -94,6 +94,12 @@ them under "Backend dependencies" by number.
   address), asked for when sending, as the web's widget.
 - Garmin sync (spec 011): `garmin.GarminSync`, app-scoped, admins only (`AccountResponse.role`); a pull to refresh
   starts it next to `IntervalsSync` (the screens' `pullSync`), its `GarminApi` has a 120 s read timeout.
+- Offline (spec 018): `data.net.OfflineInterceptor` (innermost in `Network`) saves the successful answers of the
+  `GET`s in `OfflineCache.isSaved` encrypted to `noBackupFilesDir/offline` and serves them when the backend cannot be
+  reached; `data.net.Connectivity` says offline (the shell's banner, `ui.common.LocalOffline` for disabling actions
+  that send something). A new screen that reads data offline adds its `GET` to that list; one with such actions
+  disables them with `LocalOffline` and shows `OfflineNote`. `SessionRepository` deletes the saved answers with the
+  cookies. `TestBackend.goOffline()` makes the backend unreachable in tests.
 - Packages by feature (`auth`, `profile`, `shell`, `dashboard`, `activities`, `calendar`, `coach`, …) plus `data/` (network, DTOs),
   `session/` and `ui/` (theme, shared components).
 - Theme (`ui.theme`): Material 3 colors from the web tokens in `../cyclingapp/frontend/src/styles.scss` (light + dark),

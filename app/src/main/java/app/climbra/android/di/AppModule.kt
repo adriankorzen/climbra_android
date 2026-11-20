@@ -1,44 +1,45 @@
 package app.climbra.android.di
 
 import android.content.Context
+import android.net.ConnectivityManager
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
 import app.climbra.android.AppConfig
 import app.climbra.android.activities.FileSaver
 import app.climbra.android.activities.MediaStoreFileSaver
+import app.climbra.android.activities.RideImport
+import app.climbra.android.activities.ServiceForegroundImports
+import app.climbra.android.activities.SharedRideFiles
+import app.climbra.android.calendar.CalendarRequests
+import app.climbra.android.coach.CoachActivity
+import app.climbra.android.coach.CoachQuotaRepository
+import app.climbra.android.coach.ContentResolverFileSource
+import app.climbra.android.coach.RideFileSource
 import app.climbra.android.data.api.ActivityApi
 import app.climbra.android.data.api.AuthApi
 import app.climbra.android.data.api.CalendarApi
 import app.climbra.android.data.api.CoachApi
-import app.climbra.android.activities.RideImport
-import app.climbra.android.activities.ServiceForegroundImports
-import app.climbra.android.activities.SharedRideFiles
-import app.climbra.android.coach.CoachActivity
 import app.climbra.android.data.api.FeedbackApi
-import app.climbra.android.data.api.ImportApi
 import app.climbra.android.data.api.GarminApi
-import app.climbra.android.garmin.GarminConnectFlow
-import app.climbra.android.garmin.GarminSync
-import app.climbra.android.coach.CoachQuotaRepository
-import app.climbra.android.coach.ContentResolverFileSource
-import app.climbra.android.coach.RideFileSource
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ProcessLifecycleOwner
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import app.climbra.android.calendar.CalendarRequests
+import app.climbra.android.data.api.ImportApi
 import app.climbra.android.data.api.ProfileApi
 import app.climbra.android.data.api.RiderApi
+import app.climbra.android.data.net.Connectivity
 import app.climbra.android.data.net.EncryptedFileCookieStore
 import app.climbra.android.data.net.KeystoreCipher
 import app.climbra.android.data.net.Network
+import app.climbra.android.data.net.OfflineCache
+import app.climbra.android.data.net.OfflineInterceptor
 import app.climbra.android.data.net.PersistentCookieJar
 import app.climbra.android.data.net.SessionEvents
+import app.climbra.android.garmin.GarminConnectFlow
+import app.climbra.android.garmin.GarminSync
+import app.climbra.android.intervals.IntervalsSync
+import app.climbra.android.rider.DataChanges
+import app.climbra.android.rider.RiderRepository
 import app.climbra.android.session.AppCompatLocales
 import app.climbra.android.session.AppLocales
 import app.climbra.android.session.SessionRepository
-import app.climbra.android.rider.DataChanges
-import app.climbra.android.intervals.IntervalsSync
-import app.climbra.android.rider.RiderRepository
 import app.climbra.android.ui.theme.DataStoreThemeSettings
 import app.climbra.android.ui.theme.ThemeSettings
 import dagger.Module
@@ -53,6 +54,10 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 
@@ -78,10 +83,32 @@ object AppModule {
     @Singleton
     fun sessionEvents(): SessionEvents = SessionEvents()
 
+    /** The backend's answers read offline (spec 018), encrypted with a key of their own. */
     @Provides
     @Singleton
-    fun okHttpClient(cookies: PersistentCookieJar, events: SessionEvents): OkHttpClient =
-        Network.okHttpClient(cookies, events)
+    fun offlineCache(@ApplicationContext context: Context): OfflineCache =
+        OfflineCache(File(context.noBackupFilesDir, "offline"), KeystoreCipher(context, KeystoreCipher.Key.OFFLINE))
+
+    /**
+     * Offline or not (spec 018). A network that comes back retries, and the screens load again when asked to
+     * ([DataChanges]; the ride and the workout listen to [Connectivity.reloads] themselves).
+     */
+    @Provides
+    @Singleton
+    fun connectivity(@ApplicationContext context: Context, changes: DataChanges, scope: CoroutineScope): Connectivity =
+        Connectivity().also { connectivity ->
+            scope.launch { connectivity.reloads.collect { changes.changed() } }
+            context.getSystemService(ConnectivityManager::class.java)?.registerDefaultNetworkCallback(
+                object : ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: android.net.Network) = connectivity.retry()
+                },
+            )
+        }
+
+    @Provides
+    @Singleton
+    fun okHttpClient(cookies: PersistentCookieJar, events: SessionEvents, cache: OfflineCache, connectivity: Connectivity): OkHttpClient =
+        Network.okHttpClient(cookies, events, OfflineInterceptor(cache, connectivity))
 
     @Provides
     @Singleton
@@ -103,7 +130,9 @@ object AppModule {
         events: SessionEvents,
         locales: AppLocales,
         scope: CoroutineScope,
-    ): SessionRepository = SessionRepository(api, cookies, events, locales, scope)
+        offline: OfflineCache,
+        connectivity: Connectivity,
+    ): SessionRepository = SessionRepository(api, cookies, events, locales, scope, offline, connectivity)
 
     @Provides
     @Singleton
@@ -178,7 +207,8 @@ object AppModule {
         clock: Clock,
         session: SessionRepository,
         scope: CoroutineScope,
-    ): IntervalsSync = IntervalsSync(api, changes, clock, session, scope)
+        connectivity: Connectivity,
+    ): IntervalsSync = IntervalsSync(api, changes, clock, session, scope, offline = { connectivity.isOffline })
 
     @Provides
     @Singleton
@@ -223,7 +253,8 @@ object AppModule {
         clock: Clock,
         session: SessionRepository,
         scope: CoroutineScope,
-    ): GarminSync = GarminSync(api, changes, clock, session, scope)
+        connectivity: Connectivity,
+    ): GarminSync = GarminSync(api, changes, clock, session, scope, offline = { connectivity.isOffline })
 
     /** Connecting Garmin Connect from the app (spec 016). */
     @Provides

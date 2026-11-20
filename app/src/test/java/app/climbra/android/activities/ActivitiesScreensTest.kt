@@ -13,12 +13,15 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -48,6 +51,7 @@ import app.climbra.android.data.api.WorkoutComparison
 import app.climbra.android.data.api.ZoneTime
 import app.climbra.android.intervals.SyncState
 import app.climbra.android.shell.Shell
+import app.climbra.android.ui.common.LocalOffline
 import app.climbra.android.ui.common.LocalPaneItem
 import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.format.Fmt
@@ -516,5 +520,29 @@ class ActivitiesScreensTest {
 
         item = PaneItem.Ride(2)
         compose.onNodeWithTag("ride-row-3").assert(isSelected().not())
+    }
+
+    // Spec 018 AC6: offline, the ride's menu actions and the log's import are disabled
+    @Test
+    fun offlineTheRideActionsAndTheImportAreDisabled() {
+        var screen by mutableStateOf("ride")
+        content {
+            CompositionLocalProvider(LocalOffline provides true) {
+                if (screen == "ride") {
+                    RideDetailScreen(detail, fmt, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
+                } else {
+                    ActivitiesScreen(log, fmt, {}, { _, _ -> }, {}, {}, {}, {}, {})
+                }
+            }
+        }
+
+        compose.onNodeWithTag("ride-menu").performClick()
+        compose.onNodeWithTag("action-reanalyse").assertIsNotEnabled()
+        compose.onNodeWithTag("action-download").assertIsNotEnabled()
+        compose.onNodeWithTag("action-delete").assertIsNotEnabled()
+        compose.onAllNodesWithText("Not available offline").onFirst().assertExists()
+
+        screen = "log"
+        compose.onNodeWithTag("activities-import").assertIsNotEnabled()
     }
 }

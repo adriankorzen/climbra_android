@@ -19,6 +19,8 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -44,6 +46,7 @@ import app.climbra.android.data.api.PlannedWorkoutLink
 import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.Network
 import app.climbra.android.shell.Shell
+import app.climbra.android.ui.common.LocalOffline
 import app.climbra.android.ui.common.LocalPaneItem
 import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.format.Fmt
@@ -603,5 +606,24 @@ class CalendarScreensTest {
         item = PaneItem.Ride(11)
         compose.onNodeWithTag("ride-11").assertIsSelected()
         compose.onNodeWithTag("workout-1").assert(isSelected().not())
+    }
+
+    // Spec 018 AC6: offline, the workout's and the plan's actions are disabled, with a note
+    @Test
+    fun offlineTheWorkoutAndPlanActionsAreDisabled() {
+        var screen by mutableStateOf("workout")
+        content {
+            CompositionLocalProvider(LocalOffline provides true) {
+                if (screen == "workout") WorkoutDetailScreen(detail(PLANNED, status = "NOT_SENT"), fmt, WorkoutActions()) else CalendarScreen(week(), fmt, CalendarActions())
+            }
+        }
+
+        compose.onNodeWithTag("workout-skip").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("garmin-send").performScrollTo().assertIsNotEnabled()
+        compose.onAllNodesWithTag("offline-note").onFirst().assertExists()
+
+        screen = "calendar"
+        compose.onNodeWithTag("adjust-plan-7").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("remove-plan-7").performScrollTo().assertIsNotEnabled()
     }
 }

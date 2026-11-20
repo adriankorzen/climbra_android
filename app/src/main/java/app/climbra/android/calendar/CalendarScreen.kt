@@ -84,7 +84,9 @@ import app.climbra.android.data.api.ComplianceLevel
 import app.climbra.android.data.api.GarminStatus
 import app.climbra.android.data.api.TrainingPlan
 import app.climbra.android.ui.common.ErrorBanner
+import app.climbra.android.ui.common.LocalOffline
 import app.climbra.android.ui.common.LocalPaneItem
+import app.climbra.android.ui.common.OfflineNote
 import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.common.openWebPage
 import app.climbra.android.ui.common.paneSelected
@@ -245,7 +247,7 @@ fun CalendarScreen(state: CalendarUiState, fmt: Fmt, actions: CalendarActions) {
             title = { Text(stringResource(R.string.calendar_remove_plan)) },
             text = { Text(stringResource(R.string.calendar_remove_confirm, plan.name)) },
             confirmButton = {
-                TextButton(onClick = actions.onConfirmRemove, enabled = !state.deleting, modifier = Modifier.testTag("confirm-remove")) {
+                TextButton(onClick = actions.onConfirmRemove, enabled = !state.deleting && !LocalOffline.current, modifier = Modifier.testTag("confirm-remove")) {
                     Text(stringResource(R.string.calendar_remove_plan), color = MaterialTheme.colorScheme.error)
                 }
             },
@@ -292,7 +294,7 @@ private fun Header(state: CalendarUiState, fmt: Fmt, actions: CalendarActions, o
             Text(stringResource(R.string.calendar_today))
         }
         if (state.showGarminImport) {
-            IconButton(onClick = actions.onImportGarmin, enabled = !state.sendingPlan, modifier = Modifier.testTag("garmin-import")) {
+            IconButton(onClick = actions.onImportGarmin, enabled = !state.sendingPlan && !LocalOffline.current, modifier = Modifier.testTag("garmin-import")) {
                 Icon(painterResource(R.drawable.ic_send), stringResource(R.string.garmin_import))
             }
         }
@@ -364,6 +366,8 @@ private fun PlanCard(plan: TrainingPlan, workouts: List<CalendarWorkout>, fmt: F
     OutlinedCard(Modifier.fillMaxWidth().testTag("plan-${plan.id}")) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(plan.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+            val offline = LocalOffline.current
+            OfflineNote()
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "${fmt.date(plan.startDate, DateStyle.DAY_MONTH_YEAR)} – ${fmt.date(plan.endDate, DateStyle.DAY_MONTH_YEAR)}",
@@ -379,7 +383,7 @@ private fun PlanCard(plan: TrainingPlan, workouts: List<CalendarWorkout>, fmt: F
             if (plan.adjustmentRunning) {
                 StatusLine(stringResource(R.string.adjustment_running), Modifier.testTag("adjusting-${plan.id}"))
             } else {
-                OutlinedButton(onClick = { actions.onAdjust(plan, false) }, modifier = Modifier.testTag("adjust-plan-${plan.id}")) {
+                OutlinedButton(onClick = { actions.onAdjust(plan, false) }, enabled = !offline, modifier = Modifier.testTag("adjust-plan-${plan.id}")) {
                     Icon(painterResource(R.drawable.ic_auto_awesome), null, Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.adjustment_adjust_plan))
@@ -405,10 +409,10 @@ private fun PlanCard(plan: TrainingPlan, workouts: List<CalendarWorkout>, fmt: F
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TextButton(
                             onClick = { actions.onAdjust(plan, true) },
-                            enabled = !plan.adjustmentRunning,
+                            enabled = !plan.adjustmentRunning && !offline,
                             modifier = Modifier.testTag("ask-coach-${plan.id}"),
                         ) { Text(stringResource(R.string.adjustment_ask_coach)) }
-                        TextButton(onClick = { actions.onDismissSuggestion(plan) }, modifier = Modifier.testTag("dismiss-${plan.id}")) {
+                        TextButton(onClick = { actions.onDismissSuggestion(plan) }, enabled = !offline, modifier = Modifier.testTag("dismiss-${plan.id}")) {
                             Text(stringResource(R.string.adherence_dismiss))
                         }
                     }
@@ -421,7 +425,7 @@ private fun PlanCard(plan: TrainingPlan, workouts: List<CalendarWorkout>, fmt: F
                     Text(stringResource(R.string.calendar_open_conversation))
                 }
             }
-            TextButton(onClick = { actions.onAskRemove(plan) }, modifier = Modifier.testTag("remove-plan-${plan.id}")) {
+            TextButton(onClick = { actions.onAskRemove(plan) }, enabled = !offline, modifier = Modifier.testTag("remove-plan-${plan.id}")) {
                 Icon(painterResource(R.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.calendar_remove_plan), color = MaterialTheme.colorScheme.error)

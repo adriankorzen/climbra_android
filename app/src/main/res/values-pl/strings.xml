@@ -7,6 +7,8 @@
     <string name="pane_choose_ride">Wybierz przejazd</string>
     <string name="pane_choose_conversation">Wybierz rozmowę</string>
     <string name="pane_choose_calendar_item">Wybierz trening lub przejazd</string>
+    <string name="offline_banner">Offline · dane z %1$s</string>
+    <string name="offline_not_available">Niedostępne offline</string>
 
     <!-- Login (web: auth.login.*, auth.*) -->
     <string name="login_title">Logowanie</string>

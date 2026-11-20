@@ -46,6 +46,8 @@ class GarminSync(
     private val clock: Clock,
     private val session: SessionRepository,
     private val scope: CoroutineScope,
+    /** Offline (spec 018) a pull starts no sync. */
+    private val offline: () -> Boolean = { false },
 ) {
     private val mutableRunning = MutableStateFlow(false)
     val running: StateFlow<Boolean> = mutableRunning.asStateFlow()
@@ -74,6 +76,7 @@ class GarminSync(
     /** Syncs [riderId] unless the account is no admin, a sync runs, or ([SyncOrigin.PULL]) one ended < [THROTTLE] ago. */
     fun sync(riderId: Long, origin: SyncOrigin) {
         if (!session.state.value.garminSyncAllowed() || job?.isActive == true) return
+        if (origin == SyncOrigin.PULL && offline()) return
         if (origin == SyncOrigin.PULL) {
             val ended = lastEnded
             if (ended != null && Duration.between(ended, clock.instant()) < THROTTLE) return

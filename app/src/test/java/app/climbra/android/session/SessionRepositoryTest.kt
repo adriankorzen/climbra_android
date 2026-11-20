@@ -62,6 +62,8 @@ class SessionRepositoryTest {
     fun aNetworkErrorAtStartKeepsTheStoredSession() = test { session ->
         backend.on("GET /api/auth/me", json(account(), 200, SESSION_COOKIE))
         backend.api.me()
+        // No saved account: with one the shell opens offline (spec 018, OfflineCacheTest)
+        backend.offlineCache.clear()
         backend.server.close()
 
         session.start()

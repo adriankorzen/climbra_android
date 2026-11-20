@@ -9,6 +9,8 @@
     <string name="pane_choose_ride">Choose a ride</string>
     <string name="pane_choose_conversation">Choose a conversation</string>
     <string name="pane_choose_calendar_item">Choose a workout or ride</string>
+    <string name="offline_banner">Offline · data from %1$s</string>
+    <string name="offline_not_available">Not available offline</string>
 
     <!-- Login (web: auth.login.*, auth.*) -->
     <string name="login_title">Log in</string>

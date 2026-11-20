@@ -22,6 +22,10 @@ spec in `../cyclingapp/specs/` first). Updated on 2026-11-20.
 - **Manual test of spec 019** on a tablet emulator (or the phone rotated) against the local backend: the rail, a
   ride, a conversation and a calendar workout next to their lists, rotating with an item chosen, deleting the ride
   shown. The detail pane's Hilt ViewModels were only checked by the build, not on a device.
+- **Manual test of spec 018** on the emulator: load the dashboard, the log, a ride and the calendar, then turn on
+  airplane mode (and stop the backend): the banner, the saved data, the disabled actions, a start of the app offline;
+  airplane mode off: the banner goes and the screens load again. The Keystore key of the saved answers and the
+  network callback are not covered by the automated tests.
 
 ## Not on the web either
 
@@ -29,4 +33,3 @@ spec in `../cyclingapp/specs/` first). Updated on 2026-11-20.
 - Push notifications when the coach's answer or an import is ready (the backend has no push).
 - Opening the emails' links (verify the address, set a new password) in the app: needs App Links (spec 013, out of
   scope).
-- Offline cache: spec 018 (approved, not implemented yet).

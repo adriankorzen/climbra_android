@@ -3,6 +3,7 @@ package app.climbra.android.shell
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -16,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -42,6 +44,8 @@ import app.climbra.android.R
 import app.climbra.android.coach.AdjustmentArgs
 import app.climbra.android.coach.CoachFinished
 import app.climbra.android.coach.ConversationTab
+import app.climbra.android.data.net.OfflineState
+import app.climbra.android.ui.common.LocalOffline
 import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.common.UiText
 import kotlin.reflect.KClass
@@ -341,6 +345,9 @@ fun Shell(
     importRequests: Flow<Unit> = emptyFlow(),
     /** The end of an import while its screen is not shown, with "Show". */
     importNotices: Flow<UiText> = emptyFlow(),
+    /** Saved data is shown (spec 018): a banner with Retry, and actions that send something are disabled. */
+    offline: OfflineState? = null,
+    onRetryOffline: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val width = LocalConfiguration.current.screenWidthDp.dp
@@ -399,91 +406,96 @@ fun Shell(
         modifier = Modifier.testTag(if (rail) "shell-rail" else "shell-bar"),
     ) {
         Scaffold(snackbarHost = { SnackbarHost(snackbar, Modifier.testTag("shell-snackbar")) }) { padding ->
-            NavHost(
-                navController = navController,
-                startDestination = DashboardGraph,
-                // The bars inset is applied here: nested Scaffolds and TopAppBars must not add it again
-                modifier = Modifier.padding(padding).consumeWindowInsets(padding),
-            ) {
-                navigation<DashboardGraph>(startDestination = DashboardRoute) {
-                    composable<DashboardRoute> { Screen { dashboard(navigator) } }
-                    composable<DashboardRideRoute> { Screen { ride(navigator) } }
-                }
-                navigation<ActivitiesGraph>(startDestination = ActivitiesRoute) {
-                    val tab = TopLevelDestination.ACTIVITIES
-                    composable<ActivitiesRoute> { entry ->
-                        Panes(
-                            PaneHost(entry, tab in twoPanes, navController, navigator),
-                            placeholder = Placeholder(R.string.pane_choose_ride, R.drawable.ic_directions_bike),
-                            route = { (it as? PaneItem.Ride)?.let { item -> ActivitiesRideRoute(item.id) } },
-                            list = { activities(navigator) },
-                            detail = { _, pane -> ride(pane) },
-                        )
-                    }
-                    composable<ActivitiesRideRoute> { entry ->
-                        DetailScreen(tab, tab in twoPanes, navController, PaneItem.Ride(entry.toRoute<ActivitiesRideRoute>().id)) {
-                            ride(navigator)
+            // The bars inset is applied here: nested Scaffolds and TopAppBars must not add it again
+            Column(Modifier.padding(padding).consumeWindowInsets(padding)) {
+                offline?.let { OfflineBanner(it, onRetryOffline) }
+                CompositionLocalProvider(LocalOffline provides (offline != null)) {
+                    NavHost(
+                        navController = navController,
+                        startDestination = DashboardGraph,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        navigation<DashboardGraph>(startDestination = DashboardRoute) {
+                            composable<DashboardRoute> { Screen { dashboard(navigator) } }
+                            composable<DashboardRideRoute> { Screen { ride(navigator) } }
                         }
-                    }
-                    composable<ActivitiesImportRoute> { Screen { rideImport(navigator) } }
-                }
-                navigation<CalendarGraph>(startDestination = CalendarRoute) {
-                    val tab = TopLevelDestination.CALENDAR
-                    composable<CalendarRoute> { entry ->
-                        Panes(
-                            PaneHost(entry, tab in twoPanes, navController, navigator),
-                            placeholder = Placeholder(R.string.pane_choose_calendar_item, R.drawable.ic_calendar_month),
-                            route = { item ->
-                                when (item) {
-                                    is PaneItem.Workout -> CalendarWorkoutRoute(item.id, item.date)
-                                    is PaneItem.Ride -> CalendarRideRoute(item.id)
-                                    else -> null
+                        navigation<ActivitiesGraph>(startDestination = ActivitiesRoute) {
+                            val tab = TopLevelDestination.ACTIVITIES
+                            composable<ActivitiesRoute> { entry ->
+                                Panes(
+                                    PaneHost(entry, tab in twoPanes, navController, navigator),
+                                    placeholder = Placeholder(R.string.pane_choose_ride, R.drawable.ic_directions_bike),
+                                    route = { (it as? PaneItem.Ride)?.let { item -> ActivitiesRideRoute(item.id) } },
+                                    list = { activities(navigator) },
+                                    detail = { _, pane -> ride(pane) },
+                                )
+                            }
+                            composable<ActivitiesRideRoute> { entry ->
+                                DetailScreen(tab, tab in twoPanes, navController, PaneItem.Ride(entry.toRoute<ActivitiesRideRoute>().id)) {
+                                    ride(navigator)
                                 }
-                            },
-                            list = { calendar(navigator) },
-                            detail = { item, pane -> if (item is PaneItem.Workout) workout(pane) else ride(pane) },
-                            // The month's grid takes the width, the detail is the narrower pane
-                            listWidth = null,
-                            detailWidth = CALENDAR_DETAIL_WIDTH,
-                        )
-                    }
-                    composable<CalendarWorkoutRoute> { entry ->
-                        val route = entry.toRoute<CalendarWorkoutRoute>()
-                        DetailScreen(tab, tab in twoPanes, navController, PaneItem.Workout(route.id, route.date)) { workout(navigator) }
-                    }
-                    composable<CalendarRideRoute> { entry ->
-                        DetailScreen(tab, tab in twoPanes, navController, PaneItem.Ride(entry.toRoute<CalendarRideRoute>().id)) {
-                            ride(navigator)
+                            }
+                            composable<ActivitiesImportRoute> { Screen { rideImport(navigator) } }
+                        }
+                        navigation<CalendarGraph>(startDestination = CalendarRoute) {
+                            val tab = TopLevelDestination.CALENDAR
+                            composable<CalendarRoute> { entry ->
+                                Panes(
+                                    PaneHost(entry, tab in twoPanes, navController, navigator),
+                                    placeholder = Placeholder(R.string.pane_choose_calendar_item, R.drawable.ic_calendar_month),
+                                    route = { item ->
+                                        when (item) {
+                                            is PaneItem.Workout -> CalendarWorkoutRoute(item.id, item.date)
+                                            is PaneItem.Ride -> CalendarRideRoute(item.id)
+                                            else -> null
+                                        }
+                                    },
+                                    list = { calendar(navigator) },
+                                    detail = { item, pane -> if (item is PaneItem.Workout) workout(pane) else ride(pane) },
+                                    // The month's grid takes the width, the detail is the narrower pane
+                                    listWidth = null,
+                                    detailWidth = CALENDAR_DETAIL_WIDTH,
+                                )
+                            }
+                            composable<CalendarWorkoutRoute> { entry ->
+                                val route = entry.toRoute<CalendarWorkoutRoute>()
+                                DetailScreen(tab, tab in twoPanes, navController, PaneItem.Workout(route.id, route.date)) { workout(navigator) }
+                            }
+                            composable<CalendarRideRoute> { entry ->
+                                DetailScreen(tab, tab in twoPanes, navController, PaneItem.Ride(entry.toRoute<CalendarRideRoute>().id)) {
+                                    ride(navigator)
+                                }
+                            }
+                            composable<CalendarAdjustmentRoute> { Screen { adjustment(navigator) } }
+                        }
+                        navigation<CoachGraph>(startDestination = CoachRoute) {
+                            val tab = TopLevelDestination.COACH
+                            composable<CoachRoute> { entry ->
+                                Panes(
+                                    PaneHost(entry, tab in twoPanes, navController, navigator),
+                                    placeholder = Placeholder(R.string.pane_choose_conversation, R.drawable.ic_forum),
+                                    route = { (it as? PaneItem.Conversation)?.let { item -> CoachConversationRoute(item.id, item.tab) } },
+                                    list = { coach(navigator) },
+                                    detail = { _, pane -> conversation(pane) },
+                                )
+                            }
+                            composable<CoachConversationRoute> { entry ->
+                                val route = entry.toRoute<CoachConversationRoute>()
+                                DetailScreen(tab, tab in twoPanes, navController, PaneItem.Conversation(route.id, route.tab)) {
+                                    conversation(navigator)
+                                }
+                            }
+                            composable<CoachTrainingBlockRoute> { Screen { trainingBlock(navigator) } }
+                            composable<CoachFileReviewRoute> { Screen { fileReview(navigator) } }
+                            composable<CoachRideRoute> { Screen { ride(navigator) } }
+                            composable<CoachAdjustmentRoute> { Screen { adjustment(navigator) } }
+                        }
+                        navigation<ProfileGraph>(startDestination = ProfileRoute) {
+                            composable<ProfileRoute> { Screen { profile(navigator) } }
+                            composable<ProfileFeedbackRoute> { Screen { feedback(navigator) } }
+                            composable<ProfileForgotPasswordRoute> { Screen { forgotPassword(navigator) } }
                         }
                     }
-                    composable<CalendarAdjustmentRoute> { Screen { adjustment(navigator) } }
-                }
-                navigation<CoachGraph>(startDestination = CoachRoute) {
-                    val tab = TopLevelDestination.COACH
-                    composable<CoachRoute> { entry ->
-                        Panes(
-                            PaneHost(entry, tab in twoPanes, navController, navigator),
-                            placeholder = Placeholder(R.string.pane_choose_conversation, R.drawable.ic_forum),
-                            route = { (it as? PaneItem.Conversation)?.let { item -> CoachConversationRoute(item.id, item.tab) } },
-                            list = { coach(navigator) },
-                            detail = { _, pane -> conversation(pane) },
-                        )
-                    }
-                    composable<CoachConversationRoute> { entry ->
-                        val route = entry.toRoute<CoachConversationRoute>()
-                        DetailScreen(tab, tab in twoPanes, navController, PaneItem.Conversation(route.id, route.tab)) {
-                            conversation(navigator)
-                        }
-                    }
-                    composable<CoachTrainingBlockRoute> { Screen { trainingBlock(navigator) } }
-                    composable<CoachFileReviewRoute> { Screen { fileReview(navigator) } }
-                    composable<CoachRideRoute> { Screen { ride(navigator) } }
-                    composable<CoachAdjustmentRoute> { Screen { adjustment(navigator) } }
-                }
-                navigation<ProfileGraph>(startDestination = ProfileRoute) {
-                    composable<ProfileRoute> { Screen { profile(navigator) } }
-                    composable<ProfileFeedbackRoute> { Screen { feedback(navigator) } }
-                    composable<ProfileForgotPasswordRoute> { Screen { forgotPassword(navigator) } }
                 }
             }
         }

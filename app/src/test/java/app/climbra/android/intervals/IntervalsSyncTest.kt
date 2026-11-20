@@ -16,7 +16,6 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -25,6 +24,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -253,5 +253,17 @@ class IntervalsSyncTest {
 
         assertEquals(2, count("GET /api/riders/5/intervals"))
         assertEquals(1, count("POST /api/riders/5/intervals/sync"))
+    }
+
+    // Spec 018 AC6: offline a pull starts no sync, "Sync now" still tries
+    @Test
+    fun offlineAPullStartsNoSync() = runTest(dispatcher) {
+        backend.on("GET /api/riders/5/intervals", json(connected))
+        val offline = IntervalsSync(backend.profileApi, changes, clock, session, scope, offline = { true })
+
+        offline.sync(5, SyncOrigin.PULL)
+
+        assertEquals(0, count("GET /api/riders/5/intervals"))
+        assertFalse(offline.state.value.running)
     }
 }

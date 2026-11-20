@@ -8,27 +8,26 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -45,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -59,6 +59,8 @@ import app.climbra.android.data.api.IntervalSet
 import app.climbra.android.data.api.Intervals
 import app.climbra.android.data.api.PlannedWorkoutLink
 import app.climbra.android.data.api.ZoneTime
+import app.climbra.android.ui.common.LocalOffline
+import app.climbra.android.ui.common.OfflineNote
 import app.climbra.android.ui.common.toUiText
 import app.climbra.android.ui.format.DateStyle
 import app.climbra.android.ui.format.Fmt
@@ -330,7 +332,7 @@ fun DetectionFormSection(
         }
         if (invalid) Text(stringResource(R.string.activity_detection_invalid), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onApply, enabled = !busy, modifier = Modifier.testTag("detection-apply")) {
+            Button(onClick = onApply, enabled = !busy && !LocalOffline.current, modifier = Modifier.testTag("detection-apply")) {
                 Text(stringResource(R.string.activity_recalculate))
             }
             if (adHoc) {
@@ -413,9 +415,10 @@ fun PlannedWorkoutCard(
                     }
                 }
             }
-            Button(onClick = { selected?.let(onLink) }, enabled = selected != null && !linking, modifier = Modifier.testTag("link-submit")) {
+            Button(onClick = { selected?.let(onLink) }, enabled = selected != null && !linking && !LocalOffline.current, modifier = Modifier.testTag("link-submit")) {
                 Text(stringResource(R.string.adherence_link))
             }
+            OfflineNote()
             linkError?.let { Text(it.toUiText().resolve(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
         }
     }
