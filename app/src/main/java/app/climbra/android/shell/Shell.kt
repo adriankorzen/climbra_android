@@ -3,27 +3,32 @@ package app.climbra.android.shell
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -34,10 +39,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import app.climbra.android.R
 import app.climbra.android.coach.AdjustmentArgs
 import app.climbra.android.coach.CoachFinished
 import app.climbra.android.coach.ConversationTab
+import app.climbra.android.data.net.OfflineState
+import app.climbra.android.ui.common.LocalOffline
+import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.common.UiText
 import kotlin.reflect.KClass
 import kotlinx.coroutines.flow.Flow
@@ -162,17 +171,30 @@ enum class TopLevelDestination(
     PROFILE(ProfileGraph, ProfileGraph::class, ProfileRoute, R.string.nav_profile, R.drawable.ic_person, R.drawable.ic_person_fill1),
 }
 
-/** Where a screen of the shell can lead; one object for every tab's screens. */
-class ShellNavigator internal constructor(private val nav: NavController) {
+/**
+ * Where a screen of the shell can lead; one object for every tab's screens. A tab showing two panes now
+ * ([twoPanes]) shows its rides, workouts and conversations in its detail pane instead of a screen of their own; in
+ * that pane [closePane] is Back (spec 019).
+ */
+class ShellNavigator internal constructor(
+    private val nav: NavController,
+    private val twoPanes: () -> Set<TopLevelDestination> = { emptySet() },
+    private val closePane: (() -> Unit)? = null,
+) {
+
+    /** The navigator of a detail pane: Back clears it. */
+    internal fun forPane(close: () -> Unit) = ShellNavigator(nav, twoPanes, close)
 
     fun back() {
-        nav.popBackStack()
+        closePane?.invoke() ?: nav.popBackStack()
     }
 
-    /** A ride on the stack of the tab shown now (spec 003). */
+    /** A ride on the stack of the tab shown now (spec 003), or in its detail pane. */
     fun openRide(id: Long) {
+        val tab = currentTab()
+        if ((tab == TopLevelDestination.ACTIVITIES || tab == TopLevelDestination.CALENDAR) && showInPane(tab, PaneItem.Ride(id))) return
         nav.navigate(
-            when (currentTab()) {
+            when (tab) {
                 TopLevelDestination.DASHBOARD -> DashboardRideRoute(id)
                 TopLevelDestination.CALENDAR -> CalendarRideRoute(id)
                 TopLevelDestination.COACH -> CoachRideRoute(id)
@@ -182,6 +204,7 @@ class ShellNavigator internal constructor(private val nav: NavController) {
     }
 
     fun openWorkout(id: Long, date: String) {
+        if (showInPane(TopLevelDestination.CALENDAR, PaneItem.Workout(id, date))) return
         nav.navigate(CalendarWorkoutRoute(id, date))
     }
 
@@ -210,6 +233,7 @@ class ShellNavigator internal constructor(private val nav: NavController) {
 
     /** A single ride was added: its detail in place of the import screen. */
     fun rideAdded(id: Long) {
+        if (showInPane(TopLevelDestination.ACTIVITIES, PaneItem.Ride(id))) return
         nav.navigate(ActivitiesRideRoute(id)) {
             popUpTo<ActivitiesImportRoute> { inclusive = true }
         }
@@ -219,12 +243,14 @@ class ShellNavigator internal constructor(private val nav: NavController) {
 
     /** The Coach tab with the list as its start and the conversation on top, so back returns to the list (spec 006). */
     fun openConversation(id: Long) {
+        if (showInPane(TopLevelDestination.COACH, PaneItem.Conversation(id))) return
         if (currentTab() != TopLevelDestination.COACH) openCoach()
         nav.navigate(CoachConversationRoute(id))
     }
 
     /** An accepted form gives way to its conversation. */
     fun replaceWithConversation(id: Long) {
+        if (showInPane(TopLevelDestination.COACH, PaneItem.Conversation(id))) return
         nav.navigate(CoachConversationRoute(id)) {
             popUpTo<CoachRoute> { inclusive = false }
         }
@@ -253,6 +279,7 @@ class ShellNavigator internal constructor(private val nav: NavController) {
 
     /** A proposal: its conversation on the Coach tab, on the proposal tab (spec 008). */
     fun openProposal(conversationId: Long) {
+        if (showInPane(TopLevelDestination.COACH, PaneItem.Conversation(conversationId, ConversationTab.PANEL.name))) return
         if (currentTab() != TopLevelDestination.COACH) openCoach()
         nav.navigate(CoachConversationRoute(conversationId, ConversationTab.PANEL.name))
     }
@@ -265,6 +292,23 @@ class ShellNavigator internal constructor(private val nav: NavController) {
     fun reviewFile() {
         if (currentTab() != TopLevelDestination.COACH) openCoach()
         nav.navigate(CoachFileReviewRoute)
+    }
+
+    /**
+     * Shows [item] next to the list of [tab] when the tab shows two panes now: the tab's start screen, what was over
+     * it gone. @return `false` with one pane
+     */
+    private fun showInPane(tab: TopLevelDestination, item: PaneItem): Boolean {
+        if (tab !in twoPanes()) return false
+        if (currentTab() == tab) nav.popBackStack(tab.startRoute, inclusive = false) else nav.openTab(tab)
+        nav.setPaneItem(tab, item)
+        return true
+    }
+
+    /** A tab of the navigation tapped: its start screen; the selected one again also empties its pane. */
+    internal fun openTab(tab: TopLevelDestination, reselected: Boolean) {
+        nav.openTab(tab)
+        if (reselected && tab.twoPanesFrom != null) nav.setPaneItem(tab, null)
     }
 
     private fun currentTab(): TopLevelDestination? = nav.currentDestination?.tab()
@@ -301,9 +345,15 @@ fun Shell(
     importRequests: Flow<Unit> = emptyFlow(),
     /** The end of an import while its screen is not shown, with "Show". */
     importNotices: Flow<UiText> = emptyFlow(),
+    /** Saved data is shown (spec 018): a banner with Retry, and actions that send something are disabled. */
+    offline: OfflineState? = null,
+    onRetryOffline: () -> Unit = {},
 ) {
     val navController = rememberNavController()
-    val navigator = remember(navController) { ShellNavigator(navController) }
+    val width = LocalConfiguration.current.screenWidthDp.dp
+    val twoPanes = twoPaneTabs(width)
+    val currentTwoPanes by rememberUpdatedState(twoPanes)
+    val navigator = remember(navController) { ShellNavigator(navController, { currentTwoPanes }) }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destination = backStackEntry?.destination
     val snackbar = remember { SnackbarHostState() }
@@ -337,58 +387,116 @@ fun Shell(
             }
         }
     }
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                TopLevelDestination.entries.forEach { item ->
-                    val selected = destination?.hierarchy?.any { it.hasRoute(item.graphClass) } == true
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = { navController.openTab(item) },
-                        icon = {
-                            Icon(painterResource(if (selected) item.selectedIcon else item.icon), contentDescription = null)
-                        },
-                        label = { Text(stringResource(item.label)) },
-                        modifier = Modifier.testTag("nav-${item.name.lowercase()}"),
-                    )
-                }
+    val rail = width >= RAIL_WIDTH
+    // The rail from medium windows, also on a phone in landscape (spec 019)
+    NavigationSuiteScaffold(
+        navigationSuiteItems = {
+            TopLevelDestination.entries.forEach { item ->
+                val selected = destination?.hierarchy?.any { it.hasRoute(item.graphClass) } == true
+                item(
+                    selected = selected,
+                    onClick = { navigator.openTab(item, reselected = selected) },
+                    icon = { Icon(painterResource(if (selected) item.selectedIcon else item.icon), contentDescription = null) },
+                    label = { Text(stringResource(item.label)) },
+                    modifier = Modifier.testTag("nav-${item.name.lowercase()}"),
+                )
             }
         },
-        snackbarHost = { SnackbarHost(snackbar, Modifier.testTag("shell-snackbar")) },
-    ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = DashboardGraph,
+        layoutType = if (rail) NavigationSuiteType.NavigationRail else NavigationSuiteType.NavigationBar,
+        modifier = Modifier.testTag(if (rail) "shell-rail" else "shell-bar"),
+    ) {
+        Scaffold(snackbarHost = { SnackbarHost(snackbar, Modifier.testTag("shell-snackbar")) }) { padding ->
             // The bars inset is applied here: nested Scaffolds and TopAppBars must not add it again
-            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
-        ) {
-            navigation<DashboardGraph>(startDestination = DashboardRoute) {
-                composable<DashboardRoute> { Screen { dashboard(navigator) } }
-                composable<DashboardRideRoute> { Screen { ride(navigator) } }
-            }
-            navigation<ActivitiesGraph>(startDestination = ActivitiesRoute) {
-                composable<ActivitiesRoute> { Screen { activities(navigator) } }
-                composable<ActivitiesRideRoute> { Screen { ride(navigator) } }
-                composable<ActivitiesImportRoute> { Screen { rideImport(navigator) } }
-            }
-            navigation<CalendarGraph>(startDestination = CalendarRoute) {
-                composable<CalendarRoute> { Screen { calendar(navigator) } }
-                composable<CalendarWorkoutRoute> { Screen { workout(navigator) } }
-                composable<CalendarRideRoute> { Screen { ride(navigator) } }
-                composable<CalendarAdjustmentRoute> { Screen { adjustment(navigator) } }
-            }
-            navigation<CoachGraph>(startDestination = CoachRoute) {
-                composable<CoachRoute> { Screen { coach(navigator) } }
-                composable<CoachConversationRoute> { Screen { conversation(navigator) } }
-                composable<CoachTrainingBlockRoute> { Screen { trainingBlock(navigator) } }
-                composable<CoachFileReviewRoute> { Screen { fileReview(navigator) } }
-                composable<CoachRideRoute> { Screen { ride(navigator) } }
-                composable<CoachAdjustmentRoute> { Screen { adjustment(navigator) } }
-            }
-            navigation<ProfileGraph>(startDestination = ProfileRoute) {
-                composable<ProfileRoute> { Screen { profile(navigator) } }
-                composable<ProfileFeedbackRoute> { Screen { feedback(navigator) } }
-                composable<ProfileForgotPasswordRoute> { Screen { forgotPassword(navigator) } }
+            Column(Modifier.padding(padding).consumeWindowInsets(padding)) {
+                offline?.let { OfflineBanner(it, onRetryOffline) }
+                CompositionLocalProvider(LocalOffline provides (offline != null)) {
+                    NavHost(
+                        navController = navController,
+                        startDestination = DashboardGraph,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        navigation<DashboardGraph>(startDestination = DashboardRoute) {
+                            composable<DashboardRoute> { Screen { dashboard(navigator) } }
+                            composable<DashboardRideRoute> { Screen { ride(navigator) } }
+                        }
+                        navigation<ActivitiesGraph>(startDestination = ActivitiesRoute) {
+                            val tab = TopLevelDestination.ACTIVITIES
+                            composable<ActivitiesRoute> { entry ->
+                                Panes(
+                                    PaneHost(entry, tab in twoPanes, navController, navigator),
+                                    placeholder = Placeholder(R.string.pane_choose_ride, R.drawable.ic_directions_bike),
+                                    route = { (it as? PaneItem.Ride)?.let { item -> ActivitiesRideRoute(item.id) } },
+                                    list = { activities(navigator) },
+                                    detail = { _, pane -> ride(pane) },
+                                )
+                            }
+                            composable<ActivitiesRideRoute> { entry ->
+                                DetailScreen(tab, tab in twoPanes, navController, PaneItem.Ride(entry.toRoute<ActivitiesRideRoute>().id)) {
+                                    ride(navigator)
+                                }
+                            }
+                            composable<ActivitiesImportRoute> { Screen { rideImport(navigator) } }
+                        }
+                        navigation<CalendarGraph>(startDestination = CalendarRoute) {
+                            val tab = TopLevelDestination.CALENDAR
+                            composable<CalendarRoute> { entry ->
+                                Panes(
+                                    PaneHost(entry, tab in twoPanes, navController, navigator),
+                                    placeholder = Placeholder(R.string.pane_choose_calendar_item, R.drawable.ic_calendar_month),
+                                    route = { item ->
+                                        when (item) {
+                                            is PaneItem.Workout -> CalendarWorkoutRoute(item.id, item.date)
+                                            is PaneItem.Ride -> CalendarRideRoute(item.id)
+                                            else -> null
+                                        }
+                                    },
+                                    list = { calendar(navigator) },
+                                    detail = { item, pane -> if (item is PaneItem.Workout) workout(pane) else ride(pane) },
+                                    // The month's grid takes the width, the detail is the narrower pane
+                                    listWidth = null,
+                                    detailWidth = CALENDAR_DETAIL_WIDTH,
+                                )
+                            }
+                            composable<CalendarWorkoutRoute> { entry ->
+                                val route = entry.toRoute<CalendarWorkoutRoute>()
+                                DetailScreen(tab, tab in twoPanes, navController, PaneItem.Workout(route.id, route.date)) { workout(navigator) }
+                            }
+                            composable<CalendarRideRoute> { entry ->
+                                DetailScreen(tab, tab in twoPanes, navController, PaneItem.Ride(entry.toRoute<CalendarRideRoute>().id)) {
+                                    ride(navigator)
+                                }
+                            }
+                            composable<CalendarAdjustmentRoute> { Screen { adjustment(navigator) } }
+                        }
+                        navigation<CoachGraph>(startDestination = CoachRoute) {
+                            val tab = TopLevelDestination.COACH
+                            composable<CoachRoute> { entry ->
+                                Panes(
+                                    PaneHost(entry, tab in twoPanes, navController, navigator),
+                                    placeholder = Placeholder(R.string.pane_choose_conversation, R.drawable.ic_forum),
+                                    route = { (it as? PaneItem.Conversation)?.let { item -> CoachConversationRoute(item.id, item.tab) } },
+                                    list = { coach(navigator) },
+                                    detail = { _, pane -> conversation(pane) },
+                                )
+                            }
+                            composable<CoachConversationRoute> { entry ->
+                                val route = entry.toRoute<CoachConversationRoute>()
+                                DetailScreen(tab, tab in twoPanes, navController, PaneItem.Conversation(route.id, route.tab)) {
+                                    conversation(navigator)
+                                }
+                            }
+                            composable<CoachTrainingBlockRoute> { Screen { trainingBlock(navigator) } }
+                            composable<CoachFileReviewRoute> { Screen { fileReview(navigator) } }
+                            composable<CoachRideRoute> { Screen { ride(navigator) } }
+                            composable<CoachAdjustmentRoute> { Screen { adjustment(navigator) } }
+                        }
+                        navigation<ProfileGraph>(startDestination = ProfileRoute) {
+                            composable<ProfileRoute> { Screen { profile(navigator) } }
+                            composable<ProfileFeedbackRoute> { Screen { feedback(navigator) } }
+                            composable<ProfileForgotPasswordRoute> { Screen { forgotPassword(navigator) } }
+                        }
+                    }
+                }
             }
         }
     }

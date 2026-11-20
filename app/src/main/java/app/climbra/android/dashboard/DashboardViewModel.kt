@@ -27,14 +27,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Visible days of the performance management chart, as on the web. */
@@ -90,6 +90,9 @@ class DashboardViewModel @Inject constructor(
 
     private var loadJob: Job? = null
     private var loadedAt: Instant? = null
+    /** Bumped by changes to rides, and by the app coming back online (spec 018): the shown dashboard loads again. */
+    val dataVersion: StateFlow<Int> get() = changes.version
+
     private var loadedVersion = changes.version.value
 
     init {

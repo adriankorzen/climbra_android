@@ -15,6 +15,7 @@ import app.climbra.android.data.api.Rider
 import app.climbra.android.data.api.SkipRequest
 import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.ApiResult
+import app.climbra.android.data.net.Connectivity
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
 import app.climbra.android.data.net.httpError
@@ -74,6 +75,8 @@ class WorkoutDetailViewModel @Inject constructor(
     private val changes: DataChanges,
     private val files: FileSaver,
     private val garminConnect: GarminConnectFlow,
+    /** Back online (spec 018): the workout loads again. */
+    connectivity: Connectivity = Connectivity(),
 ) : ViewModel() {
 
     private val id: Long = checkNotNull(savedState.get<Long>("id")) { "A workout route has an id" }
@@ -85,6 +88,7 @@ class WorkoutDetailViewModel @Inject constructor(
     private var rider: Rider? = null
 
     init {
+        viewModelScope.launch { connectivity.reloads.collect { load() } }
         load()
         // Connecting Garmin Connect ended (spec 016): the connection and the workout's status load again
         viewModelScope.launch {

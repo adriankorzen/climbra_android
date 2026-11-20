@@ -16,15 +16,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -32,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,6 +48,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -65,12 +66,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.climbra.android.AppConfig
 import app.climbra.android.R
 import app.climbra.android.dashboard.emptyHint
+import app.climbra.android.data.api.RideRow
 import app.climbra.android.intervals.SyncProgress
 import app.climbra.android.intervals.SyncState
 import app.climbra.android.intervals.shown
-import app.climbra.android.data.api.RideRow
 import app.climbra.android.ui.common.ErrorBanner
+import app.climbra.android.ui.common.LocalOffline
+import app.climbra.android.ui.common.LocalPaneItem
+import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.common.openWebPage
+import app.climbra.android.ui.common.paneSelected
 import app.climbra.android.ui.common.toUiText
 import app.climbra.android.ui.format.DateStyle
 import app.climbra.android.ui.format.Fmt
@@ -92,6 +97,9 @@ fun ActivitiesRoute(
     val sync by viewModel.sync.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onShown() }
+    // A ride or workout changed in the detail pane beside the list (spec 019)
+    val dataVersion by viewModel.dataVersion.collectAsStateWithLifecycle()
+    LaunchedEffect(dataVersion) { viewModel.onShown() }
     ActivitiesScreen(
         state = state,
         sync = sync,
@@ -154,7 +162,7 @@ fun ActivitiesScreen(
                         modifier = Modifier.weight(1f).semantics { heading() },
                     )
                     // Spec 009
-                    IconButton(onClick = onImport, modifier = Modifier.testTag("activities-import")) {
+                    IconButton(onClick = onImport, enabled = !LocalOffline.current, modifier = Modifier.testTag("activities-import")) {
                         Icon(painterResource(R.drawable.ic_upload_file), stringResource(R.string.import_button))
                     }
                 }
@@ -332,8 +340,14 @@ private fun Total(label: String, value: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun RideListItem(row: RideRow, fmt: Fmt, onOpenRide: (Long) -> Unit) {
+    // The ride shown in the detail pane next to the list (spec 019)
+    val selected = (LocalPaneItem.current as? PaneItem.Ride)?.id == row.id
     Column(
-        modifier = Modifier.fillMaxWidth().clickable { onOpenRide(row.id) }.testTag("ride-row-${row.id}"),
+        modifier = Modifier.fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
+            .paneSelected(selected, MaterialTheme.colorScheme.secondaryContainer)
+            .clickable { onOpenRide(row.id) }
+            .testTag("ride-row-${row.id}"),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
             Column(Modifier.weight(1f)) {

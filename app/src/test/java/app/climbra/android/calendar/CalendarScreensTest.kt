@@ -4,18 +4,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -41,6 +46,9 @@ import app.climbra.android.data.api.PlannedWorkoutLink
 import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.Network
 import app.climbra.android.shell.Shell
+import app.climbra.android.ui.common.LocalOffline
+import app.climbra.android.ui.common.LocalPaneItem
+import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.format.Fmt
 import app.climbra.android.ui.theme.ClimbraTheme
 import java.time.LocalDate
@@ -583,5 +591,39 @@ class CalendarScreensTest {
         content { CalendarScreen(week(), fmt, CalendarActions(onDefaultMode = { asked += it })) }
 
         assertEquals(listOf(CalendarMode.MONTH), asked)
+    }
+
+    // Spec 019 AC4: the workout or ride shown in the detail pane is highlighted in the week and the month
+    @Test
+    fun theItemShownInThePaneIsSelected() {
+        var item: PaneItem by mutableStateOf(PaneItem.Workout(1, "2026-11-10"))
+        content { CompositionLocalProvider(LocalPaneItem provides item) { CalendarScreen(week(), fmt, CalendarActions()) } }
+
+        scrollTo("day-2026-11-10")
+        compose.onNodeWithTag("workout-1").assertIsSelected()
+        compose.onNodeWithTag("ride-11").assert(isSelected().not())
+
+        item = PaneItem.Ride(11)
+        compose.onNodeWithTag("ride-11").assertIsSelected()
+        compose.onNodeWithTag("workout-1").assert(isSelected().not())
+    }
+
+    // Spec 018 AC6: offline, the workout's and the plan's actions are disabled, with a note
+    @Test
+    fun offlineTheWorkoutAndPlanActionsAreDisabled() {
+        var screen by mutableStateOf("workout")
+        content {
+            CompositionLocalProvider(LocalOffline provides true) {
+                if (screen == "workout") WorkoutDetailScreen(detail(PLANNED, status = "NOT_SENT"), fmt, WorkoutActions()) else CalendarScreen(week(), fmt, CalendarActions())
+            }
+        }
+
+        compose.onNodeWithTag("workout-skip").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("garmin-send").performScrollTo().assertIsNotEnabled()
+        compose.onAllNodesWithTag("offline-note").onFirst().assertExists()
+
+        screen = "calendar"
+        compose.onNodeWithTag("adjust-plan-7").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("remove-plan-7").performScrollTo().assertIsNotEnabled()
     }
 }

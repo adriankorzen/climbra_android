@@ -12,6 +12,7 @@ import app.climbra.android.data.api.LinkRideRequest
 import app.climbra.android.data.api.Recording
 import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.ApiResult
+import app.climbra.android.data.net.Connectivity
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
 import app.climbra.android.data.net.httpError
@@ -105,6 +106,8 @@ class RideDetailViewModel @Inject constructor(
     private val riders: RiderRepository,
     private val changes: DataChanges,
     private val files: FileSaver,
+    /** Back online (spec 018): the ride loads again. */
+    connectivity: Connectivity = Connectivity(),
 ) : ViewModel() {
 
     /** The id of the ride route of either tab (`DashboardRideRoute`, `ActivitiesRideRoute`). */
@@ -117,6 +120,7 @@ class RideDetailViewModel @Inject constructor(
     private var stored: AnalysisResponse? = null
 
     init {
+        viewModelScope.launch { connectivity.reloads.collect { load() } }
         load()
     }
 

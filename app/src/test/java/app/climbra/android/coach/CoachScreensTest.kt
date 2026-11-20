@@ -3,12 +3,14 @@ package app.climbra.android.coach
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -16,23 +18,28 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.toRoute
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.climbra.android.calendar.CalendarFixtures
 import app.climbra.android.coach.CoachFixtures.BLOCK
 import app.climbra.android.coach.CoachFixtures.PLAN_CHANGE
 import app.climbra.android.coach.CoachFixtures.REVIEW
 import app.climbra.android.coach.CoachFixtures.conversation
 import app.climbra.android.coach.CoachFixtures.latestProposal
-import app.climbra.android.coach.CoachFixtures.proposal
 import app.climbra.android.coach.CoachFixtures.message
 import app.climbra.android.coach.CoachFixtures.parse
 import app.climbra.android.coach.CoachFixtures.parseQuota
 import app.climbra.android.coach.CoachFixtures.pending
+import app.climbra.android.coach.CoachFixtures.proposal
 import app.climbra.android.coach.CoachFixtures.quota
 import app.climbra.android.coach.CoachFixtures.summary
 import app.climbra.android.dashboard.DashboardScreen
@@ -41,14 +48,12 @@ import app.climbra.android.data.api.CoachConversationSummary
 import app.climbra.android.data.api.PlanProposal
 import app.climbra.android.data.api.Rider
 import app.climbra.android.data.api.TrainingPlan
-import app.climbra.android.calendar.CalendarFixtures
-import app.climbra.android.shell.CoachConversationRoute
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import androidx.navigation.NavBackStackEntry
-import androidx.navigation.toRoute
 import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.Network
+import app.climbra.android.shell.CoachConversationRoute
 import app.climbra.android.shell.Shell
+import app.climbra.android.ui.common.LocalPaneItem
+import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.format.Fmt
 import app.climbra.android.ui.theme.ClimbraTheme
 import java.time.Instant
@@ -1029,5 +1034,18 @@ class CoachScreensTest {
         // The calendar's stack no longer holds the form
         compose.onNodeWithTag("nav-calendar").performClick()
         compose.onNodeWithTag("adjust").assertIsDisplayed()
+    }
+
+    // Spec 019 AC3: the conversation shown in the detail pane is highlighted in the list
+    @Test
+    fun theConversationShownInThePaneIsSelected() {
+        content {
+            CompositionLocalProvider(LocalPaneItem provides PaneItem.Conversation(2)) {
+                CoachListScreen(CoachListUiState(loading = false, conversations = summaries(summary(1), summary(2))), fmt, now, CoachNavigation(), CoachListActions())
+            }
+        }
+
+        compose.onNodeWithTag("conversation-2").assertIsSelected()
+        compose.onNodeWithTag("conversation-1").assert(isSelected().not())
     }
 }

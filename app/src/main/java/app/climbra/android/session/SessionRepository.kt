@@ -11,11 +11,13 @@ import app.climbra.android.data.api.LoginRequest
 import app.climbra.android.data.api.PasswordChangeRequest
 import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.ApiResult
+import app.climbra.android.data.net.Connectivity
+import app.climbra.android.data.net.Network
+import app.climbra.android.data.net.OfflineCache
 import app.climbra.android.data.net.PersistentCookieJar
 import app.climbra.android.data.net.SessionEvent
 import app.climbra.android.data.net.SessionEvents
 import app.climbra.android.data.net.apiCall
-import app.climbra.android.data.net.Network
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,6 +52,9 @@ class SessionRepository(
     events: SessionEvents,
     private val locales: AppLocales,
     scope: CoroutineScope,
+    /** The answers saved for offline (spec 018): deleted when the session ends and before a login. */
+    private val offline: OfflineCache? = null,
+    private val connectivity: Connectivity? = null,
 ) {
     private val mutableState = MutableStateFlow<SessionState>(SessionState.Loading)
     val state: StateFlow<SessionState> = mutableState.asStateFlow()
@@ -67,7 +72,10 @@ class SessionRepository(
         }
     }
 
-    /** Resolves the stored session: logged in, logged out, or the backend is unavailable. */
+    /**
+     * Resolves the stored session: logged in, logged out, or the backend is unavailable. Offline, the saved account
+     * opens the shell (spec 018).
+     */
     suspend fun start() {
         mutableState.value = SessionState.Loading
         when (val result = call { api.me() }) {
@@ -83,7 +91,7 @@ class SessionRepository(
 
     /** Always a remember-me session (30 days on the backend). @return the error, `null` when logged in */
     suspend fun login(email: String, password: String): ApiError? =
-        signIn { api.login(LoginRequest(email.trim(), password, rememberMe = true)) }
+        signIn(newSession = true) { api.login(LoginRequest(email.trim(), password, rememberMe = true)) }
 
     /** A nonce for a Google ID token, bound to this session by the backend (cyclingapp spec 050). */
     suspend fun googleNonce(): ApiResult<String> = when (val result = call { api.googleNonce() }) {
@@ -92,7 +100,7 @@ class SessionRepository(
     }
 
     suspend fun loginWithGoogle(idToken: String): ApiError? =
-        signIn { api.googleLogin(GoogleIdTokenRequest(idToken)) }
+        signIn(newSession = true) { api.googleLogin(GoogleIdTokenRequest(idToken)) }
 
     /** Accepts the terms and the health data consent, both required, as on the web. */
     suspend fun acceptTerms(): ApiError? {
@@ -133,21 +141,31 @@ class SessionRepository(
             is ApiResult.Success -> Unit
         }
         cookies.clear()
+        forgetOffline()
         locales.useDeviceLanguage()
         mutableState.value = SessionState.LoggedOut(accountDeleted = true)
         return null
     }
 
-    private suspend fun signIn(request: suspend () -> AccountResponse): ApiError? =
+    /** [newSession]: a login, after which nothing saved for another session may be shown (spec 018). */
+    private suspend fun signIn(newSession: Boolean = false, request: suspend () -> AccountResponse): ApiError? =
         when (val result = call(request)) {
             is ApiResult.Success -> {
+                if (newSession) forgetOffline()
                 signedIn(result.value)
                 null
             }
             is ApiResult.Failure -> result.error
         }
 
+    private fun forgetOffline() {
+        offline?.clear()
+        connectivity?.reset()
+    }
+
+    /** The account shown is the one a start offline opens with (spec 018), also after a login or a change. */
     private fun signedIn(account: AccountResponse) {
+        offline?.saveAccount(Network.json.encodeToString(AccountResponse.serializer(), account))
         locales.useAccountLanguage(account.language)
         mutableState.value =
             if (account.termsAccepted) SessionState.LoggedIn(account) else SessionState.NeedsTerms(account)
@@ -155,6 +173,7 @@ class SessionRepository(
 
     private fun endSession(expired: Boolean) {
         cookies.clear()
+        forgetOffline()
         locales.useDeviceLanguage()
         mutableState.value = SessionState.LoggedOut(expired)
     }

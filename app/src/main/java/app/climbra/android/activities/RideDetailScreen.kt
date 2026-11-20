@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -53,7 +54,10 @@ import app.climbra.android.coach.RideCoachButton
 import app.climbra.android.coach.RideCoachCard
 import app.climbra.android.dashboard.KpiTile
 import app.climbra.android.data.api.AnalysisResponse
+import app.climbra.android.ui.common.DetailBackButton
 import app.climbra.android.ui.common.ErrorBanner
+import app.climbra.android.ui.common.LocalOffline
+import app.climbra.android.ui.common.OfflineNote
 import app.climbra.android.ui.common.toUiText
 import app.climbra.android.ui.format.DateStyle
 import app.climbra.android.ui.format.Fmt
@@ -148,26 +152,24 @@ fun RideDetailScreen(
     }
 
     val activity = state.activity
+    val offline = LocalOffline.current
     val title = activity?.name ?: stringResource(R.string.activity_unnamed)
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(if (activity != null) title else "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = {
-                    IconButton(onClick = onBack, modifier = Modifier.testTag("ride-back")) {
-                        Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back))
-                    }
-                },
+                navigationIcon = { DetailBackButton(onBack, "ride-back") },
                 actions = {
                     if (activity != null) {
                         IconButton(onClick = { menu = true }, modifier = Modifier.testTag("ride-menu")) {
                             Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.more_actions))
                         }
                         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                            if (offline) OfflineNote(Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
                             DropdownMenuItem(
                                 text = { Text(stringResource(if (state.analysing) R.string.activity_analysing else R.string.activity_reanalyse)) },
                                 leadingIcon = { Icon(painterResource(R.drawable.ic_refresh), null) },
-                                enabled = !state.analysing,
+                                enabled = !state.analysing && !offline,
                                 onClick = {
                                     menu = false
                                     onReanalyse()
@@ -177,7 +179,7 @@ fun RideDetailScreen(
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.activity_download_fit)) },
                                 leadingIcon = { Icon(painterResource(R.drawable.ic_download), null) },
-                                enabled = !state.downloading,
+                                enabled = !state.downloading && !offline,
                                 onClick = {
                                     menu = false
                                     onDownload()
@@ -185,9 +187,14 @@ fun RideDetailScreen(
                                 modifier = Modifier.testTag("action-download"),
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.activity_delete), color = MaterialTheme.colorScheme.error) },
-                                leadingIcon = { Icon(painterResource(R.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error) },
-                                enabled = !state.deleting,
+                                text = { Text(stringResource(R.string.activity_delete)) },
+                                leadingIcon = { Icon(painterResource(R.drawable.ic_delete), null) },
+                                // Red when it can be used, the menu's disabled color otherwise (offline, spec 018)
+                                colors = MenuDefaults.itemColors(
+                                    textColor = MaterialTheme.colorScheme.error,
+                                    leadingIconColor = MaterialTheme.colorScheme.error,
+                                ),
+                                enabled = !state.deleting && !offline,
                                 onClick = {
                                     menu = false
                                     confirmingDelete = true
@@ -355,7 +362,7 @@ private fun RideContent(
                 }
             }
             if (intervals?.lapsAvailable == true) {
-                IntervalSourceSwitch(intervals.useLaps, enabled = !state.analysing, onChange = onIntervalSource)
+                IntervalSourceSwitch(intervals.useLaps, enabled = !state.analysing && !LocalOffline.current, onChange = onIntervalSource)
             }
             DetectionFormSection(
                 form = state.form,

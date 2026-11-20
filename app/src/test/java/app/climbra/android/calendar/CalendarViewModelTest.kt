@@ -414,4 +414,17 @@ class CalendarViewModelTest {
         assertEquals(LocalDate.of(2026, 11, 23), state.week)
         assertEquals("2026-11-23" to "2026-11-29", calendarRanges().last())
     }
+
+    // Spec 018 AC4: without the backend the calendar shows the week saved when it was last loaded
+    @Test
+    fun withoutTheBackendTheCalendarShowsItsSavedWeek() = runTest(dispatcher) {
+        standard()
+        val online = viewModel().settled()
+
+        backend.goOffline()
+        val offline = viewModel().settled()
+
+        assertEquals(online.days, offline.days)
+        assertEquals(online.data, offline.data)
+    }
 }

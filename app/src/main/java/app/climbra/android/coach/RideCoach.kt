@@ -13,13 +13,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +35,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.climbra.android.R
 import app.climbra.android.activities.workoutTypeName
+import app.climbra.android.ui.common.LocalOffline
+import app.climbra.android.ui.common.OfflineNote
 import app.climbra.android.ui.format.Fmt
 
 /** What the coach parts of a ride detail can ask for. */
@@ -53,6 +55,8 @@ fun RideCoachButton(state: AskCoachState, actions: RideCoachActions) {
     val conversation = state.conversationId
     FilledTonalButton(
         onClick = { if (state.canContinue && conversation != null) actions.onOpenConversation(conversation) else actions.onAsk() },
+        // The coach is not read offline (spec 018)
+        enabled = !LocalOffline.current,
         modifier = Modifier.testTag(if (state.canContinue) "continue-review" else "ask-coach"),
     ) {
         Icon(painterResource(R.drawable.ic_auto_awesome), null, Modifier.size(18.dp))
@@ -78,7 +82,8 @@ fun RideCoachCard(state: AskCoachState, fmt: Fmt, actions: RideCoachActions) {
             if (review == null) {
                 Text(stringResource(R.string.coach_no_review), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("no-review"))
                 if (state.conversationId == null) {
-                    TextButton(onClick = actions.onAsk, modifier = Modifier.testTag("card-ask-coach")) { Text(stringResource(R.string.coach_ask)) }
+                    TextButton(onClick = actions.onAsk, enabled = !LocalOffline.current, modifier = Modifier.testTag("card-ask-coach")) { Text(stringResource(R.string.coach_ask)) }
+                    OfflineNote()
                 }
             } else {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
@@ -130,7 +135,7 @@ fun AskCoachContent(state: AskCoachState, free: Boolean, fmt: Fmt, actions: Ride
             TextButton(onClick = actions.onCloseSheet) { Text(stringResource(R.string.cancel)) }
             Button(
                 onClick = actions.onStart,
-                enabled = !state.sending && state.limits.allows(CostKind.REVIEW, free),
+                enabled = !state.sending && state.limits.allows(CostKind.REVIEW, free) && !LocalOffline.current,
                 modifier = Modifier.testTag("ask-start"),
             ) { Text(stringResource(R.string.ask_coach_start)) }
         }

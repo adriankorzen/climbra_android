@@ -111,6 +111,9 @@ class CalendarViewModel @Inject constructor(
 
     private var rider: Rider? = null
     private var request: Job? = null
+    /** Bumped by changes to rides: shown next to the ride or workout changed (spec 019), the screen loads again. */
+    val dataVersion: StateFlow<Int> get() = changes.version
+
     private var loadedVersion = changes.version.value
 
     init {

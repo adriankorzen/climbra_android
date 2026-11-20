@@ -26,7 +26,6 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -68,7 +67,10 @@ import app.climbra.android.data.api.CalendarRide
 import app.climbra.android.data.api.CalendarWorkout
 import app.climbra.android.data.api.WorkoutComparison
 import app.climbra.android.data.api.WorkoutStep
+import app.climbra.android.ui.common.DetailBackButton
 import app.climbra.android.ui.common.ErrorBanner
+import app.climbra.android.ui.common.LocalOffline
+import app.climbra.android.ui.common.OfflineNote
 import app.climbra.android.ui.common.toUiText
 import app.climbra.android.ui.format.DateStyle
 import app.climbra.android.ui.format.Fmt
@@ -135,11 +137,7 @@ fun WorkoutDetailScreen(state: WorkoutDetailUiState, fmt: Fmt, actions: WorkoutA
         topBar = {
             TopAppBar(
                 title = { Text(workout?.title.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = {
-                    IconButton(onClick = actions.onBack, modifier = Modifier.testTag("workout-back")) {
-                        Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back))
-                    }
-                },
+                navigationIcon = { DetailBackButton(actions.onBack, "workout-back") },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -239,17 +237,19 @@ private fun Adherence(state: WorkoutDetailUiState, workout: CalendarWorkout, fmt
             }
         }
         workout.comparison?.let { Comparison(it, fmt) }
+        val offline = LocalOffline.current
+        OfflineNote()
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             when {
-                workout.activityId != null -> OutlinedButton(onClick = actions.onUnlink, enabled = !state.busy, modifier = Modifier.testTag("workout-unlink")) {
+                workout.activityId != null -> OutlinedButton(onClick = actions.onUnlink, enabled = !state.busy && !offline, modifier = Modifier.testTag("workout-unlink")) {
                     Icon(painterResource(R.drawable.ic_link_off), null, Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.adherence_unlink))
                 }
-                workout.status == CalendarWorkout.STATUS_SKIPPED -> OutlinedButton(onClick = { actions.onSkip(false) }, enabled = !state.busy, modifier = Modifier.testTag("workout-unskip")) {
+                workout.status == CalendarWorkout.STATUS_SKIPPED -> OutlinedButton(onClick = { actions.onSkip(false) }, enabled = !state.busy && !offline, modifier = Modifier.testTag("workout-unskip")) {
                     Text(stringResource(R.string.adherence_undo_skip))
                 }
-                else -> OutlinedButton(onClick = { actions.onSkip(true) }, enabled = !state.busy, modifier = Modifier.testTag("workout-skip")) {
+                else -> OutlinedButton(onClick = { actions.onSkip(true) }, enabled = !state.busy && !offline, modifier = Modifier.testTag("workout-skip")) {
                     Icon(painterResource(R.drawable.ic_event_busy), null, Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.adherence_skip))
@@ -316,7 +316,7 @@ private fun LinkAnother(candidates: List<CalendarRide>, busy: Boolean, fmt: Fmt,
         }
         Button(
             onClick = { selected?.let(onLink); selected = null },
-            enabled = selected != null && !busy,
+            enabled = selected != null && !busy && !LocalOffline.current,
             modifier = Modifier.testTag("link-submit"),
         ) {
             Icon(painterResource(R.drawable.ic_link), null, Modifier.size(18.dp))
@@ -341,14 +341,14 @@ private fun GarminAndZwift(state: WorkoutDetailUiState, workout: CalendarWorkout
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (status != null) {
-                OutlinedButton(onClick = actions.onSendToGarmin, enabled = !state.sending, modifier = Modifier.testTag("garmin-send")) {
+                OutlinedButton(onClick = actions.onSendToGarmin, enabled = !state.sending && !LocalOffline.current, modifier = Modifier.testTag("garmin-send")) {
                     Icon(painterResource(R.drawable.ic_send), null, Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(if (status == "SENT") R.string.garmin_send_again else R.string.garmin_send_workout))
                 }
             }
             if (workout.hasSteps) {
-                OutlinedButton(onClick = actions.onDownloadZwift, enabled = !state.downloading, modifier = Modifier.testTag("zwift-download")) {
+                OutlinedButton(onClick = actions.onDownloadZwift, enabled = !state.downloading && !LocalOffline.current, modifier = Modifier.testTag("zwift-download")) {
                     Icon(painterResource(R.drawable.ic_download), null, Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.zwift_download))

@@ -17,11 +17,18 @@ object Network {
         coerceInputValues = true
     }
 
-    fun okHttpClient(cookies: PersistentCookieJar, events: SessionEvents): OkHttpClient = OkHttpClient.Builder()
+    /** [offline] saves and serves the answers read offline (spec 018). */
+    fun okHttpClient(
+        cookies: PersistentCookieJar,
+        events: SessionEvents,
+        offline: OfflineInterceptor? = null,
+    ): OkHttpClient = OkHttpClient.Builder()
         .cookieJar(cookies)
         // Outermost: sees the final answer, after a CSRF retry
         .addInterceptor(SessionEventsInterceptor(events))
         .addInterceptor(CsrfInterceptor(cookies))
+        // Innermost: each attempt that reaches the backend, or fails to
+        .apply { offline?.let(::addInterceptor) }
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()

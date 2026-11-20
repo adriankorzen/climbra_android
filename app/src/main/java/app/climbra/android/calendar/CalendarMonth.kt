@@ -39,8 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +50,7 @@ import app.climbra.android.activities.sportName
 import app.climbra.android.data.api.CalendarRide
 import app.climbra.android.data.api.CalendarWeek
 import app.climbra.android.data.api.CalendarWorkout
+import app.climbra.android.ui.common.paneSelected
 import app.climbra.android.ui.format.Fmt
 import app.climbra.android.ui.theme.MonoFamily
 import app.climbra.android.ui.theme.extendedColors
@@ -225,7 +226,9 @@ private fun DayCell(day: CalendarDay, inMonth: Boolean, fmt: Fmt, actions: Calen
 @Composable
 private fun CompactWorkout(workout: CalendarWorkout, onOpen: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().height(IntrinsicSize.Min).clickable(onClick = onOpen).testTag("month-workout-${workout.id}"),
+        Modifier.fillMaxWidth().height(IntrinsicSize.Min)
+            .paneSelected(workout.selectedInPane(), MaterialTheme.colorScheme.secondaryContainer)
+            .clickable(onClick = onOpen).testTag("month-workout-${workout.id}"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.width(3.dp).fillMaxHeight().background(statusColor(workout)))
@@ -242,7 +245,9 @@ private fun CompactWorkout(workout: CalendarWorkout, onOpen: () -> Unit) {
 @Composable
 private fun CompactRide(ride: CalendarRide, fmt: Fmt, onOpen: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onOpen).testTag("month-ride-${ride.activityId}"),
+        Modifier.fillMaxWidth()
+            .paneSelected(ride.selectedInPane(), MaterialTheme.colorScheme.secondaryContainer)
+            .clickable(onClick = onOpen).testTag("month-ride-${ride.activityId}"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(painterResource(R.drawable.ic_directions_bike), null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)

@@ -393,4 +393,19 @@ class ActivitiesViewModelTest {
         assertTrue(order().drop(before).all { it == listOf("distance", "desc", "road_biking") })
         assertEquals(before + 3, ridesRequests().size)
     }
+
+    // Spec 018 AC4: without the backend the training log shows the rows saved for the same request
+    @Test
+    fun withoutTheBackendTheLogShowsItsSavedRows() = runTest(dispatcher) {
+        backend.on("GET /api/riders", json(rider))
+        backend.on("GET /api/riders/5/rides", page(1..3, totalRows = 3))
+        val online = viewModel().settled()
+
+        backend.goOffline()
+        val offline = viewModel().settled()
+
+        assertEquals(online.rows, offline.rows)
+        assertEquals(online.totals, offline.totals)
+        assertNull(offline.error)
+    }
 }

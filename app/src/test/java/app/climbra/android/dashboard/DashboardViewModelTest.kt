@@ -14,9 +14,9 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -375,5 +376,22 @@ class DashboardViewModelTest {
         val end = System.currentTimeMillis() + 5_000
         while (!check() && System.currentTimeMillis() < end) withContext(Dispatchers.IO) { Thread.sleep(20) }
         assertTrue(check())
+    }
+
+    // Spec 018 AC4: without the backend the dashboard shows the answers saved when it was last loaded
+    @Test
+    fun withoutTheBackendTheDashboardShowsItsSavedData() = runTest(dispatcher) {
+        backend.on("GET /api/riders", json(rider()))
+        backend.on("GET /api/riders/5/training-load", json(trainingLoad()))
+        backend.on("GET /api/riders/5/analyses", json("[${ride(1, "2026-11-06")}]"))
+        val online = viewModel().settled()
+
+        backend.goOffline()
+        val offline = viewModel().settled()
+
+        assertEquals(online.load, offline.load)
+        assertEquals(listOf(1L), offline.rides.map { it.activityId })
+        assertEquals(false, offline.failed)
+        assertNotNull(backend.connectivity.offline.value)
     }
 }

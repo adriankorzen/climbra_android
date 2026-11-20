@@ -1,37 +1,40 @@
 package app.climbra.android.testing
 
-import app.climbra.android.data.api.ActivityApi
-import app.climbra.android.data.api.AuthApi
+import app.climbra.android.activities.RideImport
 import app.climbra.android.coach.CoachActivity
 import app.climbra.android.coach.CoachQuotaRepository
-import app.climbra.android.data.api.CalendarApi
-import app.climbra.android.activities.RideImport
 import app.climbra.android.coach.RideFileSource
+import app.climbra.android.data.api.ActivityApi
+import app.climbra.android.data.api.AuthApi
+import app.climbra.android.data.api.CalendarApi
 import app.climbra.android.data.api.CoachApi
-import app.climbra.android.data.api.ImportApi
-import app.climbra.android.data.api.GarminApi
 import app.climbra.android.data.api.FeedbackApi
-import app.climbra.android.garmin.GarminSync
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import app.climbra.android.data.api.GarminApi
+import app.climbra.android.data.api.ImportApi
 import app.climbra.android.data.api.ProfileApi
 import app.climbra.android.data.api.RiderApi
 import app.climbra.android.data.net.ByteCipher
+import app.climbra.android.data.net.Connectivity
 import app.climbra.android.data.net.CookieStore
 import app.climbra.android.data.net.EncryptedFileCookieStore
 import app.climbra.android.data.net.Network
+import app.climbra.android.data.net.OfflineCache
+import app.climbra.android.data.net.OfflineInterceptor
 import app.climbra.android.data.net.PersistentCookieJar
 import app.climbra.android.data.net.SessionEvents
-import app.climbra.android.session.AppLocales
+import app.climbra.android.garmin.GarminSync
 import app.climbra.android.intervals.IntervalsSync
 import app.climbra.android.rider.DataChanges
+import app.climbra.android.session.AppLocales
 import app.climbra.android.session.SessionRepository
 import java.io.Closeable
-import java.time.Clock
 import java.io.File
-import kotlin.io.path.createTempDirectory
+import java.time.Clock
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.io.path.createTempDirectory
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -53,9 +56,13 @@ class TestBackend(
         start()
     }
     val events = SessionEvents()
+    /** The answers read offline (spec 018), with the XOR stand-in for the Keystore. */
+    val offlineDir: File = createTempDirectory("offline").toFile()
+    val offlineCache = OfflineCache(offlineDir, XorCipher)
+    val connectivity = Connectivity()
     val store: CookieStore = EncryptedFileCookieStore(cookieFile, XorCipher)
     val cookies = PersistentCookieJar(store)
-    val client = Network.okHttpClient(cookies, events)
+    val client = Network.okHttpClient(cookies, events, OfflineInterceptor(offlineCache, connectivity))
     private val retrofit = Network.retrofit(server.url("/").toString(), client)
     val api: AuthApi = retrofit.create(AuthApi::class.java)
     val riderApi: RiderApi = retrofit.create(RiderApi::class.java)
@@ -73,7 +80,7 @@ class TestBackend(
     private val routes = mutableMapOf<String, ArrayDeque<MockResponse>>()
     private var csrfTokens = 0
 
-    fun session(scope: CoroutineScope) = SessionRepository(api, cookies, events, locales, scope)
+    fun session(scope: CoroutineScope) = SessionRepository(api, cookies, events, locales, scope, offlineCache, connectivity)
 
     fun quotas(session: SessionRepository, scope: CoroutineScope) = CoachQuotaRepository(coachApi, session, scope)
 
@@ -143,8 +150,14 @@ class TestBackend(
         return problem(404, null)
     }
 
+    /** The backend can no longer be reached: requests fail as without a network (spec 018). */
+    fun goOffline() {
+        server.close()
+    }
+
     override fun close() {
         server.close()
+        offlineDir.deleteRecursively()
     }
 
     companion object {
