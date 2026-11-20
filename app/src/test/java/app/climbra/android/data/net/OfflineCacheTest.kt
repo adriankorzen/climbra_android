@@ -135,6 +135,20 @@ class OfflineCacheTest {
         assertNotNull(backend.connectivity.offline.value)
     }
 
+    // AC3: a login answers with the account, and the app asks for nothing else before its next start
+    @Test
+    fun afterALoginTheNextStartWithoutTheBackendOpensTheShell() = runTest(UnconfinedTestDispatcher()) {
+        val session = backend.session(backgroundScope)
+        backend.on("POST /api/auth/login", json(account(), 200, SESSION_COOKIE))
+        assertNull(session.login("anna@example.com", "secret"))
+        assertTrue(backend.requests("GET /api/auth/me").isEmpty())
+
+        backend.goOffline()
+        session.start()
+
+        assertEquals("anna@example.com", (session.state.value as SessionState.LoggedIn).account.email)
+    }
+
     // AC3
     @Test
     fun startingWithoutTheBackendAndNoSavedAccountIsUnavailable() = runTest(UnconfinedTestDispatcher()) {

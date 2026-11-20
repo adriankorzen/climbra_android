@@ -18,14 +18,12 @@ spec in `../cyclingapp/specs/` first). Updated on 2026-11-20.
   accept / reject, "Replace in plan" (008); a single ride upload, several files and a ZIP, a duplicate, and sharing a
   `.fit` from a file manager ("Share", "Open with"), also while logged out (009); sending feedback (010); the Garmin
   sync on an admin account, from the profile and by a pull (011); sorting and the sport filter of the training log (012); registering and resetting the password against the production backend, where Turnstile is on (013); a large export (a Garmin account export) with the app in the background and the screen off, Stop and a paused import (014); the month view on a tablet or in landscape (015). Sharing is not covered by the automated tests.
-
-- **Manual test of spec 019** on a tablet emulator (or the phone rotated) against the local backend: the rail, a
-  ride, a conversation and a calendar workout next to their lists, rotating with an item chosen, deleting the ride
-  shown. The detail pane's Hilt ViewModels were only checked by the build, not on a device.
-- **Manual test of spec 018** on the emulator: load the dashboard, the log, a ride and the calendar, then turn on
-  airplane mode (and stop the backend): the banner, the saved data, the disabled actions, a start of the app offline;
-  airplane mode off: the banner goes and the screens load again. The Keystore key of the saved answers and the
-  network callback are not covered by the automated tests.
+- **Manual test of spec 019, rest**: checked on the phone emulator rotated (914 dp: rail, the training log's two
+  panes, the chosen ride kept from two panes to one), on 2026-11-20. Left: the coach's two panes and the calendar's
+  (≥ 1200 dp, a tablet emulator), deleting the ride shown.
+- **Manual test of spec 018, rest**: checked on the emulator on 2026-11-20 (start offline after a login, the banner,
+  saved dashboard, log and ride, the disabled actions, Retry back online). Left: the network callback (airplane mode
+  on a device without `adb reverse`), the calendar offline.
 
 ## Not on the web either
 

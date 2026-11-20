@@ -32,9 +32,18 @@ class OfflineCache(
     private val now: () -> Instant = Instant::now,
 ) {
 
+    fun save(url: HttpUrl, body: ByteArray, contentType: String?) = save(key(url), body, contentType)
+
+    /**
+     * The account a login or a change returned, as the answer of `GET /api/auth/me`: a login answers with it, so the
+     * app never asks for it before its next start, which may be offline.
+     */
+    fun saveAccount(json: String) = save(key(ACCOUNT_PATH, null), json.encodeToByteArray(), "application/json")
+
     @Synchronized
-    fun save(url: HttpUrl, body: ByteArray, contentType: String?) {
+    private fun save(key: String, body: ByteArray, contentType: String?) {
         dir.mkdirs()
+        val file = file(key)
         val plain = ByteArrayOutputStream().also { bytes ->
             DataOutputStream(bytes).use { out ->
                 out.writeLong(now().toEpochMilli())
@@ -42,7 +51,6 @@ class OfflineCache(
                 out.write(body)
             }
         }.toByteArray()
-        val file = file(url)
         val temporary = File(dir, file.name + ".tmp")
         try {
             temporary.writeBytes(cipher.encrypt(plain))
@@ -95,15 +103,21 @@ class OfflineCache(
         }
     }
 
-    /** Method, path and query; the host is the app's one backend. */
-    private fun file(url: HttpUrl): File {
-        val key = "GET ${url.encodedPath}?${url.encodedQuery.orEmpty()}"
+    private fun file(url: HttpUrl): File = file(key(url))
+
+    private fun file(key: String): File {
         val hash = MessageDigest.getInstance("SHA-256").digest(key.encodeToByteArray()).joinToString("") { "%02x".format(it) }
         return File(dir, hash + SUFFIX)
     }
 
+    /** Method, path and query; the host is the app's one backend. */
+    private fun key(url: HttpUrl) = key(url.encodedPath, url.encodedQuery)
+
+    private fun key(path: String, query: String?) = "GET $path?${query.orEmpty()}"
+
     companion object {
         const val MAX_BYTES = 50L * 1024 * 1024
+        private const val ACCOUNT_PATH = "/api/auth/me"
         private const val SUFFIX = ".bin"
         private const val LOG_TAG = "OfflineCache"
 

@@ -95,7 +95,9 @@ None. Only the existing `GET` endpoints above. They need no cache headers, becau
   of the shown data) and `reloads`. The interceptor sets it, and `di.AppModule` registers the network callback.
 - The manifest gains `ACCESS_NETWORK_STATE` for the network callback.
 - `SessionRepository`: clears `OfflineCache` and `Connectivity` wherever it clears the cookies, and after a login
-  (email or Google).
+  (email or Google). It saves the account it shows (after a start, a login, a change of language) as the answer of
+  `GET /api/auth/me` (`OfflineCache.saveAccount`): a login answers with the account, so the app would otherwise not
+  ask for it before its next start, which may be offline.
 - No DTO changes.
 
 ## Acceptance criteria

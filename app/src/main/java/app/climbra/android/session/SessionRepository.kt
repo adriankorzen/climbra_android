@@ -163,7 +163,9 @@ class SessionRepository(
         connectivity?.reset()
     }
 
+    /** The account shown is the one a start offline opens with (spec 018), also after a login or a change. */
     private fun signedIn(account: AccountResponse) {
+        offline?.saveAccount(Network.json.encodeToString(AccountResponse.serializer(), account))
         locales.useAccountLanguage(account.language)
         mutableState.value =
             if (account.termsAccepted) SessionState.LoggedIn(account) else SessionState.NeedsTerms(account)

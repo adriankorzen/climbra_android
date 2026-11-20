@@ -536,6 +536,7 @@ class ActivitiesScreensTest {
             }
         }
 
+        compose.onNodeWithTag("ask-coach").assertIsNotEnabled()
         compose.onNodeWithTag("ride-menu").performClick()
         compose.onNodeWithTag("action-reanalyse").assertIsNotEnabled()
         compose.onNodeWithTag("action-download").assertIsNotEnabled()

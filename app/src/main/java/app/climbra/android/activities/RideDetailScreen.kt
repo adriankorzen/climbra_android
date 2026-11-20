@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -186,8 +187,13 @@ fun RideDetailScreen(
                                 modifier = Modifier.testTag("action-download"),
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.activity_delete), color = MaterialTheme.colorScheme.error) },
-                                leadingIcon = { Icon(painterResource(R.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error) },
+                                text = { Text(stringResource(R.string.activity_delete)) },
+                                leadingIcon = { Icon(painterResource(R.drawable.ic_delete), null) },
+                                // Red when it can be used, the menu's disabled color otherwise (offline, spec 018)
+                                colors = MenuDefaults.itemColors(
+                                    textColor = MaterialTheme.colorScheme.error,
+                                    leadingIconColor = MaterialTheme.colorScheme.error,
+                                ),
                                 enabled = !state.deleting && !offline,
                                 onClick = {
                                     menu = false

@@ -55,6 +55,8 @@ fun RideCoachButton(state: AskCoachState, actions: RideCoachActions) {
     val conversation = state.conversationId
     FilledTonalButton(
         onClick = { if (state.canContinue && conversation != null) actions.onOpenConversation(conversation) else actions.onAsk() },
+        // The coach is not read offline (spec 018)
+        enabled = !LocalOffline.current,
         modifier = Modifier.testTag(if (state.canContinue) "continue-review" else "ask-coach"),
     ) {
         Icon(painterResource(R.drawable.ic_auto_awesome), null, Modifier.size(18.dp))
