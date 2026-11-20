@@ -1,7 +1,7 @@
 # Backlog
 
 Checks left to do and what is not planned yet. Features move into a spec in `specs/` when taken up (backend work as a
-spec in `../cyclingapp/specs/` first). Updated on 2026-11-19.
+spec in `../cyclingapp/specs/` first). Updated on 2026-11-20.
 
 ## To check
 
@@ -19,10 +19,14 @@ spec in `../cyclingapp/specs/` first). Updated on 2026-11-19.
   `.fit` from a file manager ("Share", "Open with"), also while logged out (009); sending feedback (010); the Garmin
   sync on an admin account, from the profile and by a pull (011); sorting and the sport filter of the training log (012); registering and resetting the password against the production backend, where Turnstile is on (013); a large export (a Garmin account export) with the app in the background and the screen off, Stop and a paused import (014); the month view on a tablet or in landscape (015). Sharing is not covered by the automated tests.
 
+- **Manual test of spec 019** on a tablet emulator (or the phone rotated) against the local backend: the rail, a
+  ride, a conversation and a calendar workout next to their lists, rotating with an item chosen, deleting the ride
+  shown. The detail pane's Hilt ViewModels were only checked by the build, not on a device.
+
 ## Not on the web either
 
 - Editing a ride's name (the backend has no endpoint for it).
 - Push notifications when the coach's answer or an import is ready (the backend has no push).
 - Opening the emails' links (verify the address, set a new password) in the app: needs App Links (spec 013, out of
   scope).
-- Offline cache, tablet two-pane layouts.
+- Offline cache: spec 018 (approved, not implemented yet).

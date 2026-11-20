@@ -3,9 +3,9 @@ package app.climbra.android.activities
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.climbra.android.data.api.ActivityApi
-import app.climbra.android.data.api.Rider
 import app.climbra.android.data.api.RideRow
 import app.climbra.android.data.api.RideTotals
+import app.climbra.android.data.api.Rider
 import app.climbra.android.data.net.ApiError
 import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.Network
@@ -25,14 +25,14 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Period presets of the training log, as the web's `RANGE_PRESETS`; [days] counts today. */
@@ -118,6 +118,9 @@ class ActivitiesViewModel @Inject constructor(
     private var rider: Rider? = null
     private var request: Job? = null
     private var search: Job? = null
+    /** Bumped by changes to rides: shown next to the ride or workout changed (spec 019), the screen loads again. */
+    val dataVersion: StateFlow<Int> get() = changes.version
+
     private var loadedVersion = changes.version.value
 
     /** The text the current rows were asked for. */

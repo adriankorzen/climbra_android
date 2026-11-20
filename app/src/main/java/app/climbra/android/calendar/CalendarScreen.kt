@@ -24,6 +24,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,6 +54,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -60,6 +62,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -70,10 +73,10 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.climbra.android.AppConfig
 import app.climbra.android.R
-import app.climbra.android.coach.AdjustmentArgs
 import app.climbra.android.activities.complianceColor
 import app.climbra.android.activities.sportName
 import app.climbra.android.activities.workoutTypeName
+import app.climbra.android.coach.AdjustmentArgs
 import app.climbra.android.data.api.CalendarRide
 import app.climbra.android.data.api.CalendarWeek
 import app.climbra.android.data.api.CalendarWorkout
@@ -81,7 +84,10 @@ import app.climbra.android.data.api.ComplianceLevel
 import app.climbra.android.data.api.GarminStatus
 import app.climbra.android.data.api.TrainingPlan
 import app.climbra.android.ui.common.ErrorBanner
+import app.climbra.android.ui.common.LocalPaneItem
+import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.common.openWebPage
+import app.climbra.android.ui.common.paneSelected
 import app.climbra.android.ui.common.toUiText
 import app.climbra.android.ui.format.DateStyle
 import app.climbra.android.ui.format.Fmt
@@ -110,6 +116,9 @@ fun CalendarRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onShown() }
+    // A ride or workout changed in the detail pane beside the list (spec 019)
+    val dataVersion by viewModel.dataVersion.collectAsStateWithLifecycle()
+    LaunchedEffect(dataVersion) { viewModel.onShown() }
     CalendarScreen(
         state = state,
         fmt = rememberFmt(),
@@ -491,9 +500,12 @@ fun statusColor(workout: CalendarWorkout): Color = when (workout.status) {
 
 @Composable
 private fun WorkoutTile(workout: CalendarWorkout, dimmed: Boolean, fmt: Fmt, onOpen: () -> Unit) {
+    // The workout shown in the detail pane next to the calendar (spec 019)
+    val selected = workout.selectedInPane()
     OutlinedCard(
-        modifier = Modifier.fillMaxWidth().alpha(if (dimmed) 0.6f else 1f).testTag("workout-${workout.id}"),
+        modifier = Modifier.fillMaxWidth().alpha(if (dimmed) 0.6f else 1f).semantics { this.selected = selected }.testTag("workout-${workout.id}"),
         onClick = onOpen,
+        colors = if (selected) CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer) else CardDefaults.outlinedCardColors(),
     ) {
         Row(Modifier.height(IntrinsicSize.Min)) {
             Box(Modifier.width(4.dp).fillMaxHeight().background(statusColor(workout)))
@@ -518,7 +530,9 @@ private fun WorkoutTile(workout: CalendarWorkout, dimmed: Boolean, fmt: Fmt, onO
 @Composable
 private fun RideRow(ride: CalendarRide, fmt: Fmt, linked: Boolean, onOpen: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(start = if (linked) 12.dp else 0.dp, top = 2.dp, bottom = 2.dp)
+        modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.extraSmall)
+            .paneSelected(ride.selectedInPane(), MaterialTheme.colorScheme.secondaryContainer)
+            .clickable(onClick = onOpen).padding(start = if (linked) 12.dp else 0.dp, top = 2.dp, bottom = 2.dp)
             .testTag("ride-${ride.activityId}"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -640,3 +654,11 @@ private fun WeekPicker(week: LocalDate, onPick: (LocalDate) -> Unit, onDismiss: 
         DatePicker(state = state)
     }
 }
+
+/** The workout is shown in the detail pane next to the calendar (spec 019). */
+@Composable
+internal fun CalendarWorkout.selectedInPane(): Boolean = (LocalPaneItem.current as? PaneItem.Workout)?.id == id
+
+/** The ride is shown in the detail pane next to the calendar (spec 019). */
+@Composable
+internal fun CalendarRide.selectedInPane(): Boolean = (LocalPaneItem.current as? PaneItem.Ride)?.id == activityId

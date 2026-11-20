@@ -23,7 +23,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
@@ -32,8 +31,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -56,6 +57,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,6 +68,8 @@ import app.climbra.android.AppConfig
 import app.climbra.android.R
 import app.climbra.android.data.api.CoachConversationSummary
 import app.climbra.android.ui.common.ErrorBanner
+import app.climbra.android.ui.common.LocalPaneItem
+import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.common.openWebPage
 import app.climbra.android.ui.common.toUiText
 import app.climbra.android.ui.format.Fmt
@@ -287,6 +291,7 @@ private fun ConversationRow(
     onDelete: (CoachConversationSummary) -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
+    val selected = (LocalPaneItem.current as? PaneItem.Conversation)?.id == conversation.id
     ListItem(
         headlineContent = { Text(conversation.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
         supportingContent = {
@@ -343,7 +348,9 @@ private fun ConversationRow(
                 }
             }
         },
-        modifier = Modifier.clickable { onOpen(conversation.id) }.testTag("conversation-${conversation.id}"),
+        // The conversation shown in the detail pane next to the list (spec 019)
+        colors = if (selected) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer) else ListItemDefaults.colors(),
+        modifier = Modifier.semantics { this.selected = selected }.clickable { onOpen(conversation.id) }.testTag("conversation-${conversation.id}"),
     )
 }
 

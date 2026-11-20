@@ -3,30 +3,33 @@ package app.climbra.android.activities
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import app.climbra.android.data.api.ActivityDetail
 import app.climbra.android.data.api.ActivityAnalysis
+import app.climbra.android.data.api.ActivityDetail
 import app.climbra.android.data.api.AnalysisResponse
 import app.climbra.android.data.api.CalendarWorkout
 import app.climbra.android.data.api.ComparisonRatio
@@ -38,13 +41,15 @@ import app.climbra.android.data.api.PlannedWorkoutLink
 import app.climbra.android.data.api.PowerMetrics
 import app.climbra.android.data.api.Recording
 import app.climbra.android.data.api.RideRow
-import app.climbra.android.intervals.SyncState
 import app.climbra.android.data.api.RideTotals
 import app.climbra.android.data.api.Samples
 import app.climbra.android.data.api.ThresholdsUsed
 import app.climbra.android.data.api.WorkoutComparison
 import app.climbra.android.data.api.ZoneTime
+import app.climbra.android.intervals.SyncState
 import app.climbra.android.shell.Shell
+import app.climbra.android.ui.common.LocalPaneItem
+import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.format.Fmt
 import app.climbra.android.ui.theme.ClimbraTheme
 import java.time.LocalDate
@@ -495,5 +500,21 @@ class ActivitiesScreensTest {
         showLog { log.copy(rows = emptyList(), totalRows = 0, types = listOf("road_biking", "indoor_cycling"), sport = "indoor_cycling") }
 
         compose.onNodeWithText("No rides of this type in this period.").assertExists()
+    }
+
+    // Spec 019 AC2: the ride shown in the detail pane is highlighted in the list
+    @Test
+    fun theRideShownInThePaneIsSelected() {
+        var item: PaneItem? by mutableStateOf(PaneItem.Ride(3))
+        content {
+            CompositionLocalProvider(LocalPaneItem provides item) {
+                ActivitiesScreen(log, fmt, {}, { _, _ -> }, {}, {}, {}, {}, {})
+            }
+        }
+
+        compose.onNodeWithTag("ride-row-3").assertIsSelected()
+
+        item = PaneItem.Ride(2)
+        compose.onNodeWithTag("ride-row-3").assert(isSelected().not())
     }
 }

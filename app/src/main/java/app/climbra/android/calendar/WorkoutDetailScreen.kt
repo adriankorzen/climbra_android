@@ -26,7 +26,6 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -68,6 +67,7 @@ import app.climbra.android.data.api.CalendarRide
 import app.climbra.android.data.api.CalendarWorkout
 import app.climbra.android.data.api.WorkoutComparison
 import app.climbra.android.data.api.WorkoutStep
+import app.climbra.android.ui.common.DetailBackButton
 import app.climbra.android.ui.common.ErrorBanner
 import app.climbra.android.ui.common.toUiText
 import app.climbra.android.ui.format.DateStyle
@@ -135,11 +135,7 @@ fun WorkoutDetailScreen(state: WorkoutDetailUiState, fmt: Fmt, actions: WorkoutA
         topBar = {
             TopAppBar(
                 title = { Text(workout?.title.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = {
-                    IconButton(onClick = actions.onBack, modifier = Modifier.testTag("workout-back")) {
-                        Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back))
-                    }
-                },
+                navigationIcon = { DetailBackButton(actions.onBack, "workout-back") },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },

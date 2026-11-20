@@ -20,8 +20,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -83,6 +83,7 @@ import app.climbra.android.data.api.CoachMessage
 import app.climbra.android.data.api.ConversationType
 import app.climbra.android.data.api.PendingCoachRequest
 import app.climbra.android.data.api.PlannedWorkout
+import app.climbra.android.ui.common.DetailBackButton
 import app.climbra.android.ui.common.ErrorBanner
 import app.climbra.android.ui.common.openWebPage
 import app.climbra.android.ui.common.toUiText
@@ -286,11 +287,7 @@ private fun ConversationTopBar(conversation: CoachConversation?, actions: Conver
     var menu by remember { mutableStateOf(false) }
     TopAppBar(
         title = { Text(conversation?.title.orEmpty(), maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium) },
-        navigationIcon = {
-            IconButton(onClick = actions.onBack, modifier = Modifier.testTag("conversation-back")) {
-                Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back))
-            }
-        },
+        navigationIcon = { DetailBackButton(actions.onBack, "conversation-back") },
         actions = {
             if (conversation != null) {
                 IconButton(onClick = { menu = true }, modifier = Modifier.testTag("conversation-menu")) {

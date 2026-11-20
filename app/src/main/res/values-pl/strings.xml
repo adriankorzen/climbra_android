@@ -4,6 +4,9 @@
     <string name="nav_dashboard">Pulpit</string>
     <string name="nav_activities">Aktywności</string>
     <string name="nav_profile">Profil</string>
+    <string name="pane_choose_ride">Wybierz przejazd</string>
+    <string name="pane_choose_conversation">Wybierz rozmowę</string>
+    <string name="pane_choose_calendar_item">Wybierz trening lub przejazd</string>
 
     <!-- Login (web: auth.login.*, auth.*) -->
     <string name="login_title">Logowanie</string>

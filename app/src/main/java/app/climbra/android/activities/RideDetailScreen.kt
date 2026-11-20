@@ -53,6 +53,7 @@ import app.climbra.android.coach.RideCoachButton
 import app.climbra.android.coach.RideCoachCard
 import app.climbra.android.dashboard.KpiTile
 import app.climbra.android.data.api.AnalysisResponse
+import app.climbra.android.ui.common.DetailBackButton
 import app.climbra.android.ui.common.ErrorBanner
 import app.climbra.android.ui.common.toUiText
 import app.climbra.android.ui.format.DateStyle
@@ -153,11 +154,7 @@ fun RideDetailScreen(
         topBar = {
             TopAppBar(
                 title = { Text(if (activity != null) title else "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = {
-                    IconButton(onClick = onBack, modifier = Modifier.testTag("ride-back")) {
-                        Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back))
-                    }
-                },
+                navigationIcon = { DetailBackButton(onBack, "ride-back") },
                 actions = {
                     if (activity != null) {
                         IconButton(onClick = { menu = true }, modifier = Modifier.testTag("ride-menu")) {

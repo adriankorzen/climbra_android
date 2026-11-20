@@ -68,10 +68,15 @@ them under "Backend dependencies" by number.
 - MVVM: Compose screens → `@HiltViewModel` exposing `StateFlow<UiState>` → repositories → Retrofit services.
   Screens are split into a `…Route` (gets the ViewModel) and a stateless `…Screen` (state + callbacks) that tests render.
 - `SessionRepository.state` decides the top-level screen in `app.ClimbraContent` (login, terms, shell), so a session
-  end leaves no back stack. The shell (`shell.Shell`) is a `NavigationBar`; each tab is a nested graph with type-safe
+  end leaves no back stack. The shell (`shell.Shell`) has a navigation bar or rail; each tab is a nested graph with type-safe
   routes (a ride opens on the stack of its tab, spec 003); screens navigate through `shell.ShellNavigator` (a coach
   conversation always opens on the Coach tab, above its list, spec 006). After a change to rides (delete, reanalyse, link) call
   `rider.DataChanges.changed()`: screens that show rides load again when shown.
+- Large screens (spec 019): the shell is a `NavigationSuiteScaffold` (bar below 600 dp, rail from it). From 840 dp
+  (training log, coach) and 1200 dp (calendar) the tab's start screen shows the chosen item next to its list
+  (`shell.ShellPanes`); `ShellNavigator` puts rides, workouts and conversations there instead of on the stack. The
+  item (`ui.common.PaneItem`) lives in the start entry's `SavedStateHandle`, the pane's ViewModels in a store of their
+  own with the item's arguments (`ui.common.PaneViewModels`), so detail ViewModels keep reading `SavedStateHandle`.
 - Hilt for DI (`di.AppModule`), Retrofit + OkHttp + kotlinx.serialization, Navigation Compose. Vico for charts
   (from the first spec that needs one).
 - AI coach (spec 006): `coach.CoachQuotaRepository` (the AI credits, one for the app) and `coach.CoachActivity`
