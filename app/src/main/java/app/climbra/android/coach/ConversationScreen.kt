@@ -83,6 +83,7 @@ import app.climbra.android.data.api.CoachMessage
 import app.climbra.android.data.api.ConversationType
 import app.climbra.android.data.api.PendingCoachRequest
 import app.climbra.android.data.api.PlannedWorkout
+import app.climbra.android.push.AndroidPushNotifier
 import app.climbra.android.ui.common.DetailBackButton
 import app.climbra.android.ui.common.ErrorBanner
 import app.climbra.android.ui.common.openWebPage
@@ -111,6 +112,8 @@ fun ConversationRoute(
     val context = LocalContext.current
     LifecycleStartEffect(viewModel) {
         viewModel.setShown(true)
+        // Its notification is read (spec 020)
+        AndroidPushNotifier.clearConversation(context, viewModel.id)
         onStopOrDispose { viewModel.setShown(false) }
     }
     LaunchedEffect(state.deleted) {

@@ -546,7 +546,7 @@ internal fun GarminSyncCard(state: ProfileUiState, actions: ProfileActions) {
 
 /** The account (spec 004), with the feedback form (spec 010). */
 @Composable
-internal fun AccountCard(state: ProfileUiState, fmt: Fmt, actions: ProfileActions) {
+internal fun AccountCard(state: ProfileUiState, fmt: Fmt, actions: ProfileActions, notificationsOn: Boolean? = null) {
     val account = state.account ?: return
     ProfileCard(stringResource(R.string.account_title), "profile-account") {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -580,6 +580,19 @@ internal fun AccountCard(state: ProfileUiState, fmt: Fmt, actions: ProfileAction
             }
             TextButton(onClick = actions::openPrivacy, modifier = Modifier.testTag("account-privacy")) {
                 Text(stringResource(R.string.terms_open_privacy))
+            }
+        }
+
+        // Spec 020: the system's settings decide; the row only shows and opens them
+        if (notificationsOn != null) {
+            Text(stringResource(R.string.push_profile_title), style = MaterialTheme.typography.titleSmall)
+            Faint(
+                stringResource(if (notificationsOn) R.string.push_profile_on else R.string.push_profile_off),
+                Modifier.testTag("account-notifications-state"),
+            )
+            OutlinedButton(onClick = actions::openNotificationSettings, modifier = Modifier.testTag("account-notifications")) {
+                Icon(painterResource(R.drawable.ic_notifications), contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(stringResource(R.string.push_profile_open), modifier = Modifier.padding(start = 8.dp))
             }
         }
 

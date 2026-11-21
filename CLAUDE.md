@@ -100,6 +100,12 @@ them under "Backend dependencies" by number.
   that send something). A new screen that reads data offline adds its `GET` to that list; one with such actions
   disables them with `LocalOffline` and shows `OfflineNote`. `SessionRepository` deletes the saved answers with the
   cookies. `TestBackend.goOffline()` makes the backend unreachable in tests.
+- Push (spec 020): Firebase is set up in `ClimbraApplication` from `BuildConfig` (`climbra.firebase.*`, no
+  `google-services.json`; `AppConfig.pushEnabled`). `push.PushTokens` (app-scoped) sends the FCM token after a login
+  and removes it in `SessionRepository.logout`'s `beforeLogout`; `push.PushMessages` drops other accounts' pushes,
+  reloads in the foreground (`app.AppForeground`), else `PushNotifier` shows one; a tap goes through `push.PushTargets`
+  to the shell. Email links (spec 021): App Links of `climbra.app` → `auth.EmailLinks` → the logged-out screens or
+  `auth.SignedInEmailLinks` above the shell.
 - Packages by feature (`auth`, `profile`, `shell`, `dashboard`, `activities`, `calendar`, `coach`, …) plus `data/` (network, DTOs),
   `session/` and `ui/` (theme, shared components).
 - Theme (`ui.theme`): Material 3 colors from the web tokens in `../cyclingapp/frontend/src/styles.scss` (light + dark),

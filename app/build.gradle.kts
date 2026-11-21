@@ -55,6 +55,15 @@ android {
         val googleClientId = setting("climbra.googleServerClientId", "")
         buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", googleClientId.quoted())
         buildConfigField("boolean", "GOOGLE_LOGIN_ENABLED", googleClientId.isNotBlank().toString())
+
+        // The Firebase project of the push notifications (spec 020, cyclingapp spec 056), set up in code instead of
+        // google-services.json; without all four there is no Firebase and no notification
+        val firebase = listOf("appId", "apiKey", "projectId", "senderId").associateWith { setting("climbra.firebase.$it", "") }
+        buildConfigField("String", "FIREBASE_APP_ID", firebase.getValue("appId").quoted())
+        buildConfigField("String", "FIREBASE_API_KEY", firebase.getValue("apiKey").quoted())
+        buildConfigField("String", "FIREBASE_PROJECT_ID", firebase.getValue("projectId").quoted())
+        buildConfigField("String", "FIREBASE_SENDER_ID", firebase.getValue("senderId").quoted())
+        buildConfigField("boolean", "PUSH_ENABLED", firebase.values.all { it.isNotBlank() }.toString())
     }
 
     // Without the settings the release build stays unsigned, so a fresh clone and CI on a pull request still build
@@ -143,6 +152,8 @@ dependencies {
     implementation(libs.vico.compose.m3)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.markdown.renderer.m3)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

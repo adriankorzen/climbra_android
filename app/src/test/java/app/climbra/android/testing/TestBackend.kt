@@ -25,6 +25,7 @@ import app.climbra.android.data.net.SessionEvents
 import app.climbra.android.garmin.GarminSync
 import app.climbra.android.intervals.IntervalsSync
 import app.climbra.android.rider.DataChanges
+import app.climbra.android.push.PushApi
 import app.climbra.android.session.AppLocales
 import app.climbra.android.session.SessionRepository
 import java.io.Closeable
@@ -73,6 +74,7 @@ class TestBackend(
     val importApi: ImportApi = retrofit.create(ImportApi::class.java)
     val garminApi: GarminApi = retrofit.create(GarminApi::class.java)
     val feedbackApi: FeedbackApi = retrofit.create(FeedbackApi::class.java)
+    val pushApi: PushApi = retrofit.create(PushApi::class.java)
     val locales = FakeAppLocales()
 
     /** Requests in the order they arrived. */
@@ -80,7 +82,8 @@ class TestBackend(
     private val routes = mutableMapOf<String, ArrayDeque<MockResponse>>()
     private var csrfTokens = 0
 
-    fun session(scope: CoroutineScope) = SessionRepository(api, cookies, events, locales, scope, offlineCache, connectivity)
+    fun session(scope: CoroutineScope, beforeLogout: suspend () -> Unit = {}) =
+        SessionRepository(api, cookies, events, locales, scope, offlineCache, connectivity, beforeLogout)
 
     fun quotas(session: SessionRepository, scope: CoroutineScope) = CoachQuotaRepository(coachApi, session, scope)
 

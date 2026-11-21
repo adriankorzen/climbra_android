@@ -27,6 +27,7 @@ Built spec first: see [`specs/`](specs) and [`CLAUDE.md`](CLAUDE.md).
 | [016](specs/016-garmin-connect-in-the-app.md) | Connecting Garmin Connect in the app: Connect in the profile and in the calendar's "Connect first" dialogs opens the consent (the web's texts and checkbox), Garmin's page in a Custom Tab, the return through `climbra://garmin-connect` completed in the app's session (also after the next login), the outcome in a snackbar; needs cyclingapp spec 055 |
 | [018](specs/018-offline-cache.md) | Reading saved data offline: the dashboard, the training log, rides opened before and the calendar show the backend's last answers when it cannot be reached (also at start with a stored session), with an "Offline · data from …" banner and Retry; actions that send something are disabled meanwhile. The answers are encrypted on the device (at most 50 MB) and deleted when the session ends |
 | [019](specs/019-adaptive-layouts.md) | Large screens: a navigation rail in place of the bottom bar from 600 dp (also a phone in landscape); from 840 dp the training log and the coach show the chosen ride or conversation next to their list, from 1200 dp the calendar its workout or ride next to the week or month; the chosen item is kept when the window changes |
+| [020](specs/020-push-notifications.md) | Push notifications (Firebase Cloud Messaging): when the coach has answered or could not answer, and when an import has finished or failed, also for requests and imports started on the web, while the app is in the background; the tap opens the conversation or the training log. Two notification channels (coach, imports), the permission asked after the first coach request, the profile's "Notifications" row opens the system settings. The message carries only the type and ids. Needs cyclingapp spec 056 and the `climbra.firebase.*` settings |
 | [021](specs/021-email-links-in-the-app.md) | The account emails' links open the app (Android App Links for `climbra.app`): confirming the address with the registration's password logs in, setting a new password, the "account exists" email's login and forgot password; an invalid link asks for a new one. Logged in, a confirm or reset link opens above the shell. Needs cyclingapp spec 057 with the release key's fingerprint |
 
 Registration and the password reset request are the app's screens (spec 013, Turnstile in a WebView); the links in their emails open the app (spec 021) once `climbra.app` lists the app's signing certificate, else the web pages.
@@ -61,6 +62,7 @@ Optional settings in `local.properties` (not committed):
 | `climbra.apiBaseUrl` | Backend of debug builds, default `http://localhost:8080` |
 | `climbra.webBaseUrl` | Web pages of debug builds (register, password reset, terms), default `http://localhost:4200` |
 | `climbra.googleServerClientId` | The backend's Google OAuth **web** client id; without it the Google button is hidden. Google login also needs an OAuth client of type Android (package `app.climbra.android` + the signing key's SHA-1 from `./gradlew signingReport`) in the same Google Cloud project, and the backend with cyclingapp spec 050 |
+| `climbra.firebase.appId`, `climbra.firebase.apiKey`, `climbra.firebase.projectId`, `climbra.firebase.senderId` | The Firebase project of the push notifications (spec 020): from the Android app `app.climbra.android` in the Firebase console (*Project settings*, or its `google-services.json`: `mobilesdk_app_id`, `current_key`, `project_id`, `project_number`). Without all four there is no Firebase and no notification; the backend needs the same project's service account (cyclingapp `deploy/README.md`) |
 
 ## Tests
 
@@ -94,7 +96,8 @@ Publishing: push a tag (`git tag v0.1.0 && git push origin v0.1.0`). `.github/wo
 signed APK and AAB and attaches them, with `mapping.txt`, to a GitHub Release. It needs the repository's secrets
 `CLIMBRA_RELEASE_KEYSTORE_BASE64` (the keystore file in base64), `CLIMBRA_RELEASE_STORE_PASSWORD`,
 `CLIMBRA_RELEASE_KEY_ALIAS` and `CLIMBRA_RELEASE_KEY_PASSWORD`, and optionally the variables
-`CLIMBRA_GOOGLE_SERVER_CLIENT_ID` (Google login) and `CLIMBRA_RELEASE_CERT_SHA256` (the certificate the APK must be
+`CLIMBRA_GOOGLE_SERVER_CLIENT_ID` (Google login), `CLIMBRA_FIREBASE_APP_ID`, `CLIMBRA_FIREBASE_API_KEY`,
+`CLIMBRA_FIREBASE_PROJECT_ID` and `CLIMBRA_FIREBASE_SENDER_ID` (push notifications) and `CLIMBRA_RELEASE_CERT_SHA256` (the certificate the APK must be
 signed with). Google login in a release build also needs an Android OAuth client with the release key's SHA-1.
 
 Keep the keystore and its passwords safe outside the repository: an app signed with a lost key cannot be updated.

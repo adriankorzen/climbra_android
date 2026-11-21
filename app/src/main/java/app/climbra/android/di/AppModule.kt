@@ -10,6 +10,7 @@ import app.climbra.android.activities.MediaStoreFileSaver
 import app.climbra.android.activities.RideImport
 import app.climbra.android.activities.ServiceForegroundImports
 import app.climbra.android.activities.SharedRideFiles
+import app.climbra.android.app.AppForeground
 import app.climbra.android.auth.EmailLinks
 import app.climbra.android.calendar.CalendarRequests
 import app.climbra.android.coach.CoachActivity
@@ -36,6 +37,7 @@ import app.climbra.android.data.net.SessionEvents
 import app.climbra.android.garmin.GarminConnectFlow
 import app.climbra.android.garmin.GarminSync
 import app.climbra.android.intervals.IntervalsSync
+import app.climbra.android.push.PushTokens
 import app.climbra.android.rider.DataChanges
 import app.climbra.android.rider.RiderRepository
 import app.climbra.android.session.AppCompatLocales
@@ -133,7 +135,12 @@ object AppModule {
         scope: CoroutineScope,
         offline: OfflineCache,
         connectivity: Connectivity,
-    ): SessionRepository = SessionRepository(api, cookies, events, locales, scope, offline, connectivity)
+        // Lazy: the push token follows the session (spec 020)
+        pushTokens: dagger.Lazy<PushTokens>,
+    ): SessionRepository = SessionRepository(
+        api, cookies, events, locales, scope, offline, connectivity,
+        beforeLogout = { pushTokens.get().beforeLogout() },
+    )
 
     @Provides
     @Singleton
@@ -192,12 +199,17 @@ object AppModule {
         quotas: CoachQuotaRepository,
         session: SessionRepository,
         scope: CoroutineScope,
-    ): CoachActivity {
-        val foreground = ProcessLifecycleOwner.get().lifecycle.currentStateFlow
+        foreground: AppForeground,
+    ): CoachActivity = CoachActivity(api, quotas, session, foreground.visible, scope)
+
+    /** The app is shown (at least started): polling, and no notification for a push (spec 020). */
+    @Provides
+    @Singleton
+    fun appForeground(scope: CoroutineScope): AppForeground = AppForeground(
+        ProcessLifecycleOwner.get().lifecycle.currentStateFlow
             .map { it.isAtLeast(Lifecycle.State.STARTED) }
-            .stateIn(scope, SharingStarted.Eagerly, false)
-        return CoachActivity(api, quotas, session, foreground, scope)
-    }
+            .stateIn(scope, SharingStarted.Eagerly, false),
+    )
 
     /** One intervals.icu sync for the whole app (spec 007). */
     @Provides

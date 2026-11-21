@@ -6,6 +6,8 @@ data class AppConfig(
     val webBaseUrl: String,
     val googleServerClientId: String,
     val googleLoginEnabled: Boolean,
+    /** A Firebase project is set (spec 020): push notifications and the profile's row for them. */
+    val pushEnabled: Boolean = false,
 ) {
     /** A page of the web app, e.g. `register`. */
     fun webPage(path: String): String = webBaseUrl.trimEnd('/') + "/" + path.trimStart('/')
@@ -16,6 +18,7 @@ data class AppConfig(
             webBaseUrl = BuildConfig.WEB_BASE_URL,
             googleServerClientId = BuildConfig.GOOGLE_SERVER_CLIENT_ID,
             googleLoginEnabled = BuildConfig.GOOGLE_LOGIN_ENABLED,
+            pushEnabled = BuildConfig.PUSH_ENABLED,
         )
     }
 }

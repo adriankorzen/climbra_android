@@ -822,6 +822,22 @@
     <string name="api_error_import_running">An import is already running. Wait until it ends.</string>
     <string name="api_error_import_queue_full">The server is busy with other imports, try again in a minute.</string>
     <!-- Spec 010: feedback (the web's texts) -->
+    <!-- Push notifications (spec 020) -->
+    <string name="push_channel_coach">Coach answers</string>
+    <string name="push_channel_imports">Imports</string>
+    <string name="push_coach_answered_title">The coach has answered</string>
+    <string name="push_coach_answered_text">Open the conversation to read it.</string>
+    <string name="push_coach_failed_title">The coach could not answer</string>
+    <string name="push_coach_failed_text">Open the conversation to try again.</string>
+    <string name="push_import_finished_title">Rides imported</string>
+    <string name="push_import_finished_text">The import has finished. See your rides in the training log.</string>
+    <string name="push_import_failed_title">The import failed</string>
+    <string name="push_import_failed_text">Open the app to see what went wrong.</string>
+    <string name="push_profile_title">Notifications</string>
+    <string name="push_profile_on">On: the app tells you when the coach has answered or an import has finished.</string>
+    <string name="push_profile_off">Off: turn them on in the system settings to know when the coach has answered.</string>
+    <string name="push_profile_open">Notification settings</string>
+
     <string name="feedback_title">Send feedback</string>
     <string name="feedback_open">Send feedback</string>
     <string name="feedback_intro">Tell us what doesn\'t work, what to improve or what is missing. Every message goes to the author of the app.</string>

@@ -56,6 +56,8 @@ class SessionRepository(
     /** The answers saved for offline (spec 018): deleted when the session ends and before a login. */
     private val offline: OfflineCache? = null,
     private val connectivity: Connectivity? = null,
+    /** Runs before a logout ends the session, while it still works: the push token is removed (spec 020). */
+    private val beforeLogout: suspend () -> Unit = {},
 ) {
     private val mutableState = MutableStateFlow<SessionState>(SessionState.Loading)
     val state: StateFlow<SessionState> = mutableState.asStateFlow()
@@ -121,6 +123,7 @@ class SessionRepository(
 
     /** Ends the session on the backend; the cookies are cleared even when that call fails. */
     suspend fun logout() {
+        runCatching { beforeLogout() }
         call { api.logout() }
         endSession(expired = false)
     }

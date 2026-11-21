@@ -45,6 +45,7 @@ import app.climbra.android.coach.AdjustmentArgs
 import app.climbra.android.coach.CoachFinished
 import app.climbra.android.coach.ConversationTab
 import app.climbra.android.data.net.OfflineState
+import app.climbra.android.push.PushTarget
 import app.climbra.android.ui.common.LocalOffline
 import app.climbra.android.ui.common.PaneItem
 import app.climbra.android.ui.common.UiText
@@ -348,6 +349,9 @@ fun Shell(
     /** Saved data is shown (spec 018): a banner with Retry, and actions that send something are disabled. */
     offline: OfflineState? = null,
     onRetryOffline: () -> Unit = {},
+    /** A tapped notification's target (spec 020), opened and taken. */
+    pushTarget: PushTarget? = null,
+    onPushTargetTaken: (PushTarget) -> Unit = {},
 ) {
     val navController = rememberNavController()
     val width = LocalConfiguration.current.screenWidthDp.dp
@@ -374,6 +378,14 @@ fun Shell(
     }
     LaunchedEffect(importRequests) {
         importRequests.collect { navigator.openImport() }
+    }
+    LaunchedEffect(pushTarget) {
+        val target = pushTarget ?: return@LaunchedEffect
+        when (target) {
+            is PushTarget.Conversation -> navigator.openConversation(target.id)
+            PushTarget.TrainingLog -> navigator.openActivities()
+        }
+        onPushTargetTaken(target)
     }
     LaunchedEffect(importNotices) {
         importNotices.collect { notice ->

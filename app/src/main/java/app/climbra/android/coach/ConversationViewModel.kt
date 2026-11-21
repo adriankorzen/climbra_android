@@ -131,7 +131,8 @@ class ConversationViewModel @Inject constructor(
     private val clock: Clock,
 ) : ViewModel() {
 
-    private val id: Long = checkNotNull(savedState.get<Long>("id")) { "A conversation route has an id" }
+    /** The conversation shown; its notification is cleared when it opens (spec 020). */
+    val id: Long = checkNotNull(savedState.get<Long>("id")) { "A conversation route has an id" }
 
     /** The calendar's proposal banner opens the proposal tab (spec 008). */
     private val mutableState = MutableStateFlow(

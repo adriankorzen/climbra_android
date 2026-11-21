@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- A network that comes back retries the backend when offline (spec 018) -->
@@ -101,6 +102,21 @@
             android:name=".activities.ImportService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- Spec 020: FCM's tokens and the backend's data messages -->
+        <service
+            android:name=".push.ClimbraMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Firebase is set up in ClimbraApplication from the build's settings, not from google-services.json -->
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinitprovider"
+            tools:node="remove" />
 
         <!-- Keeps the per-app language on Android 10-12 (Android 13+ stores it in the system) -->
         <service

@@ -69,6 +69,11 @@ class CoachActivity(
     private val channel = Channel<CoachFinished>(Channel.BUFFERED)
     val events: Flow<CoachFinished> = channel.receiveAsFlow()
 
+    private val acceptedChannel = Channel<Unit>(Channel.CONFLATED)
+
+    /** A request was accepted and will be answered in the background: the notification permission is asked (spec 020). */
+    val accepted: Flow<Unit> = acceptedChannel.receiveAsFlow()
+
     private val noticeChannel = Channel<UiText>(Channel.BUFFERED)
 
     /** Short notices of the coach for the shell's snackbar, e.g. that a ride has a review already. */
@@ -112,7 +117,10 @@ class CoachActivity(
 
     /** Follows a conversation whose request was just accepted. */
     fun track(conversation: CoachConversation) {
-        if (conversation.busy) setRunning { it + (conversation.id to conversation.title) }
+        if (conversation.busy) {
+            setRunning { it + (conversation.id to conversation.title) }
+            acceptedChannel.trySend(Unit)
+        }
         changed()
     }
 
