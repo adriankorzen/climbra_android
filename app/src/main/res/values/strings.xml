@@ -885,6 +885,20 @@
     <string name="forgot_submit">Send link</string>
     <string name="forgot_sent">If an account exists for %1$s, we have sent a link to set a new password. It is valid for 1 hour.</string>
     <string name="forgot_back">Back to login</string>
+
+    <!-- Email links in the app (spec 021) -->
+    <string name="verify_title">Confirm email</string>
+    <string name="verify_intro">To confirm your email address, enter the password you chose when you registered. We will log you in right away.</string>
+    <string name="verify_submit">Confirm and log in</string>
+    <string name="verify_wrong_password">This is not the password you chose when you registered. Try again or set a new password.</string>
+    <string name="verify_invalid">This link is invalid, has already been used or has expired. Enter your email to get a new one.</string>
+    <string name="verify_resend">Send a new link</string>
+    <string name="verify_resent">If the account is waiting for confirmation, we have sent a new link. Check your inbox.</string>
+    <string name="reset_title">Set a new password</string>
+    <string name="reset_submit">Save password</string>
+    <string name="reset_done">Your password has been changed and all sessions have been logged out. Log in with the new password.</string>
+    <string name="reset_invalid">This link is invalid, has already been used or has expired.</string>
+    <string name="reset_new_link">Send a new link</string>
     <string name="captcha_unavailable">We could not check that you are not a bot. Check the connection and try again, or use Google login.</string>
     <string name="api_error_captcha_failed">We could not confirm that you are not a bot. Please try again.</string>
     <string name="api_error_email_limit_reached">We can\'t send emails right now. Please try again later or use Google login.</string>

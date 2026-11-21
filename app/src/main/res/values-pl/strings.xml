@@ -892,6 +892,20 @@
     <string name="forgot_submit">Wyślij link</string>
     <string name="forgot_sent">Jeśli istnieje konto dla %1$s, wysłaliśmy link do ustawienia nowego hasła. Jest ważny przez 1 godzinę.</string>
     <string name="forgot_back">Wróć do logowania</string>
+
+    <!-- Email links in the app (spec 021) -->
+    <string name="verify_title">Potwierdzenie adresu e-mail</string>
+    <string name="verify_intro">Aby potwierdzić adres e-mail, wpisz hasło wybrane przy rejestracji. Od razu Cię zalogujemy.</string>
+    <string name="verify_submit">Potwierdź i zaloguj się</string>
+    <string name="verify_wrong_password">To nie jest hasło wybrane przy rejestracji. Spróbuj ponownie albo ustaw nowe hasło.</string>
+    <string name="verify_invalid">Ten link jest nieprawidłowy, został już użyty albo wygasł. Podaj adres e-mail, aby dostać nowy.</string>
+    <string name="verify_resend">Wyślij nowy link</string>
+    <string name="verify_resent">Jeśli konto czeka na potwierdzenie, wysłaliśmy nowy link. Sprawdź skrzynkę.</string>
+    <string name="reset_title">Ustaw nowe hasło</string>
+    <string name="reset_submit">Zapisz hasło</string>
+    <string name="reset_done">Hasło zostało zmienione, a wszystkie sesje wylogowane. Zaloguj się nowym hasłem.</string>
+    <string name="reset_invalid">Ten link jest nieprawidłowy, został już użyty albo wygasł.</string>
+    <string name="reset_new_link">Wyślij nowy link</string>
     <string name="captcha_unavailable">Nie udało się sprawdzić, czy nie jesteś botem. Sprawdź połączenie i spróbuj ponownie albo użyj logowania przez Google.</string>
     <string name="api_error_captcha_failed">Nie potwierdziliśmy, że nie jesteś botem. Spróbuj ponownie.</string>
     <string name="api_error_email_limit_reached">Chwilowo nie możemy wysyłać e-maili. Spróbuj ponownie później albo użyj logowania przez Google.</string>

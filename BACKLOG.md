@@ -1,7 +1,7 @@
 # Backlog
 
 Checks left to do and what is not planned yet. Features move into a spec in `specs/` when taken up (backend work as a
-spec in `../cyclingapp/specs/` first). Updated on 2026-11-20.
+spec in `../cyclingapp/specs/` first). Updated on 2026-11-21.
 
 ## To check
 
@@ -28,6 +28,5 @@ spec in `../cyclingapp/specs/` first). Updated on 2026-11-20.
 ## Not on the web either
 
 - Editing a ride's name (the backend has no endpoint for it).
-- Push notifications when the coach's answer or an import is ready (the backend has no push).
-- Opening the emails' links (verify the address, set a new password) in the app: needs App Links (spec 013, out of
-  scope).
+- Notifications about rides synced from intervals.icu or Garmin: the backend syncs only when asked; needs a
+  background sync there first (spec 020, out of scope).

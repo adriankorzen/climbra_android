@@ -14,6 +14,8 @@ import app.climbra.android.activities.ImportService
 import app.climbra.android.activities.SharedRideFiles
 import app.climbra.android.activities.sharedFiles
 import app.climbra.android.app.AppViewModel
+import app.climbra.android.auth.EmailLinks
+import app.climbra.android.auth.emailLink
 import app.climbra.android.coach.RideFileSource
 import app.climbra.android.garmin.GarminConnectFlow
 import app.climbra.android.garmin.garminConnectState
@@ -43,6 +45,9 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var garminConnect: GarminConnectFlow
 
+    @Inject
+    lateinit var emailLinks: EmailLinks
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().setKeepOnScreenCondition { appViewModel.state.value == SessionState.Loading }
         super.onCreate(savedInstanceState)
@@ -71,6 +76,8 @@ class MainActivity : AppCompatActivity() {
     private fun receive(intent: Intent?) {
         // The end of Garmin Connect's consent (spec 016)
         intent.garminConnectState()?.let { return garminConnect.returned(it) }
+        // The links of the account emails (spec 021)
+        intent.emailLink()?.let { return emailLinks.offer(it) }
         if (intent?.action == ImportService.ACTION_OPEN_IMPORT) sharedRideFiles.openScreen()
         else sharedRideFiles.offer(rideFiles.sharedFiles(intent))
     }

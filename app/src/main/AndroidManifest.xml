@@ -79,6 +79,21 @@
                     android:host="garmin-connect"
                     android:scheme="climbra" />
             </intent-filter>
+
+            <!-- The links of the account emails, verified against climbra.app's assetlinks.json (spec 021) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="climbra.app" />
+                <data android:path="/verify-email" />
+                <data android:path="/reset-password" />
+                <data android:path="/login" />
+                <data android:path="/forgot-password" />
+            </intent-filter>
         </activity>
 
         <!-- Spec 014: keeps a large ride import going while the app is not shown -->

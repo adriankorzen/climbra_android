@@ -36,7 +36,9 @@ import app.climbra.android.activities.RideImport
 import app.climbra.android.activities.SharedRideFiles
 import app.climbra.android.auth.ForgotPasswordRoute
 import app.climbra.android.auth.ForgotPasswordViewModel
+import app.climbra.android.auth.EmailLinks
 import app.climbra.android.auth.LoggedOutContent
+import app.climbra.android.auth.SignedInEmailLinksRoute
 import app.climbra.android.auth.TermsRoute
 import app.climbra.android.calendar.CalendarRequests
 import app.climbra.android.calendar.CalendarRoute
@@ -84,6 +86,8 @@ class AppViewModel @Inject constructor(
     val garminConnect: GarminConnectFlow,
     /** Offline or not (spec 018): the shell's banner. */
     val connectivity: Connectivity,
+    /** The email link the app was opened with (spec 021). */
+    val emailLinks: EmailLinks,
 ) : ViewModel() {
 
     val state: StateFlow<SessionState> = session.state
@@ -112,10 +116,23 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
         state = state,
         onRetry = viewModel::retry,
         login = { loggedOut ->
-            LoggedOutContent(loggedOut, viewModel.config)
+            LoggedOutContent(loggedOut, viewModel.config, viewModel.emailLinks, viewModel.connectivity)
         },
-        terms = { changed -> TermsRoute(documentsChanged = changed, config = viewModel.config) },
+        terms = { changed ->
+            SignedInEmailLinksRoute(viewModel.emailLinks, viewModel.config, viewModel.connectivity, viewModel::accountEmail) {
+                TermsRoute(documentsChanged = changed, config = viewModel.config)
+            }
+        },
         shell = { _ ->
+            SignedInEmailLinksRoute(viewModel.emailLinks, viewModel.config, viewModel.connectivity, viewModel::accountEmail) {
+                ShellContent(viewModel)
+            }
+        },
+    )
+}
+
+@Composable
+private fun ShellContent(viewModel: AppViewModel) {
             val config = viewModel.config
             val context = LocalContext.current
             val coachNavigation: (ShellNavigator) -> CoachNavigation = { nav ->
@@ -224,8 +241,6 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                 offline = viewModel.connectivity.offline.collectAsStateWithLifecycle().value,
                 onRetryOffline = viewModel.connectivity::retry,
             )
-        },
-    )
 }
 
 /**

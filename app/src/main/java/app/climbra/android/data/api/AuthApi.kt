@@ -42,6 +42,14 @@ interface AuthApi {
     @POST("api/auth/password-reset")
     suspend fun requestPasswordReset(@Body request: EmailRequest)
 
+    /** The email link's token and the registration's password; starts a session (spec 021). */
+    @POST("api/auth/verify-email")
+    suspend fun verifyEmail(@Body request: VerifyEmailRequest): AccountResponse
+
+    /** `204`; the backend ends every session of the account (spec 021). */
+    @POST("api/auth/password-reset/confirm")
+    suspend fun confirmPasswordReset(@Body request: PasswordResetConfirmRequest)
+
     /** `204`; the account is read again with [me]. */
     @POST("api/account/accept-terms")
     suspend fun acceptTerms(@Body request: AcceptTermsRequest)
@@ -117,3 +125,11 @@ data class RegisterRequest(
 /** Mirrors `account.AccountRequests.EmailRequest`. */
 @Serializable
 data class EmailRequest(val email: String, val captchaToken: String?)
+
+/** Mirrors `account.AccountRequests.VerifyEmailRequest`. */
+@Serializable
+data class VerifyEmailRequest(val token: String, val password: String)
+
+/** Mirrors `account.AccountRequests.PasswordResetConfirmRequest`. */
+@Serializable
+data class PasswordResetConfirmRequest(val token: String, val password: String)

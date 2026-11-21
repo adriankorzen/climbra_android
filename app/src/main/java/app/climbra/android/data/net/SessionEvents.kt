@@ -40,6 +40,12 @@ class SessionEventsInterceptor(private val events: SessionEvents) : Interceptor 
 
     companion object {
         private const val TERMS_NOT_ACCEPTED = "\"TERMS_NOT_ACCEPTED\""
-        private val LOGIN_PATHS = setOf("/api/auth/login", "/api/auth/google/id-token", "/api/auth/logout")
+        private val LOGIN_PATHS = setOf(
+            "/api/auth/login",
+            "/api/auth/google/id-token",
+            "/api/auth/logout",
+            // A wrong password for the email link (spec 021): a logged-in session must not end
+            "/api/auth/verify-email",
+        )
     }
 }

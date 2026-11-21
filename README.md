@@ -27,8 +27,9 @@ Built spec first: see [`specs/`](specs) and [`CLAUDE.md`](CLAUDE.md).
 | [016](specs/016-garmin-connect-in-the-app.md) | Connecting Garmin Connect in the app: Connect in the profile and in the calendar's "Connect first" dialogs opens the consent (the web's texts and checkbox), Garmin's page in a Custom Tab, the return through `climbra://garmin-connect` completed in the app's session (also after the next login), the outcome in a snackbar; needs cyclingapp spec 055 |
 | [018](specs/018-offline-cache.md) | Reading saved data offline: the dashboard, the training log, rides opened before and the calendar show the backend's last answers when it cannot be reached (also at start with a stored session), with an "Offline · data from …" banner and Retry; actions that send something are disabled meanwhile. The answers are encrypted on the device (at most 50 MB) and deleted when the session ends |
 | [019](specs/019-adaptive-layouts.md) | Large screens: a navigation rail in place of the bottom bar from 600 dp (also a phone in landscape); from 840 dp the training log and the coach show the chosen ride or conversation next to their list, from 1200 dp the calendar its workout or ride next to the week or month; the chosen item is kept when the window changes |
+| [021](specs/021-email-links-in-the-app.md) | The account emails' links open the app (Android App Links for `climbra.app`): confirming the address with the registration's password logs in, setting a new password, the "account exists" email's login and forgot password; an invalid link asks for a new one. Logged in, a confirm or reset link opens above the shell. Needs cyclingapp spec 057 with the release key's fingerprint |
 
-Registration and the password reset request are the app's screens (spec 013, Turnstile in a WebView); the links in their emails (confirming the address, setting a new password) open the web pages.
+Registration and the password reset request are the app's screens (spec 013, Turnstile in a WebView); the links in their emails open the app (spec 021) once `climbra.app` lists the app's signing certificate, else the web pages.
 
 ## Requirements
 
@@ -43,6 +44,15 @@ Registration and the password reset request are the app's screens (spec 013, Tur
 3. `./gradlew installDebug` and open Climbra.
 
 Debug builds use `http://localhost:8080`. Release builds use `https://climbra.app`.
+
+The email links (spec 021) are App Links of `https://climbra.app` in every build. Android verifies them only for a
+build whose certificate `climbra.app/.well-known/assetlinks.json` lists (the release key, cyclingapp spec 057). To try
+them on a debug build, allow them by hand and open the local link's path and token on `https://climbra.app`:
+
+```bash
+adb shell pm set-app-links-user-selection --user cur --package app.climbra.android true climbra.app
+adb shell am start -a android.intent.action.VIEW -d "https://climbra.app/verify-email?token=<token from Mailpit>"
+```
 
 Optional settings in `local.properties` (not committed):
 

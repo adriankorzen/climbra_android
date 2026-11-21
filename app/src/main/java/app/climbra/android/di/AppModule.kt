@@ -10,6 +10,7 @@ import app.climbra.android.activities.MediaStoreFileSaver
 import app.climbra.android.activities.RideImport
 import app.climbra.android.activities.ServiceForegroundImports
 import app.climbra.android.activities.SharedRideFiles
+import app.climbra.android.auth.EmailLinks
 import app.climbra.android.calendar.CalendarRequests
 import app.climbra.android.coach.CoachActivity
 import app.climbra.android.coach.CoachQuotaRepository
@@ -233,6 +234,10 @@ object AppModule {
     @Provides
     @Singleton
     fun sharedRideFiles(): SharedRideFiles = SharedRideFiles()
+
+    @Provides
+    @Singleton
+    fun emailLinks(): EmailLinks = EmailLinks()
 
     @Provides
     @Singleton
