@@ -76,10 +76,8 @@ class PushTokensTest {
         login(session)
 
         val sent = await("PUT /api/push-devices")
-        assertEquals(
-            PushDeviceRequest("token-1", "ANDROID"),
-            Network.json.decodeFromString(PushDeviceRequest.serializer(), bodyOf(sent.single())),
-        )
+        // The JSON as sent: the backend requires the platform (a default value would be left out)
+        assertEquals("""{"token":"token-1","platform":"ANDROID"}""", bodyOf(sent.single()))
 
         tokens.newToken("token-2")
         val again = await("PUT /api/push-devices", count = 2)

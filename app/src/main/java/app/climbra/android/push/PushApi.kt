@@ -19,7 +19,12 @@ interface PushApi {
 
 /** Mirrors `push.PushDeviceRequest`. */
 @Serializable
-data class PushDeviceRequest(val token: String, val platform: String = "ANDROID")
+data class PushDeviceRequest(val token: String, val platform: String) {
+    companion object {
+        /** Sent explicitly: the JSON leaves out default values, and the backend requires the platform. */
+        fun android(token: String) = PushDeviceRequest(token, "ANDROID")
+    }
+}
 
 /** Mirrors `push.PushDeviceRequest.Removal`. */
 @Serializable

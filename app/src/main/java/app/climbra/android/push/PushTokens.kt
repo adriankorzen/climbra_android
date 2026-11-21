@@ -1,5 +1,6 @@
 package app.climbra.android.push
 
+import android.util.Log
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
 import app.climbra.android.session.SessionState
@@ -27,9 +28,12 @@ object NoPushTokens : PushTokenSource {
     override suspend fun delete() = Unit
 }
 
+private const val TAG = "PushTokens"
+
 class FirebasePushTokens : PushTokenSource {
     override suspend fun token(): String? = suspendCancellableCoroutine { continuation ->
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) Log.w(TAG, "No FCM token", task.exception)
             continuation.resume(if (task.isSuccessful) task.result else null)
         }
     }
@@ -73,7 +77,7 @@ class PushTokens(
 
     private suspend fun register(token: String?) {
         if (token == null || offline()) return
-        apiCall(Network.json) { api.register(PushDeviceRequest(token)) }
+        apiCall(Network.json) { api.register(PushDeviceRequest.android(token)) }
     }
 
     /** Before the logout ends the session, at most [LOGOUT_TIMEOUT_MILLIS]; the logout goes on whatever happens. */
