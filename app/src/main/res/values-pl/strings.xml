@@ -827,6 +827,22 @@
     <string name="api_error_import_running">Import już trwa. Poczekaj, aż się skończy.</string>
     <string name="api_error_import_queue_full">Serwer jest zajęty innymi importami, spróbuj za minutę.</string>
     <!-- Spec 010: zgłoszenia (teksty weba) -->
+    <!-- Push notifications (spec 020) -->
+    <string name="push_channel_coach">Odpowiedzi trenera</string>
+    <string name="push_channel_imports">Importy</string>
+    <string name="push_coach_answered_title">Trener odpowiedział</string>
+    <string name="push_coach_answered_text">Otwórz rozmowę, aby przeczytać odpowiedź.</string>
+    <string name="push_coach_failed_title">Trener nie mógł odpowiedzieć</string>
+    <string name="push_coach_failed_text">Otwórz rozmowę, aby spróbować ponownie.</string>
+    <string name="push_import_finished_title">Jazdy zaimportowane</string>
+    <string name="push_import_finished_text">Import się zakończył. Jazdy znajdziesz w dzienniku treningów.</string>
+    <string name="push_import_failed_title">Import się nie udał</string>
+    <string name="push_import_failed_text">Otwórz aplikację, aby zobaczyć, co poszło nie tak.</string>
+    <string name="push_profile_title">Powiadomienia</string>
+    <string name="push_profile_on">Włączone: aplikacja powie Ci, gdy trener odpowie albo import się zakończy.</string>
+    <string name="push_profile_off">Wyłączone: włącz je w ustawieniach systemu, aby wiedzieć, kiedy trener odpowie.</string>
+    <string name="push_profile_open">Ustawienia powiadomień</string>
+
     <string name="feedback_title">Wyślij zgłoszenie</string>
     <string name="feedback_open">Wyślij zgłoszenie</string>
     <string name="feedback_intro">Napisz, co nie działa, co poprawić albo czego brakuje. Każda wiadomość trafia do autora aplikacji.</string>
@@ -892,6 +908,20 @@
     <string name="forgot_submit">Wyślij link</string>
     <string name="forgot_sent">Jeśli istnieje konto dla %1$s, wysłaliśmy link do ustawienia nowego hasła. Jest ważny przez 1 godzinę.</string>
     <string name="forgot_back">Wróć do logowania</string>
+
+    <!-- Email links in the app (spec 021) -->
+    <string name="verify_title">Potwierdzenie adresu e-mail</string>
+    <string name="verify_intro">Aby potwierdzić adres e-mail, wpisz hasło wybrane przy rejestracji. Od razu Cię zalogujemy.</string>
+    <string name="verify_submit">Potwierdź i zaloguj się</string>
+    <string name="verify_wrong_password">To nie jest hasło wybrane przy rejestracji. Spróbuj ponownie albo ustaw nowe hasło.</string>
+    <string name="verify_invalid">Ten link jest nieprawidłowy, został już użyty albo wygasł. Podaj adres e-mail, aby dostać nowy.</string>
+    <string name="verify_resend">Wyślij nowy link</string>
+    <string name="verify_resent">Jeśli konto czeka na potwierdzenie, wysłaliśmy nowy link. Sprawdź skrzynkę.</string>
+    <string name="reset_title">Ustaw nowe hasło</string>
+    <string name="reset_submit">Zapisz hasło</string>
+    <string name="reset_done">Hasło zostało zmienione, a wszystkie sesje wylogowane. Zaloguj się nowym hasłem.</string>
+    <string name="reset_invalid">Ten link jest nieprawidłowy, został już użyty albo wygasł.</string>
+    <string name="reset_new_link">Wyślij nowy link</string>
     <string name="captcha_unavailable">Nie udało się sprawdzić, czy nie jesteś botem. Sprawdź połączenie i spróbuj ponownie albo użyj logowania przez Google.</string>
     <string name="api_error_captcha_failed">Nie potwierdziliśmy, że nie jesteś botem. Spróbuj ponownie.</string>
     <string name="api_error_email_limit_reached">Chwilowo nie możemy wysyłać e-maili. Spróbuj ponownie później albo użyj logowania przez Google.</string>

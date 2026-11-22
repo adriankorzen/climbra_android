@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -36,7 +37,9 @@ import app.climbra.android.activities.RideImport
 import app.climbra.android.activities.SharedRideFiles
 import app.climbra.android.auth.ForgotPasswordRoute
 import app.climbra.android.auth.ForgotPasswordViewModel
+import app.climbra.android.auth.EmailLinks
 import app.climbra.android.auth.LoggedOutContent
+import app.climbra.android.auth.SignedInEmailLinksRoute
 import app.climbra.android.auth.TermsRoute
 import app.climbra.android.calendar.CalendarRequests
 import app.climbra.android.calendar.CalendarRoute
@@ -57,6 +60,9 @@ import app.climbra.android.garmin.GarminSync
 import app.climbra.android.intervals.IntervalsSync
 import app.climbra.android.profile.FeedbackRoute
 import app.climbra.android.profile.ProfileRoute
+import app.climbra.android.push.AskForNotificationsAfterCoach
+import app.climbra.android.push.PushPermissionAsked
+import app.climbra.android.push.PushTargets
 import app.climbra.android.session.SessionRepository
 import app.climbra.android.session.SessionState
 import app.climbra.android.shell.Shell
@@ -84,6 +90,11 @@ class AppViewModel @Inject constructor(
     val garminConnect: GarminConnectFlow,
     /** Offline or not (spec 018): the shell's banner. */
     val connectivity: Connectivity,
+    /** The email link the app was opened with (spec 021). */
+    val emailLinks: EmailLinks,
+    /** A tapped notification's target and the permission asked once (spec 020). */
+    val pushTargets: PushTargets,
+    val pushPermissionAsked: PushPermissionAsked,
 ) : ViewModel() {
 
     val state: StateFlow<SessionState> = session.state
@@ -112,10 +123,26 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
         state = state,
         onRetry = viewModel::retry,
         login = { loggedOut ->
-            LoggedOutContent(loggedOut, viewModel.config)
+            // A notification tapped while logged out opens only the login (spec 020)
+            val pushTarget by viewModel.pushTargets.pending.collectAsStateWithLifecycle()
+            LaunchedEffect(pushTarget) { pushTarget?.let(viewModel.pushTargets::taken) }
+            LoggedOutContent(loggedOut, viewModel.config, viewModel.emailLinks, viewModel.connectivity)
         },
-        terms = { changed -> TermsRoute(documentsChanged = changed, config = viewModel.config) },
+        terms = { changed ->
+            SignedInEmailLinksRoute(viewModel.emailLinks, viewModel.config, viewModel.connectivity, viewModel::accountEmail) {
+                TermsRoute(documentsChanged = changed, config = viewModel.config)
+            }
+        },
         shell = { _ ->
+            SignedInEmailLinksRoute(viewModel.emailLinks, viewModel.config, viewModel.connectivity, viewModel::accountEmail) {
+                ShellContent(viewModel)
+            }
+        },
+    )
+}
+
+@Composable
+private fun ShellContent(viewModel: AppViewModel) {
             val config = viewModel.config
             val context = LocalContext.current
             val coachNavigation: (ShellNavigator) -> CoachNavigation = { nav ->
@@ -128,6 +155,8 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
             }
             // The consent dialog and Garmin's page, asked for by the profile and the calendar (spec 016)
             GarminConnectHost(viewModel.garminConnect)
+            // The notification permission, after the first coach request answered in the background (spec 020)
+            AskForNotificationsAfterCoach(config.pushEnabled, viewModel.coachActivity.accepted, viewModel.pushPermissionAsked)
             Shell(
                 dashboard = { nav ->
                     DashboardRoute(config = config, onOpenRide = nav::openRide, coach = coachNavigation(nav), onOpenCoach = nav::openCoach, onImport = nav::openImport)
@@ -223,9 +252,9 @@ fun ClimbraApp(viewModel: AppViewModel = hiltViewModel()) {
                 importNotices = viewModel.rideImport.notices,
                 offline = viewModel.connectivity.offline.collectAsStateWithLifecycle().value,
                 onRetryOffline = viewModel.connectivity::retry,
+                pushTarget = viewModel.pushTargets.pending.collectAsStateWithLifecycle().value,
+                onPushTargetTaken = viewModel.pushTargets::taken,
             )
-        },
-    )
 }
 
 /**

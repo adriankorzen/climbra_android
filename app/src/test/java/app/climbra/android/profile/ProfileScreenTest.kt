@@ -125,6 +125,7 @@ class ProfileScreenTest {
         override fun logout() { calls += "logout" }
         override fun openFeedback() { calls += "openFeedback" }
         override fun syncGarmin() { calls += "syncGarmin" }
+        override fun openNotificationSettings() { calls += "openNotificationSettings" }
     }
 
     private val actions = Recorder()
@@ -470,6 +471,21 @@ class ProfileScreenTest {
         scrolled("account-feedback").performClick()
 
         assertEquals(listOf("openFeedback"), actions.calls)
+    }
+
+    // Spec 020 AC1, AC8: the notifications row shows the state and opens the system's settings; hidden without Firebase
+    @Test
+    fun theNotificationsRowOpensTheSystemSettings() {
+        var on by mutableStateOf<Boolean?>(null)
+        compose.setContent { ClimbraTheme(darkTheme = false) { ProfileScreen(ready, polish, today, actions, notificationsOn = on) } }
+        tag("account-notifications").assertDoesNotExist()
+
+        on = false
+        scrolled("account-notifications-state").assertTextContains("Off", substring = true)
+        on = true
+        scrolled("account-notifications-state").assertTextContains("On:", substring = true)
+        scrolled("account-notifications").performClick()
+        assertEquals(listOf("openNotificationSettings"), actions.calls)
     }
 
     // Spec 011 AC1, AC2: only an admin sees the Garmin sync; it waits while it runs

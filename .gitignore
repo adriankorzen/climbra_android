@@ -21,3 +21,6 @@ local.properties
 # Release signing (spec 017): never committed
 *.jks
 *.keystore
+
+# Firebase (spec 020): the values go to local.properties, the file is not used
+google-services.json

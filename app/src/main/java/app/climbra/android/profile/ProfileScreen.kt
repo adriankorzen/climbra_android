@@ -23,7 +23,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -36,6 +38,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.climbra.android.push.notificationsEnabled
+import app.climbra.android.push.openAppNotificationSettings
 import app.climbra.android.AppConfig
 import app.climbra.android.R
 import app.climbra.android.data.api.IntervalsThresholds
@@ -83,6 +87,7 @@ interface ProfileActions {
     fun messageShown() {}
     fun openFeedback() {}
     fun syncGarmin() {}
+    fun openNotificationSettings() {}
 }
 
 @Composable
@@ -94,7 +99,12 @@ fun ProfileRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResumed() }
+    // Read again when the rider comes back from the system's settings (spec 020)
+    var notificationsOn by remember { mutableStateOf(notificationsEnabled(context)) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.onResumed()
+        notificationsOn = notificationsEnabled(context)
+    }
     val actions = remember(viewModel, config, context, onOpenFeedback, onForgotPassword) {
         object : ProfileActions {
             override fun refresh() = viewModel.refresh()
@@ -130,15 +140,29 @@ fun ProfileRoute(
             override fun messageShown() = viewModel.messageShown()
             override fun openFeedback() = onOpenFeedback()
             override fun syncGarmin() = viewModel.syncGarmin()
+            override fun openNotificationSettings() = openAppNotificationSettings(context)
         }
     }
-    ProfileScreen(state = state, fmt = rememberFmt(), today = viewModel.today(), actions = actions)
+    ProfileScreen(
+        state = state,
+        fmt = rememberFmt(),
+        today = viewModel.today(),
+        actions = actions,
+        notificationsOn = notificationsOn.takeIf { config.pushEnabled },
+    )
 }
 
 /** The profile of the web app (`profile-page`): the sections in its order, pairs side by side on wide screens. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(state: ProfileUiState, fmt: Fmt, today: LocalDate, actions: ProfileActions) {
+fun ProfileScreen(
+    state: ProfileUiState,
+    fmt: Fmt,
+    today: LocalDate,
+    actions: ProfileActions,
+    /** The notifications are on (spec 020); `null` hides the row (no Firebase in the build). */
+    notificationsOn: Boolean? = null,
+) {
     val snackbar = remember { SnackbarHostState() }
     val message = state.message?.resolve()
     LaunchedEffect(message) {
@@ -183,7 +207,7 @@ fun ProfileScreen(state: ProfileUiState, fmt: Fmt, today: LocalDate, actions: Pr
                         GarminCard(state, fmt, actions)
                     }
                     GarminSyncCard(state, actions)
-                    AccountCard(state, fmt, actions)
+                    AccountCard(state, fmt, actions, notificationsOn)
                     OutlinedButton(onClick = actions::logout, modifier = Modifier.testTag("profile-logout")) {
                         Icon(painterResource(R.drawable.ic_logout), contentDescription = null, modifier = Modifier.size(18.dp))
                         Text(stringResource(R.string.logout), modifier = Modifier.padding(start = 8.dp))
