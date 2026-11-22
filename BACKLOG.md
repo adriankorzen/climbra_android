@@ -13,8 +13,8 @@ spec in `../cyclingapp/specs/` first). Updated on 2026-11-21.
 - **Specs 020 and 021, rest:** done on 2026-11-21: the Firebase project `climbraapp-dc05a` and its service account,
   `climbra.firebase.*` and the `CLIMBRA_FIREBASE_*` variables, and on the emulator against the local backend with FCM:
   the token stored at login and removed at logout, an import's notification in the background (none in the
-  foreground), its tap opening the training log. Left: `FCM_*` on the server (or `fcm_*` in `terraform.tfvars`) and
-  the backend's deploy, which moves the legal documents to 2026-11-21 (everyone accepts them again); the permission
+  foreground), its tap opening the training log; `FCM_*` on the server and the backend deployed (legal documents
+  2026-11-21) on 2026-11-22. Left: the permission
   asked after the first coach request, a coach answer's notification opening the conversation, the profile's row.
   The App Links are verified (`climbra.app: verified` on the emulator with the release APK, Google's checker lists the
   key, `/verify-email` opens the app); left: the four links logged in.
