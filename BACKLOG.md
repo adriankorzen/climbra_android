@@ -5,18 +5,19 @@ spec in `../cyclingapp/specs/` first). Updated on 2026-11-21.
 
 ## To check
 
-- **Spec 017, first release:** create the release keystore (`keytool`), put it and its passwords in the repository's
-  secrets (README, "Release builds"), add the release key's SHA-1 to an Android OAuth client for Google login, check the
-  first CI run on GitHub, then tag `v0.1.0` and go through the README's smoke test with the signed APK against the
-  production backend (the release build was only seen starting to the login screen on the emulator).
+- **Spec 017, first release:** done on 2026-11-22: the release key (SHA-256 `C7:7E:7B:…:BE:76`), the repository's
+  secrets and variables, the Android OAuth client with the release SHA-1, and `v0.1.0` built, signed and published by
+  the release workflow (its APK checked: the signature, versionName 0.1.0, Firebase set up). Left: the README's smoke
+  test of that APK against the production backend (email and Google login, the screens, a coach answer's
+  notification).
 - **Specs 020 and 021, rest:** done on 2026-11-21: the Firebase project `climbraapp-dc05a` and its service account,
   `climbra.firebase.*` and the `CLIMBRA_FIREBASE_*` variables, and on the emulator against the local backend with FCM:
   the token stored at login and removed at logout, an import's notification in the background (none in the
   foreground), its tap opening the training log. Left: `FCM_*` on the server (or `fcm_*` in `terraform.tfvars`) and
   the backend's deploy, which moves the legal documents to 2026-11-21 (everyone accepts them again); the permission
   asked after the first coach request, a coach answer's notification opening the conversation, the profile's row.
-  After the release key exists: its SHA-256 in `ANDROID_CERT_FINGERPRINTS`, Google's assetlinks checker, and the four
-  email links opening the app (also logged in).
+  The App Links are verified (`climbra.app: verified` on the emulator with the release APK, Google's checker lists the
+  key, `/verify-email` opens the app); left: the four links logged in.
 - **Manual test of spec 016** against a backend with cyclingapp spec 055 deployed and `GARMIN_CONNECT_*` set (the
   production one, or a local one with the Developer Portal app): Connect from the profile and from a send in the
   calendar, Garmin's consent in the Custom Tab, the return to the app and its snackbar; refusing in Garmin; closing the
