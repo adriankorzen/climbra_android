@@ -928,7 +928,7 @@ class CoachScreensTest {
                 fmt = fmt,
                 onRefresh = {},
                 onSelectRange = {},
-                onOpenWeb = {},
+                onCreateProfile = {},
                 coach = CoachNavigation(
                     openConversation = { calls += "open $it" },
                     newTrainingBlock = { calls += "block" },

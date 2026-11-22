@@ -378,7 +378,7 @@ fun ImportScreen(state: ImportUiState, fmt: Fmt, actions: ImportActions) {
             state.noRider -> {
                 Text(stringResource(R.string.import_no_rider), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("import-no-rider"))
                 Button(onClick = actions.onOpenProfile, modifier = Modifier.testTag("import-open-profile")) {
-                    Text(stringResource(R.string.import_open_profile))
+                    Text(stringResource(R.string.profile_create))
                 }
             }
             else -> {

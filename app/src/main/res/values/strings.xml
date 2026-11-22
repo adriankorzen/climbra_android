@@ -93,7 +93,7 @@
     <string name="dashboard_empty_hint">You have no rides yet. Import your recent rides from FIT or TCX files to see your training load and analyses.</string>
     <string name="dashboard_open_web">Open climbra.app</string>
     <string name="dashboard_no_rider_title">Create your rider profile</string>
-    <string name="dashboard_no_rider_hint">Your account has no rider profile yet. Create it on climbra.app, then come back here.</string>
+    <string name="dashboard_no_rider_hint">Your account has no rider profile yet. Create it with your name and weight to see your rides, plans and the coach.</string>
     <string name="activity_unnamed">Activity</string>
     <string name="unit_watts">W</string>
     <string name="unit_watts_per_kg">%1$s W/kg</string>
@@ -818,7 +818,6 @@
     <string name="import_unreadable">The file can\'t be read as a ride.</string>
     <string name="import_share_unsupported">Climbra imports FIT, TCX, GZ and ZIP files.</string>
     <string name="import_no_rider">Create your rider profile first: rides are stored for it.</string>
-    <string name="import_open_profile">Open profile</string>
     <string name="api_error_import_running">An import is already running. Wait until it ends.</string>
     <string name="api_error_import_queue_full">The server is busy with other imports, try again in a minute.</string>
     <!-- Spec 010: feedback (the web's texts) -->

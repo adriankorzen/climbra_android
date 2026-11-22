@@ -49,7 +49,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -74,7 +73,7 @@ import app.climbra.android.ui.common.ErrorBanner
 import app.climbra.android.ui.common.LocalOffline
 import app.climbra.android.ui.common.LocalPaneItem
 import app.climbra.android.ui.common.PaneItem
-import app.climbra.android.ui.common.openWebPage
+import app.climbra.android.ui.common.NoRiderCard
 import app.climbra.android.ui.common.paneSelected
 import app.climbra.android.ui.common.toUiText
 import app.climbra.android.ui.format.DateStyle
@@ -91,11 +90,11 @@ fun ActivitiesRoute(
     config: AppConfig,
     onOpenRide: (Long) -> Unit,
     onImport: () -> Unit = {},
+    onCreateProfile: () -> Unit = {},
     viewModel: ActivitiesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val sync by viewModel.sync.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onShown() }
     // A ride or workout changed in the detail pane beside the list (spec 019)
     val dataVersion by viewModel.dataVersion.collectAsStateWithLifecycle()
@@ -110,7 +109,7 @@ fun ActivitiesRoute(
         onLoadMore = viewModel::loadMore,
         onRefresh = viewModel::refresh,
         onOpenRide = onOpenRide,
-        onOpenWeb = { openWebPage(context, config.webPage("")) },
+        onCreateProfile = onCreateProfile,
         onImport = onImport,
         onSort = viewModel::selectSort,
         onSport = viewModel::selectSport,
@@ -129,7 +128,7 @@ fun ActivitiesScreen(
     onLoadMore: () -> Unit,
     onRefresh: () -> Unit,
     onOpenRide: (Long) -> Unit,
-    onOpenWeb: () -> Unit,
+    onCreateProfile: () -> Unit,
     sync: SyncState = SyncState(),
     onImport: () -> Unit = {},
     onSort: (RideColumn) -> Unit = {},
@@ -189,12 +188,7 @@ fun ActivitiesScreen(
             }
             when {
                 state.noRider -> item(key = "no-rider") {
-                    Hint(
-                        stringResource(R.string.dashboard_no_rider_title),
-                        stringResource(R.string.dashboard_no_rider_hint),
-                        onOpenWeb,
-                        "activities-no-rider",
-                    )
+                    NoRiderCard(onCreateProfile, "activities-no-rider")
                 }
                 !state.loading && !state.hasRides -> item(key = "empty-all") {
                     Hint(
