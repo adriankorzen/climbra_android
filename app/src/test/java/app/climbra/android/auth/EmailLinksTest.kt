@@ -93,7 +93,7 @@ class EmailLinksTest {
     }
 
     @Composable
-    private fun loggedOut(link: EmailLink?, taken: MutableList<EmailLink>) = LoggedOutNavigation(
+    private fun LoggedOut(link: EmailLink?, taken: MutableList<EmailLink>) = LoggedOutNavigation(
         link = link,
         onLinkTaken = { taken += it },
         login = { Text("login", Modifier.testTag("slot-login")) },
@@ -108,7 +108,7 @@ class EmailLinksTest {
     fun loggedOutTheLinkOpensItsScreen() {
         val taken = mutableListOf<EmailLink>()
         var link by mutableStateOf<EmailLink?>(null)
-        content { loggedOut(link, taken) }
+        content { LoggedOut(link, taken) }
         compose.onNodeWithTag("slot-login").assertIsDisplayed()
 
         link = EmailLink.Verify("abc")
