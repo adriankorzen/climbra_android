@@ -119,6 +119,9 @@ android {
     }
 }
 
+/** The Android image Robolectric runs the JVM tests on, resolved by Gradle (see `robolectricJars`). */
+val robolectricAndroidAll: Configuration by configurations.creating
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
@@ -164,9 +167,27 @@ dependencies {
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
 
+    robolectricAndroidAll(libs.robolectric.android.all)
+
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+}
+
+/*
+ * Robolectric's Android image comes from Gradle, with its retries and its cache, and Robolectric runs offline:
+ * left to itself it downloads the image in the tests, and one failed download fails every Robolectric class (CI).
+ */
+val robolectricJars = tasks.register<Sync>("robolectricJars") {
+    from(robolectricAndroidAll)
+    into(layout.buildDirectory.dir("robolectric-jars"))
+}
+
+tasks.withType<Test>().configureEach {
+    dependsOn(robolectricJars)
+    val jars = robolectricJars.map { it.destinationDir.absolutePath }
+    systemProperty("robolectric.offline", "true")
+    jvmArgumentProviders.add(CommandLineArgumentProvider { listOf("-Drobolectric.dependency.dir=${jars.get()}") })
 }
