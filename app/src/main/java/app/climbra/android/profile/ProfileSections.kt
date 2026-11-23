@@ -1,5 +1,6 @@
 package app.climbra.android.profile
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +59,8 @@ import app.climbra.android.data.api.ThresholdEntry
 import app.climbra.android.data.api.TrainingZone
 import app.climbra.android.data.api.Zones
 import app.climbra.android.ui.common.ErrorBanner
+import app.climbra.android.ui.common.LocalOffline
+import app.climbra.android.ui.common.OfflineNote
 import app.climbra.android.ui.format.DateStyle
 import app.climbra.android.ui.format.Fmt
 import app.climbra.android.ui.theme.MonoFamily
@@ -66,10 +69,26 @@ import app.climbra.android.ui.theme.extendedColors
 
 /** A titled card of the profile. */
 @Composable
-internal fun ProfileCard(title: String, tag: String, content: @Composable ColumnScope.() -> Unit) {
+internal fun ProfileCard(
+    title: String,
+    tag: String,
+    action: (@Composable () -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     OutlinedCard(modifier = Modifier.fillMaxWidth().testTag(tag)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+            if (action == null) {
+                Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f).semantics { heading() },
+                    )
+                    action()
+                }
+            }
             content()
         }
     }
@@ -113,9 +132,33 @@ private fun Badge(text: String, tag: String) {
 // Rider
 
 @Composable
-internal fun RiderCard(state: ProfileUiState, actions: ProfileActions) {
+internal fun RiderCard(state: ProfileUiState, fmt: Fmt, actions: ProfileActions) {
     val form = state.riderForm
-    ProfileCard(stringResource(R.string.profile_rider), "profile-rider") {
+    val rider = state.rider
+    val offline = LocalOffline.current
+    // Without a rider the form is always open: there is nothing to view or cancel (spec 024)
+    val editing = rider == null || form.editing
+    BackHandler(enabled = rider != null && form.editing && !form.saving) { actions.cancelRider() }
+    ProfileCard(
+        stringResource(R.string.profile_rider),
+        "profile-rider",
+        action = if (editing) null else {
+            {
+                TextButton(onClick = actions::editRider, enabled = !offline, modifier = Modifier.testTag("rider-edit")) {
+                    Icon(painterResource(R.drawable.ic_edit), contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.edit), modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+        },
+    ) {
+        if (rider != null && !form.editing) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Field(stringResource(R.string.profile_name), rider.name, "rider-view-name", Modifier.weight(1f))
+                Field(stringResource(R.string.profile_weight), fmt.num(rider.weightKg, weightDigits(rider.weightKg)), "rider-view-weight")
+                Field(stringResource(R.string.profile_resting_hr), fmt.num(rider.restingHeartRateBpm), "rider-view-resting-hr")
+            }
+            return@ProfileCard
+        }
         OutlinedTextField(
             value = form.name,
             onValueChange = { actions.riderChange(form.copy(name = it)) },
@@ -149,11 +192,23 @@ internal fun RiderCard(state: ProfileUiState, actions: ProfileActions) {
                 modifier = Modifier.testTag("rider-invalid"),
             )
         }
-        Button(onClick = actions::saveRider, enabled = !form.saving, modifier = Modifier.testTag("rider-save")) {
-            Text(stringResource(if (state.noRider) R.string.profile_create else R.string.save))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (rider != null) {
+                OutlinedButton(onClick = actions::cancelRider, enabled = !form.saving, modifier = Modifier.testTag("rider-cancel")) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+            Button(onClick = actions::saveRider, enabled = !form.saving && !offline, modifier = Modifier.testTag("rider-save")) {
+                Text(stringResource(if (rider == null) R.string.profile_create else R.string.save))
+            }
         }
+        OfflineNote()
     }
 }
+
+/** The weight as the rider typed it: up to two decimals, none for a whole number. */
+private fun weightDigits(weight: Double?): Int =
+    weight?.toBigDecimal()?.stripTrailingZeros()?.scale()?.coerceIn(0, 2) ?: 0
 
 // Preferences
 

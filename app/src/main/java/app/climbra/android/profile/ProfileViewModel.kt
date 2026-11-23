@@ -204,7 +204,12 @@ class ProfileViewModel @Inject constructor(
             it.copy(
                 rider = rider,
                 noRider = rider == null,
-                riderForm = if (rider == null) RiderForm() else riderForm(rider),
+                // A reload keeps the fields being edited (spec 024)
+                riderForm = when {
+                    rider == null -> RiderForm()
+                    it.riderForm.editing && it.rider != null -> it.riderForm
+                    else -> riderForm(rider)
+                },
                 thresholds = it.thresholds.copy(loading = rider != null, failed = false),
                 zones = it.zones.copy(loading = rider != null, failed = false),
                 intervals = it.intervals.copy(loading = rider != null, failed = false),
@@ -310,6 +315,18 @@ class ProfileViewModel @Inject constructor(
     // Rider
 
     fun onRiderChange(form: RiderForm) = mutableState.update { it.copy(riderForm = form.copy(invalid = false)) }
+
+    /** Opens the rider's fields with the saved values (spec 024). */
+    fun editRider() = mutableState.update { state ->
+        val rider = state.rider ?: return@update state
+        state.copy(riderForm = riderForm(rider).copy(editing = true))
+    }
+
+    /** Drops the typed values and shows the saved ones. */
+    fun cancelRider() = mutableState.update { state ->
+        val rider = state.rider
+        if (rider == null || state.riderForm.saving) state else state.copy(riderForm = riderForm(rider))
+    }
 
     fun saveRider() {
         val current = state.value

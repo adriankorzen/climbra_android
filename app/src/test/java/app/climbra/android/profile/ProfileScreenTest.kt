@@ -1,5 +1,6 @@
 package app.climbra.android.profile
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -33,6 +34,7 @@ import app.climbra.android.data.api.ThresholdEntry
 import app.climbra.android.data.api.ThresholdValues
 import app.climbra.android.data.api.TrainingZone
 import app.climbra.android.data.api.Zones
+import app.climbra.android.ui.common.LocalOffline
 import app.climbra.android.ui.format.Fmt
 import app.climbra.android.ui.theme.ClimbraTheme
 import app.climbra.android.ui.theme.ThemeMode
@@ -106,6 +108,8 @@ class ProfileScreenTest {
         val calls = mutableListOf<String>()
         override fun retry(section: ProfileSection) { calls += "retry:$section" }
         override fun saveRider() { calls += "saveRider" }
+        override fun editRider() { calls += "editRider" }
+        override fun cancelRider() { calls += "cancelRider" }
         override fun openThresholdForm(entry: ThresholdEntry?) { calls += "openThresholdForm:${entry?.id}" }
         override fun saveThreshold() { calls += "saveThreshold" }
         override fun askDeleteThreshold(entry: ThresholdEntry) { calls += "askDelete:${entry.id}" }
@@ -180,13 +184,75 @@ class ProfileScreenTest {
     // AC2
     @Test
     fun theRiderFormShowsItsFieldsAndRefusesInvalidOnes() {
-        show(ready.copy(riderForm = ready.riderForm.copy(invalid = true)))
+        show(ready.copy(riderForm = ready.riderForm.copy(invalid = true, editing = true)))
 
         tag("rider-name").assertTextContains("Anna")
         tag("rider-weight").assertTextContains("60")
         tag("rider-invalid").assertIsDisplayed()
         tag("rider-save").performClick()
         assertEquals(listOf("saveRider"), actions.calls)
+    }
+
+    // Spec 024 AC1
+    @Test
+    fun theRiderDataIsShownAsTextWithEdit() {
+        show(ready.copy(rider = rider.copy(weightKg = 61.25, restingHeartRateBpm = null)))
+
+        tag("rider-view-name", unmerged = true).assertTextContains("Anna")
+        tag("rider-view-weight", unmerged = true).assertTextContains("61,25")
+        tag("rider-view-resting-hr", unmerged = true).assertTextContains("–")
+        tag("rider-name").assertDoesNotExist()
+        tag("rider-save").assertDoesNotExist()
+        tag("rider-cancel").assertDoesNotExist()
+        tag("rider-edit").assertIsEnabled().performClick()
+        assertEquals(listOf("editRider"), actions.calls)
+    }
+
+    // Spec 024 AC2, AC3
+    @Test
+    fun editingShowsTheFieldsWithCancelAndSave() {
+        show(ready.copy(riderForm = ready.riderForm.copy(editing = true)))
+
+        tag("rider-edit").assertDoesNotExist()
+        tag("rider-view-name", unmerged = true).assertDoesNotExist()
+        tag("rider-name").assertTextContains("Anna")
+        tag("rider-save").assertTextContains("Save")
+        tag("rider-cancel").performClick()
+        assertEquals(listOf("cancelRider"), actions.calls)
+    }
+
+    // Spec 024 AC3
+    @Test
+    fun systemBackWhileEditingCancels() {
+        lateinit var dispatcher: androidx.activity.OnBackPressedDispatcher
+        compose.setContent {
+            dispatcher = androidx.activity.compose.LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            ClimbraTheme(darkTheme = false) {
+                ProfileScreen(ready.copy(riderForm = ready.riderForm.copy(editing = true)), polish, today, actions)
+            }
+        }
+
+        compose.runOnIdle { dispatcher.onBackPressed() }
+        assertEquals(listOf("cancelRider"), actions.calls)
+    }
+
+    // Spec 024 AC7
+    @Test
+    fun offlineTheRiderCannotBeEditedOrSaved() {
+        var editing by mutableStateOf(false)
+        compose.setContent {
+            CompositionLocalProvider(LocalOffline provides true) {
+                ClimbraTheme(darkTheme = false) {
+                    ProfileScreen(ready.copy(riderForm = ready.riderForm.copy(editing = editing)), polish, today, actions)
+                }
+            }
+        }
+
+        tag("rider-edit").assertIsNotEnabled()
+        editing = true
+        tag("rider-save").assertIsNotEnabled()
+        tag("rider-cancel").assertIsEnabled().performClick()
+        assertEquals(listOf("cancelRider"), actions.calls)
     }
 
     // AC3
@@ -196,6 +262,9 @@ class ProfileScreenTest {
 
         tag("profile-title").assertTextContains("Create your profile")
         tag("rider-save").assertTextContains("Create profile")
+        // Spec 024 AC8: nothing to cancel
+        tag("rider-cancel").assertDoesNotExist()
+        tag("rider-edit").assertDoesNotExist()
         tag("profile-thresholds").assertDoesNotExist()
         tag("profile-intervals").assertDoesNotExist()
         scrolled("profile-account").assertIsDisplayed()

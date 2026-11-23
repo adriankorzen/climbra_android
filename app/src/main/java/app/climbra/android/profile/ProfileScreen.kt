@@ -58,6 +58,8 @@ interface ProfileActions {
     fun retry(section: ProfileSection) {}
     fun riderChange(form: RiderForm) {}
     fun saveRider() {}
+    fun editRider() {}
+    fun cancelRider() {}
     fun openThresholdForm(entry: ThresholdEntry?) {}
     fun thresholdChange(form: ThresholdForm) {}
     fun closeThresholdForm() {}
@@ -111,6 +113,8 @@ fun ProfileRoute(
             override fun retry(section: ProfileSection) = viewModel.retry(section)
             override fun riderChange(form: RiderForm) = viewModel.onRiderChange(form)
             override fun saveRider() = viewModel.saveRider()
+            override fun editRider() = viewModel.editRider()
+            override fun cancelRider() = viewModel.cancelRider()
             override fun openThresholdForm(entry: ThresholdEntry?) = viewModel.openThresholdForm(entry)
             override fun thresholdChange(form: ThresholdForm) = viewModel.onThresholdChange(form)
             override fun closeThresholdForm() = viewModel.closeThresholdForm()
@@ -195,7 +199,7 @@ fun ProfileScreen(
                         }
                     }
                     val riderKnown = !state.loading && !state.riderFailed
-                    Pair(wide, { if (riderKnown) RiderCard(state, actions) }, { PreferencesCard(state, actions) })
+                    Pair(wide, { if (riderKnown) RiderCard(state, fmt, actions) }, { PreferencesCard(state, actions) })
                     if (state.rider != null) {
                         Pair(
                             wide,

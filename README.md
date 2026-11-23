@@ -31,6 +31,7 @@ Built spec first: see [`specs/`](specs) and [`CLAUDE.md`](CLAUDE.md).
 | [021](specs/021-email-links-in-the-app.md) | The account emails' links open the app (Android App Links for `climbra.app`): confirming the address with the registration's password logs in, setting a new password, the "account exists" email's login and forgot password; an invalid link asks for a new one. Logged in, a confirm or reset link opens above the shell. Needs cyclingapp spec 057 with the release key's fingerprint |
 | [022](specs/022-rider-profile-from-every-tab.md) | An account without a rider profile: the dashboard, the training log, the calendar, the coach and the import screen show "Create profile", which opens the profile tab with the rider form (no longer the web) |
 | [023](specs/023-workout-chart-step-details.md) | The workout chart (calendar and coach proposals): tapping or dragging over a bar shows its time span, kind, % FTP and the backend's watts above the chart; tapping it again clears it |
+| [024](specs/024-rider-form-edit-mode.md) | The profile's rider data is shown as text with "Edit"; editing opens the fields with "Cancel" (also the system back) and "Save", a reload keeps the typed values, offline editing is disabled (web: cyclingapp spec 058) |
 
 Registration and the password reset request are the app's screens (spec 013, Turnstile in a WebView); the links in their emails open the app (spec 021) once `climbra.app` lists the app's signing certificate, else the web pages.
 
