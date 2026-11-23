@@ -94,7 +94,7 @@
     <string name="dashboard_empty_hint">Nie masz jeszcze żadnych jazd. Zaimportuj ostatnie treningi z plików FIT lub TCX, żeby zobaczyć obciążenie treningowe i analizy.</string>
     <string name="dashboard_open_web">Otwórz climbra.app</string>
     <string name="dashboard_no_rider_title">Utwórz profil kolarza</string>
-    <string name="dashboard_no_rider_hint">Twoje konto nie ma jeszcze profilu kolarza. Utwórz go na climbra.app, a potem wróć tutaj.</string>
+    <string name="dashboard_no_rider_hint">Twoje konto nie ma jeszcze profilu kolarza. Utwórz go, podając imię i wagę, aby zobaczyć jazdy, plany i trenera.</string>
     <string name="activity_unnamed">Aktywność</string>
     <string name="unit_watts">W</string>
     <string name="unit_watts_per_kg">%1$s W/kg</string>
@@ -823,7 +823,6 @@
     <string name="import_unreadable">Nie da się odczytać jazdy z tego pliku.</string>
     <string name="import_share_unsupported">Climbra importuje pliki FIT, TCX, GZ i ZIP.</string>
     <string name="import_no_rider">Najpierw utwórz profil kolarza – to do niego zapisujemy jazdy.</string>
-    <string name="import_open_profile">Otwórz profil</string>
     <string name="api_error_import_running">Import już trwa. Poczekaj, aż się skończy.</string>
     <string name="api_error_import_queue_full">Serwer jest zajęty innymi importami, spróbuj za minutę.</string>
     <!-- Spec 010: zgłoszenia (teksty weba) -->

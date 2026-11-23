@@ -15,6 +15,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -32,6 +39,7 @@ import app.climbra.android.calendar.stepKindName
 import app.climbra.android.data.api.WorkoutBlock
 import app.climbra.android.data.api.WorkoutStep
 import app.climbra.android.ui.format.Fmt
+import app.climbra.android.ui.format.rememberFmt
 import app.climbra.android.ui.theme.MonoFamily
 import app.climbra.android.ui.theme.extendedColors
 
@@ -47,24 +55,80 @@ private fun zoneColor(step: WorkoutStep): Color {
 /** The step profile: each step as wide as its duration and as high as its upper target, in its zone color. */
 @Composable
 fun WorkoutStepChart(blocks: List<WorkoutBlock>, modifier: Modifier = Modifier) {
-    val steps = blocks.flatMap { block -> List(block.repetitions.coerceAtLeast(1)) { block.steps }.flatten() }
-    val colors = steps.map { zoneColor(it) }
+    val steps = remember(blocks) { chartSteps(blocks) }
+    val colors = steps.map { zoneColor(it.step) }
     val axis = MaterialTheme.extendedColors.chartAxis
-    val description = stringResource(R.string.workout_profile)
-    val total = steps.sumOf { it.durationSeconds }.coerceAtLeast(1)
-    val top = (steps.maxOfOrNull { it.powerHighPctFtp } ?: 100).coerceAtLeast(100) * 1.1f
-    Canvas(modifier.testTag("workout-chart").semantics { contentDescription = description }) {
-        var x = 0f
-        steps.forEachIndexed { index, step ->
-            val width = size.width * step.durationSeconds / total
-            val height = size.height * step.powerHighPctFtp / top
-            drawRect(colors[index].copy(alpha = 0.8f), topLeft = Offset(x, size.height - height), size = Size(width, height))
-            x += width
+    val fmt = rememberFmt()
+    val kinds = steps.map { stepKindName(it.step.kind) }
+    val description = stringResource(R.string.workout_profile) + ": " +
+        steps.indices.joinToString("; ") { stepLabel(steps[it], kinds[it], fmt) }
+    val total = steps.lastOrNull()?.end?.coerceAtLeast(1) ?: 1
+    val top = (steps.maxOfOrNull { it.step.powerHighPctFtp } ?: 100).coerceAtLeast(100) * 1.1f
+    // Spec 023: the step under the finger, its figures above the chart
+    var picked by remember(blocks) { mutableStateOf<Int?>(null) }
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            picked?.let { stepLabel(steps[it], kinds[it], fmt) } ?: "",
+            style = MaterialTheme.typography.labelMedium,
+            fontFamily = MonoFamily,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp).testTag("workout-chart-label"),
+        )
+        Canvas(
+            modifier.testTag("workout-chart").semantics { contentDescription = description }
+                .pointerInput(steps) {
+                    detectTapGestures { offset ->
+                        val index = stepAt(steps, offset.x / size.width)
+                        picked = if (index == picked) null else index
+                    }
+                }
+                .pointerInput(steps) {
+                    detectHorizontalDragGestures { change, _ -> picked = stepAt(steps, change.position.x / size.width) }
+                },
+        ) {
+            steps.forEachIndexed { index, chartStep ->
+                val x = size.width * chartStep.start / total
+                val width = size.width * chartStep.step.durationSeconds / total
+                val height = size.height * chartStep.step.powerHighPctFtp / top
+                val alpha = when (picked) {
+                    null -> 0.8f
+                    index -> 1f
+                    else -> 0.35f
+                }
+                drawRect(colors[index].copy(alpha = alpha), topLeft = Offset(x, size.height - height), size = Size(width, height))
+            }
+            // The FTP line
+            val ftp = size.height - size.height * 100f / top
+            drawLine(axis, Offset(0f, ftp), Offset(size.width, ftp), strokeWidth = 1.dp.toPx())
         }
-        // The FTP line
-        val ftp = size.height - size.height * 100f / top
-        drawLine(axis, Offset(0f, ftp), Offset(size.width, ftp), strokeWidth = 1.dp.toPx())
     }
+}
+
+/** A step as drawn: the blocks with their repetitions, one after the other, from [start] to [end] seconds. */
+data class ChartStep(val step: WorkoutStep, val start: Int, val end: Int)
+
+fun chartSteps(blocks: List<WorkoutBlock>): List<ChartStep> {
+    var at = 0
+    return blocks.flatMap { block -> List(block.repetitions.coerceAtLeast(1)) { block.steps }.flatten() }.map { step ->
+        ChartStep(step, at, at + step.durationSeconds).also { at = it.end }
+    }
+}
+
+/** The step whose time span holds [fraction] of the chart's width, `null` outside it. */
+fun stepAt(steps: List<ChartStep>, fraction: Float): Int? {
+    val total = steps.lastOrNull()?.end ?: return null
+    if (fraction < 0f || fraction > 1f || total <= 0) return null
+    val second = fraction * total
+    return steps.indexOfFirst { second >= it.start && second < it.end }.takeIf { it >= 0 } ?: steps.lastIndex
+}
+
+/** As the web's tooltip: the time span, the kind, % FTP and the backend's watts (left out without them). */
+fun stepLabel(chartStep: ChartStep, kind: String, fmt: Fmt): String {
+    val step = chartStep.step
+    val watts = if (step.powerLowWatts != null && step.powerHighWatts != null) " · ${range(step.powerLowWatts, step.powerHighWatts)} W" else ""
+    return "${fmt.duration(chartStep.start)}–${fmt.duration(chartStep.end)} · $kind · " +
+        "${range(step.powerLowPctFtp, step.powerHighPctFtp)}% FTP$watts"
 }
 
 /** The steps with their repetitions, % FTP, the watts of the current FTP and the cadence. */

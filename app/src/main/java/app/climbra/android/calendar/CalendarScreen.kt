@@ -85,6 +85,7 @@ import app.climbra.android.data.api.GarminStatus
 import app.climbra.android.data.api.TrainingPlan
 import app.climbra.android.ui.common.ErrorBanner
 import app.climbra.android.ui.common.LocalOffline
+import app.climbra.android.ui.common.NoRiderCard
 import app.climbra.android.ui.common.LocalPaneItem
 import app.climbra.android.ui.common.OfflineNote
 import app.climbra.android.ui.common.PaneItem
@@ -113,6 +114,7 @@ fun CalendarRoute(
     /** The adjustment form (spec 008) and a proposal on its conversation's proposal tab. */
     onAdjust: (AdjustmentArgs) -> Unit = {},
     onOpenProposal: (Long) -> Unit = {},
+    onCreateProfile: () -> Unit = {},
     viewModel: CalendarViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -138,6 +140,7 @@ fun CalendarRoute(
             onConfirmRemove = viewModel::confirmRemove,
             onDismissSuggestion = viewModel::dismissSuggestion,
             onOpenWeb = { path -> openWebPage(context, config.webPage(path)) },
+            onCreateProfile = onCreateProfile,
             onImportGarmin = viewModel::sendPlanToGarmin,
             onCloseGarminDialog = viewModel::closeGarminDialog,
             onConnectGarmin = viewModel::connectGarmin,
@@ -170,6 +173,8 @@ data class CalendarActions(
     val onDismissSuggestion: (TrainingPlan) -> Unit = {},
     /** A page of the web app, e.g. `calendar?week=2026-11-09`. */
     val onOpenWeb: (String) -> Unit = {},
+    /** No rider profile yet: the Profile tab creates it (spec 022). */
+    val onCreateProfile: () -> Unit = {},
     val onImportGarmin: () -> Unit = {},
     val onCloseGarminDialog: () -> Unit = {},
     /** Connect in the dialog of a send without a connection: the consent dialog (spec 016). */
@@ -343,7 +348,7 @@ internal fun LazyListScope.top(state: CalendarUiState, fmt: Fmt, actions: Calend
         }
     }
     if (state.noRider) {
-        item(key = "no-rider") { NoRider { actions.onOpenWeb("") } }
+        item(key = "no-rider") { NoRiderCard(actions.onCreateProfile, "calendar-no-rider") }
         return false
     }
     val data = state.data ?: return false
@@ -576,17 +581,6 @@ private fun NoPlan(onCreateBlock: () -> Unit) {
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.calendar_create_block))
             }
-        }
-    }
-}
-
-@Composable
-private fun NoRider(onOpenWeb: () -> Unit) {
-    OutlinedCard(Modifier.fillMaxWidth().testTag("calendar-no-rider")) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.dashboard_no_rider_title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.dashboard_no_rider_hint), style = MaterialTheme.typography.bodyMedium)
-            Button(onClick = onOpenWeb) { Text(stringResource(R.string.dashboard_open_web)) }
         }
     }
 }

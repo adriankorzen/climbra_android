@@ -101,7 +101,7 @@ class ActivitiesScreensTest {
     private val texts = mutableListOf<String>()
     private val sorts = mutableListOf<RideColumn>()
     private val sports = mutableListOf<String?>()
-    private var webOpened = 0
+    private var profileOpened = 0
     private var imports = 0
 
     private fun showLog(sync: () -> SyncState = { SyncState() }, state: () -> ActivitiesUiState) = content {
@@ -114,12 +114,22 @@ class ActivitiesScreensTest {
             onLoadMore = {},
             onRefresh = {},
             onOpenRide = { opened += it },
-            onOpenWeb = { webOpened++ },
+            onCreateProfile = { profileOpened++ },
             onImport = { imports++ },
             onSort = { sorts += it },
             onSport = { sports += it },
             sync = sync(),
         )
+    }
+
+    // Spec 022 AC1, AC2: no rider profile: the card opens the profile tab
+    @Test
+    fun withoutARiderTheCardOpensTheProfile() {
+        showLog { log.copy(noRider = true, loading = false) }
+
+        compose.onNodeWithTag("activities-no-rider").assertExists()
+        compose.onNodeWithTag("activities-no-rider-button").performClick()
+        assertEquals(1, profileOpened)
     }
 
     // AC2, AC3

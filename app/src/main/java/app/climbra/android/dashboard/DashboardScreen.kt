@@ -36,7 +36,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -61,7 +60,7 @@ import app.climbra.android.data.api.FormRange
 import app.climbra.android.intervals.SyncProgress
 import app.climbra.android.intervals.SyncState
 import app.climbra.android.ui.common.ErrorBanner
-import app.climbra.android.ui.common.openWebPage
+import app.climbra.android.ui.common.NoRiderCard
 import app.climbra.android.ui.format.DateStyle
 import app.climbra.android.ui.format.Fmt
 import app.climbra.android.ui.format.rememberFmt
@@ -76,11 +75,11 @@ fun DashboardRoute(
     coach: CoachNavigation = CoachNavigation(),
     onOpenCoach: () -> Unit = {},
     onImport: () -> Unit = {},
+    onCreateProfile: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val sync by viewModel.sync.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onShown() }
     // Back online, or rides changed elsewhere while shown (spec 018)
     val dataVersion by viewModel.dataVersion.collectAsStateWithLifecycle()
@@ -91,7 +90,7 @@ fun DashboardRoute(
         fmt = rememberFmt(),
         onRefresh = viewModel::refresh,
         onSelectRange = viewModel::selectRange,
-        onOpenWeb = { openWebPage(context, config.webPage("")) },
+        onCreateProfile = onCreateProfile,
         onOpenRide = onOpenRide,
         coach = coach,
         onOpenCoach = onOpenCoach,
@@ -108,7 +107,7 @@ fun DashboardScreen(
     fmt: Fmt,
     onRefresh: () -> Unit,
     onSelectRange: (Int) -> Unit,
-    onOpenWeb: () -> Unit,
+    onCreateProfile: () -> Unit,
     onOpenRide: (Long) -> Unit = {},
     coach: CoachNavigation = CoachNavigation(),
     onOpenCoach: () -> Unit = {},
@@ -145,12 +144,7 @@ fun DashboardScreen(
                 }
             }
             when {
-                state.noRider -> Hint(
-                    title = stringResource(R.string.dashboard_no_rider_title),
-                    text = stringResource(R.string.dashboard_no_rider_hint),
-                    onClick = onOpenWeb,
-                    tag = "dashboard-no-rider",
-                )
+                state.noRider -> NoRiderCard(onCreateProfile, "dashboard-no-rider")
                 state.rider != null || state.failed -> {
                     Content(state, fmt, onSelectRange, onImport, onOpenRide, syncConnected = sync.connected == true)
                     state.conversations?.let { CoachCard(it, fmt, now, coach, onOpenCoach) }

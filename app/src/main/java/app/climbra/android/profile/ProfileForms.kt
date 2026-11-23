@@ -13,6 +13,8 @@ data class RiderForm(
     /** A save was refused because of the fields. */
     val invalid: Boolean = false,
     val saving: Boolean = false,
+    /** The rider's fields are open for editing (spec 024); without a rider the form is always open. */
+    val editing: Boolean = false,
 ) {
     /** The request, `null` when a field breaks the backend's rules. */
     fun request(): RiderRequest? {

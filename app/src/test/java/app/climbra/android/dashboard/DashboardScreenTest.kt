@@ -12,6 +12,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -76,7 +77,7 @@ class DashboardScreenTest {
     )
 
     private var refreshes = 0
-    private var webOpened = 0
+    private var profileOpened = 0
     private var imports = 0
     private val selectedRanges = mutableListOf<Int>()
 
@@ -87,7 +88,7 @@ class DashboardScreenTest {
                 fmt = fmt,
                 onRefresh = { refreshes++ },
                 onSelectRange = { selectedRanges += it },
-                onOpenWeb = { webOpened++ },
+                onCreateProfile = { profileOpened++ },
                 onImport = { imports++ },
                 sync = sync(),
             )
@@ -237,6 +238,11 @@ class DashboardScreenTest {
         compose.onNodeWithTag("dashboard-no-rider").assertIsDisplayed()
         compose.onNodeWithText("Create your rider profile").assertIsDisplayed()
         compose.onNodeWithTag("kpi-tss").assertDoesNotExist()
+
+        // Spec 022 AC1, AC2: the profile tab creates it, not the web
+        compose.onNodeWithText("Open climbra.app").assertDoesNotExist()
+        compose.onNodeWithTag("dashboard-no-rider-button").assertTextEquals("Create profile").performClick()
+        assertEquals(1, profileOpened)
     }
 
     // Spec 007 AC3: a running sync shows above the content, with its count once known

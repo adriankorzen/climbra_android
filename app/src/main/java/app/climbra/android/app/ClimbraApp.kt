@@ -151,6 +151,7 @@ private fun ShellContent(viewModel: AppViewModel) {
                     newTrainingBlock = nav::newTrainingBlock,
                     reviewFile = nav::reviewFile,
                     openActivities = nav::openActivities,
+                    openProfile = nav::openProfile,
                 )
             }
             // The consent dialog and Garmin's page, asked for by the profile and the calendar (spec 016)
@@ -159,9 +160,9 @@ private fun ShellContent(viewModel: AppViewModel) {
             AskForNotificationsAfterCoach(config.pushEnabled, viewModel.coachActivity.accepted, viewModel.pushPermissionAsked)
             Shell(
                 dashboard = { nav ->
-                    DashboardRoute(config = config, onOpenRide = nav::openRide, coach = coachNavigation(nav), onOpenCoach = nav::openCoach, onImport = nav::openImport)
+                    DashboardRoute(config = config, onOpenRide = nav::openRide, coach = coachNavigation(nav), onOpenCoach = nav::openCoach, onImport = nav::openImport, onCreateProfile = nav::openProfile)
                 },
-                activities = { nav -> ActivitiesRoute(config = config, onOpenRide = nav::openRide, onImport = nav::openImport) },
+                activities = { nav -> ActivitiesRoute(config = config, onOpenRide = nav::openRide, onImport = nav::openImport, onCreateProfile = nav::openProfile) },
                 rideImport = { nav ->
                     ImportRoute(
                         config = config,
@@ -198,6 +199,7 @@ private fun ShellContent(viewModel: AppViewModel) {
                         onNewTrainingBlock = nav::newTrainingBlock,
                         onAdjust = nav::openAdjustment,
                         onOpenProposal = nav::openProposal,
+                        onCreateProfile = nav::openProfile,
                     )
                 },
                 workout = { nav -> WorkoutDetailRoute(onBack = nav::back, onOpenRide = nav::openRide) },

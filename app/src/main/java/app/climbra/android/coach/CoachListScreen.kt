@@ -52,7 +52,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -70,7 +69,7 @@ import app.climbra.android.data.api.CoachConversationSummary
 import app.climbra.android.ui.common.ErrorBanner
 import app.climbra.android.ui.common.LocalPaneItem
 import app.climbra.android.ui.common.PaneItem
-import app.climbra.android.ui.common.openWebPage
+import app.climbra.android.ui.common.NoRiderCard
 import app.climbra.android.ui.common.toUiText
 import app.climbra.android.ui.format.Fmt
 import app.climbra.android.ui.format.rememberFmt
@@ -85,12 +84,13 @@ data class CoachNavigation(
     val reviewFile: () -> Unit = {},
     /** "Review a ride": the Activities tab. */
     val openActivities: () -> Unit = {},
+    /** No rider profile yet: the Profile tab creates it (spec 022). */
+    val openProfile: () -> Unit = {},
 )
 
 @Composable
 fun CoachListRoute(config: AppConfig, navigation: CoachNavigation, viewModel: CoachListViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     CoachListScreen(
         state = state,
         fmt = rememberFmt(),
@@ -103,7 +103,7 @@ fun CoachListRoute(config: AppConfig, navigation: CoachNavigation, viewModel: Co
             onCancelDelete = viewModel::cancelDelete,
             onConfirmDelete = viewModel::confirmDelete,
             onMessageShown = viewModel::messageShown,
-            onOpenWeb = { openWebPage(context, config.webPage("")) },
+            onCreateProfile = navigation.openProfile,
         ),
     )
 }
@@ -115,7 +115,7 @@ data class CoachListActions(
     val onCancelDelete: () -> Unit = {},
     val onConfirmDelete: () -> Unit = {},
     val onMessageShown: () -> Unit = {},
-    val onOpenWeb: () -> Unit = {},
+    val onCreateProfile: () -> Unit = {},
 )
 
 /** The current time, moving on every [tickMillis] while shown ("3 min ago" counts on). */
@@ -224,7 +224,7 @@ fun CoachListScreen(
                     }
                 }
                 if (state.noRider) {
-                    item(key = "no-rider") { NoRiderHint(actions.onOpenWeb) }
+                    item(key = "no-rider") { NoRiderCard(actions.onCreateProfile, "coach-no-rider", Modifier.padding(16.dp)) }
                     return@LazyColumn
                 }
                 if (state.empty) {
@@ -385,15 +385,3 @@ private fun WelcomeAction(icon: Int, title: Int, hint: Int, tag: String, onClick
     }
 }
 
-/** As the other tabs for an account without a rider. */
-@Composable
-fun NoRiderHint(onOpenWeb: () -> Unit) {
-    OutlinedCard(Modifier.fillMaxWidth().padding(16.dp).testTag("coach-no-rider")) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.dashboard_no_rider_title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.dashboard_no_rider_hint), style = MaterialTheme.typography.bodyMedium)
-            Spacer(Modifier.height(4.dp))
-            Button(onClick = onOpenWeb) { Text(stringResource(R.string.dashboard_open_web)) }
-        }
-    }
-}

@@ -257,6 +257,79 @@ class ProfileViewModelTest {
         assertEquals(0, count("PUT /api/riders/5"))
     }
 
+    // Spec 024 AC2, AC3
+    @Test
+    fun editAndCancelRestoreTheSavedValuesAndSendNothing() = runTest(dispatcher) {
+        loggedIn()
+        withProfile()
+        val viewModel = viewModel()
+        viewModel.settled()
+        assertFalse(viewModel.state.value.riderForm.editing)
+
+        viewModel.editRider()
+        assertEquals(RiderForm(name = "Anna", weight = "60", restingHr = "48", editing = true), viewModel.state.value.riderForm)
+        viewModel.onRiderChange(viewModel.state.value.riderForm.copy(name = "", weight = "1"))
+        viewModel.saveRider()
+        assertTrue(viewModel.state.value.riderForm.invalid)
+        viewModel.cancelRider()
+
+        assertEquals(RiderForm(name = "Anna", weight = "60", restingHr = "48"), viewModel.state.value.riderForm)
+        assertEquals(0, count("PUT /api/riders/5"))
+    }
+
+    // Spec 024 AC4
+    @Test
+    fun aSuccessfulSaveLeavesTheEditMode() = runTest(dispatcher) {
+        loggedIn()
+        withProfile()
+        backend.on("PUT /api/riders/5", json(rider.replace("\"Anna\"", "\"Anna N.\"")))
+        val viewModel = viewModel()
+        viewModel.settled()
+
+        viewModel.editRider()
+        viewModel.onRiderChange(viewModel.state.value.riderForm.copy(name = "Anna N."))
+        viewModel.saveRider()
+        val state = viewModel.state.first { !it.riderForm.saving && it.message != null }
+
+        assertEquals(RiderForm(name = "Anna N.", weight = "60", restingHr = "48"), state.riderForm)
+    }
+
+    // Spec 024 AC5
+    @Test
+    fun aFailedSaveKeepsTheTypedValues() = runTest(dispatcher) {
+        loggedIn()
+        withProfile()
+        backend.on("PUT /api/riders/5", problem(500, null))
+        val viewModel = viewModel()
+        viewModel.settled()
+
+        viewModel.editRider()
+        viewModel.onRiderChange(viewModel.state.value.riderForm.copy(name = "Anna N."))
+        viewModel.saveRider()
+        val state = viewModel.state.first { !it.riderForm.saving && it.message != null }
+
+        assertTrue(state.riderForm.editing)
+        assertEquals("Anna N.", state.riderForm.name)
+    }
+
+    // Spec 024 AC6
+    @Test
+    fun aReloadWhileEditingKeepsTheTypedValues() = runTest(dispatcher) {
+        loggedIn()
+        withProfile()
+        val viewModel = viewModel()
+        viewModel.settled()
+
+        viewModel.editRider()
+        viewModel.onRiderChange(viewModel.state.value.riderForm.copy(weight = "62"))
+        viewModel.refresh()
+        val state = viewModel.settled()
+
+        assertEquals(2, count("GET /api/riders"))
+        assertTrue(state.riderForm.editing)
+        assertEquals("62", state.riderForm.weight)
+    }
+
     // AC3
     @Test
     fun anAccountWithoutRiderCreatesItWithTheDeviceTimeZone() = runTest(dispatcher) {
