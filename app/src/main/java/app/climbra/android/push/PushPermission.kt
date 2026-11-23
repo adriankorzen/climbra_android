@@ -72,7 +72,10 @@ fun AskForNotificationsAfterCoach(pushEnabled: Boolean, accepted: Flow<Unit>, as
         accepted.collect {
             val granted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-            if (shouldAskForNotifications(pushEnabled, Build.VERSION.SDK_INT, granted, asked.asked())) {
+            // shouldAskForNotifications asks only from API 33; the check repeats it for lint (InlinedApi)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                shouldAskForNotifications(pushEnabled, Build.VERSION.SDK_INT, granted, asked.asked())
+            ) {
                 asked.markAsked()
                 currentLauncher.value.launch(Manifest.permission.POST_NOTIFICATIONS)
             }

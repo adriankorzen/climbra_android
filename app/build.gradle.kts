@@ -39,7 +39,8 @@ fun releaseSigning(name: String): String? =
 android {
     namespace = "app.climbra.android"
     compileSdk {
-        version = release(37)
+        // 37.1: Compose 1.13 (BOM 2026.11) compiles only against it; targetSdk stays 37
+        version = release(37) { minorApiLevel = 1 }
     }
 
     defaultConfig {

@@ -23,12 +23,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -354,7 +354,7 @@ fun Shell(
     onPushTargetTaken: (PushTarget) -> Unit = {},
 ) {
     val navController = rememberNavController()
-    val width = LocalConfiguration.current.screenWidthDp.dp
+    val width = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
     val twoPanes = twoPaneTabs(width)
     val currentTwoPanes by rememberUpdatedState(twoPanes)
     val navigator = remember(navController) { ShellNavigator(navController, { currentTwoPanes }) }

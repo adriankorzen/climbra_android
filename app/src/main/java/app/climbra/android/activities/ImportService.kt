@@ -7,7 +7,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -97,7 +96,7 @@ class ImportService : Service() {
             this,
             NOTIFICATION_ID,
             notification(ImportNotice(getString(R.string.import_title), getString(R.string.import_scanning), null, null, true)),
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0,
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
         )
         watching?.cancel()
         watching = scope.launch {
@@ -120,11 +119,9 @@ class ImportService : Service() {
     }
 
     private fun channel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            getSystemService(NotificationManager::class.java).createNotificationChannel(
-                NotificationChannel(CHANNEL, getString(R.string.import_channel), NotificationManager.IMPORTANCE_LOW),
-            )
-        }
+        getSystemService(NotificationManager::class.java).createNotificationChannel(
+            NotificationChannel(CHANNEL, getString(R.string.import_channel), NotificationManager.IMPORTANCE_LOW),
+        )
     }
 
     private fun notification(notice: ImportNotice): Notification {
