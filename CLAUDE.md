@@ -138,3 +138,5 @@ backend's `compose.yaml` starts.
 - ViewModels: `Dispatchers.setMain(UnconfinedTestDispatcher())` with a real `SessionRepository` on `TestBackend`.
 - Screens: Compose UI tests on Robolectric (`@RunWith(AndroidJUnit4::class)`, `createComposeRule`), SDK 35 in
   `src/test/resources/robolectric.properties` (SDK 36 fails in Robolectric 4.17). Find nodes by `testTag`.
+  Robolectric runs offline on the Android image Gradle resolves (`robolectricAndroidAll` in `libs.versions.toml`,
+  the `robolectricJars` task): a Robolectric update or another SDK needs that image's version changed too.
