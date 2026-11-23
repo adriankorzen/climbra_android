@@ -368,6 +368,8 @@
     <string name="intervals_disconnect">Disconnect</string>
     <string name="intervals_confirm_disconnect">Disconnect intervals.icu? Imported rides stay.</string>
     <string name="intervals_disconnected">intervals.icu disconnected</string>
+    <string name="intervals_auto_sync">Sync automatically (every 30 minutes)</string>
+    <string name="intervals_auto_sync_key_rejected">intervals.icu rejected the key. Connect again to sync automatically.</string>
     <string name="intervals_sources_note">Rides that came from Strava cannot be imported (intervals.icu does not provide them through its API), and rides from Garmin Connect may soon become unavailable.</string>
     <string name="intervals_thresholds_title">Thresholds in intervals.icu</string>
     <string name="intervals_current_values">Current</string>
@@ -832,6 +834,11 @@
     <string name="push_import_finished_text">The import has finished. See your rides in the training log.</string>
     <string name="push_import_failed_title">The import failed</string>
     <string name="push_import_failed_text">Open the app to see what went wrong.</string>
+    <string name="push_channel_rides">New rides</string>
+    <string name="push_ride_synced_title">New ride synced</string>
+    <string name="push_ride_synced_text">Tap to see its analysis.</string>
+    <string name="push_rides_synced_title">New rides synced</string>
+    <string name="push_rides_synced_text">Tap to see them in the training log.</string>
     <string name="push_profile_title">Notifications</string>
     <string name="push_profile_on">On: the app tells you when the coach has answered or an import has finished.</string>
     <string name="push_profile_off">Off: turn them on in the system settings to know when the coach has answered.</string>
@@ -949,4 +956,23 @@
         <item quantity="one">+%1$d more</item>
         <item quantity="other">+%1$d more</item>
     </plurals>
+    <!-- Power curve (spec 026; web: powerCurve.*) -->
+    <string name="power_curve_title">Power curve</string>
+    <string name="power_curve_subtitle">Your best power over durations, against the period before</string>
+    <string name="power_curve_period_28">28 days</string>
+    <string name="power_curve_period_90">90 days</string>
+    <string name="power_curve_period_365">1 year</string>
+    <string name="power_curve_period_all">All</string>
+    <string name="power_curve_compared">Compared with %1$s – %2$s</string>
+    <string name="power_curve_current">This period</string>
+    <string name="power_curve_previous">Period before</string>
+    <string name="power_curve_picked_before">before %1$s W</string>
+    <string name="power_curve_chart">Power curve chart</string>
+    <string name="power_curve_empty">No rides with power in this period.</string>
+    <plurals name="power_curve_pending">
+        <item quantity="one">%1$d ride is still being analysed for the power curve. The curve fills in as it is done.</item>
+        <item quantity="other">%1$d rides are still being analysed for the power curve. The curve fills in as they are done.</item>
+    </plurals>
+    <string name="power_curve_card_hint">Best of the last 90 days</string>
+    <string name="power_curve_show">Show</string>
 </resources>

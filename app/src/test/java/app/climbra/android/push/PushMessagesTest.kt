@@ -71,6 +71,28 @@ class PushMessagesTest {
         assertEquals(0, coachChanges)
     }
 
+    // Spec 025 AC4–AC7: the automatic sync's pushes
+    @Test
+    fun theAutomaticSyncsPushesShowInTheBackgroundAndReloadInTheForeground() {
+        assertEquals(7L to PushMessage.RideSynced(21), PushMessage.parse(data("RIDE_SYNCED", "activityId" to "21")))
+        assertEquals(7L to PushMessage.RidesSynced(5), PushMessage.parse(data("RIDES_SYNCED", "jobId" to "5")))
+        assertNull(PushMessage.parse(data("RIDE_SYNCED", "jobId" to "5")))
+
+        messages.received(data("RIDE_SYNCED", "activityId" to "21"))
+        messages.received(data("RIDES_SYNCED", "jobId" to "5"))
+        messages.received(data("RIDE_SYNCED", "activityId" to "22", userId = "8"))
+        // A large import does not hide them: they are not its pushes
+        largeImport = true
+        messages.received(data("RIDE_SYNCED", "activityId" to "23"))
+        assertEquals(listOf(PushMessage.RideSynced(21), PushMessage.RidesSynced(5), PushMessage.RideSynced(23)), shown)
+
+        foreground.value = true
+        messages.received(data("RIDE_SYNCED", "activityId" to "24"))
+        messages.received(data("RIDES_SYNCED", "jobId" to "6"))
+        assertEquals(3, shown.size)
+        assertEquals(2, rideChanges)
+    }
+
     // AC5
     @Test
     fun inTheForegroundTheScreensReloadInstead() {

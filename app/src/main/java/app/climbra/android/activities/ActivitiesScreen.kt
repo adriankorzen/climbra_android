@@ -91,6 +91,7 @@ fun ActivitiesRoute(
     onOpenRide: (Long) -> Unit,
     onImport: () -> Unit = {},
     onCreateProfile: () -> Unit = {},
+    onPowerCurve: () -> Unit = {},
     viewModel: ActivitiesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -113,6 +114,7 @@ fun ActivitiesRoute(
         onImport = onImport,
         onSort = viewModel::selectSort,
         onSport = viewModel::selectSport,
+        onPowerCurve = onPowerCurve,
     )
 }
 
@@ -133,6 +135,7 @@ fun ActivitiesScreen(
     onImport: () -> Unit = {},
     onSort: (RideColumn) -> Unit = {},
     onSport: (String?) -> Unit = {},
+    onPowerCurve: () -> Unit = {},
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
     val list = rememberLazyListState()
@@ -160,6 +163,10 @@ fun ActivitiesScreen(
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.weight(1f).semantics { heading() },
                     )
+                    // Spec 026
+                    IconButton(onClick = onPowerCurve, modifier = Modifier.testTag("activities-power-curve")) {
+                        Icon(painterResource(R.drawable.ic_show_chart), stringResource(R.string.power_curve_title))
+                    }
                     // Spec 009
                     IconButton(onClick = onImport, enabled = !LocalOffline.current, modifier = Modifier.testTag("activities-import")) {
                         Icon(painterResource(R.drawable.ic_upload_file), stringResource(R.string.import_button))

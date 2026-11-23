@@ -6,6 +6,7 @@ import app.climbra.android.coach.CoachActivity
 import app.climbra.android.data.api.AnalysisSummary
 import app.climbra.android.data.api.CoachApi
 import app.climbra.android.data.api.CoachConversationSummary
+import app.climbra.android.data.api.PowerCurveResponse
 import app.climbra.android.data.api.Rider
 import app.climbra.android.data.api.RiderApi
 import app.climbra.android.data.api.TrainingLoadResponse
@@ -59,6 +60,8 @@ data class DashboardUiState(
     val range: Int = DEFAULT_RANGE,
     /** The 3 newest coach conversations (spec 006), `null` until loaded. */
     val conversations: List<CoachConversationSummary>? = null,
+    /** The backend's power curve of the last 90 days (spec 026), `null` until loaded. */
+    val powerCurve: PowerCurveResponse? = null,
 ) {
     /** The tail of the returned days that the chart shows. */
     val visibleDays get() = load?.days.orEmpty().takeLast(range)
@@ -163,6 +166,8 @@ class DashboardViewModel @Inject constructor(
             val conversations = async { call { coachApi.conversations(rider.id) } }
             Triple(load.await(), rides.await(), conversations.await())
         }
+        // The card's figures; a failure only leaves the card out
+        val powerCurve = (call { api.powerCurve(rider.id, POWER_CURVE_DAYS) } as? ApiResult.Success)?.value
         val recent = (rides as? ApiResult.Success)?.value?.sortedByDescending { it.startTime }
         // Only a history without analysed rides needs the list of all rides
         val noRidesAtAll = recent?.isEmpty() == true &&
@@ -175,6 +180,7 @@ class DashboardViewModel @Inject constructor(
                 rides = recent ?: previous.rides,
                 noRidesAtAll = noRidesAtAll,
                 conversations = (conversations as? ApiResult.Success)?.value?.take(COACH_CONVERSATIONS) ?: previous.conversations,
+                powerCurve = powerCurve ?: previous.powerCurve,
                 failed = load is ApiResult.Failure || rides is ApiResult.Failure,
             )
         }
@@ -192,6 +198,7 @@ class DashboardViewModel @Inject constructor(
         const val WEEKS = 12
         const val RECENT_RIDES = 7
         const val COACH_CONVERSATIONS = 3
+        const val POWER_CURVE_DAYS = "90"
         val STALE_AFTER: Duration = Duration.ofMinutes(5)
     }
 }

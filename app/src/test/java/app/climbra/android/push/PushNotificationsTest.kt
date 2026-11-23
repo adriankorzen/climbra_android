@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.core.app.NotificationCompat
@@ -54,7 +55,7 @@ class PushNotificationsTest {
     @Test
     fun theTypesShowTheirTextsOnTheirChannels() {
         val notifier = notifier()
-        assertEquals(setOf("coach", "imports"), manager.notificationChannels.map { it.id }.toSet())
+        assertEquals(setOf("coach", "imports", "rides"), manager.notificationChannels.map { it.id }.toSet())
 
         notifier.show(PushMessage.Coach(12, answered = true))
         notifier.show(PushMessage.Import(3, finished = false))
@@ -82,6 +83,49 @@ class PushNotificationsTest {
         val failed = AndroidPushNotifier.content(PushMessage.Coach(5, answered = false))
         assertEquals(R.string.push_coach_failed_text, failed.text)
         assertEquals(PushTarget.Conversation(5), failed.target)
+    }
+
+    // Spec 025 AC4, AC5: the automatic sync's new rides, in their own channel
+    @Test
+    fun newRidesShowInTheirChannel() {
+        val notifier = notifier()
+
+        notifier.show(PushMessage.RideSynced(21))
+        notifier.show(PushMessage.RidesSynced(5))
+
+        assertEquals("New ride synced", title("ride", 21))
+        assertEquals("rides", shadowOf(manager).getNotification("ride", 21).channelId)
+        assertEquals("New rides synced", title("rides", 5))
+        assertEquals("rides", shadowOf(manager).getNotification("rides", 5).channelId)
+        assertEquals(PushTarget.Ride(21), AndroidPushNotifier.content(PushMessage.RideSynced(21)).target)
+        assertEquals(PushTarget.TrainingLog, AndroidPushNotifier.content(PushMessage.RidesSynced(5)).target)
+        assertEquals(R.string.push_rides_synced_text, AndroidPushNotifier.content(PushMessage.RidesSynced(5)).text)
+    }
+
+    // Spec 025 AC4: the tap on one ride opens it on the training log's tab
+    @Test
+    fun theShellOpensTheRideOnTheTrainingLog() {
+        assertEquals(PushTarget.Ride(21), PushTarget.Ride(21).intent(context).pushTarget())
+        var target by mutableStateOf<PushTarget?>(null)
+        compose.setContent {
+            ClimbraTheme(darkTheme = false) {
+                Shell(
+                    dashboard = { Text("dashboard", Modifier.testTag("dashboard-screen")) },
+                    activities = { Text("training log", Modifier.testTag("activities-screen")) },
+                    profile = {},
+                    ride = {
+                        val args: ArgsViewModel = viewModel()
+                        Text("ride ${args.id}", Modifier.testTag("ride-${args.id}"))
+                    },
+                    pushTarget = target,
+                )
+            }
+        }
+        compose.onNodeWithTag("dashboard-screen").assertIsDisplayed()
+
+        target = PushTarget.Ride(21)
+        compose.onNodeWithTag("ride-21").assertIsDisplayed()
+        compose.onNodeWithTag("nav-activities").assertIsSelected()
     }
 
     @Test

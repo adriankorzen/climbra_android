@@ -67,6 +67,14 @@ data object DashboardRoute
 @Serializable
 data class DashboardRideRoute(val id: Long)
 
+/** The power curve opened from the dashboard's card (spec 026). */
+@Serializable
+data object DashboardPowerCurveRoute
+
+/** The power curve opened from the training log's top bar (spec 026). */
+@Serializable
+data object ActivitiesPowerCurveRoute
+
 @Serializable
 data object ActivitiesGraph
 
@@ -214,6 +222,20 @@ class ShellNavigator internal constructor(
 
     fun openActivities() = nav.openTab(TopLevelDestination.ACTIVITIES)
 
+    /** The power curve on the stack of the tab shown now, the dashboard's or the training log's (spec 026). */
+    fun openPowerCurve() {
+        nav.navigate(if (currentTab() == TopLevelDestination.DASHBOARD) DashboardPowerCurveRoute else ActivitiesPowerCurveRoute) {
+            launchSingleTop = true
+        }
+    }
+
+    /** A new ride of the automatic sync (spec 025): on the training log's tab, in its pane from 840 dp. */
+    fun openRideOnTrainingLog(id: Long) {
+        if (showInPane(TopLevelDestination.ACTIVITIES, PaneItem.Ride(id))) return
+        if (currentTab() != TopLevelDestination.ACTIVITIES) openActivities()
+        nav.navigate(ActivitiesRideRoute(id))
+    }
+
     fun openProfile() = nav.openTab(TopLevelDestination.PROFILE)
 
     /** The password reset on the profile's stack (spec 013). */
@@ -338,6 +360,7 @@ fun Shell(
     fileReview: @Composable (ShellNavigator) -> Unit = {},
     adjustment: @Composable (ShellNavigator) -> Unit = {},
     rideImport: @Composable (ShellNavigator) -> Unit = {},
+    powerCurve: @Composable (ShellNavigator) -> Unit = {},
     feedback: @Composable (ShellNavigator) -> Unit = {},
     forgotPassword: @Composable (ShellNavigator) -> Unit = {},
     coachEvents: Flow<CoachFinished> = emptyFlow(),
@@ -384,6 +407,7 @@ fun Shell(
         when (target) {
             is PushTarget.Conversation -> navigator.openConversation(target.id)
             PushTarget.TrainingLog -> navigator.openActivities()
+            is PushTarget.Ride -> navigator.openRideOnTrainingLog(target.id)
         }
         onPushTargetTaken(target)
     }
@@ -430,6 +454,7 @@ fun Shell(
                         navigation<DashboardGraph>(startDestination = DashboardRoute) {
                             composable<DashboardRoute> { Screen { dashboard(navigator) } }
                             composable<DashboardRideRoute> { Screen { ride(navigator) } }
+                            composable<DashboardPowerCurveRoute> { Screen { powerCurve(navigator) } }
                         }
                         navigation<ActivitiesGraph>(startDestination = ActivitiesRoute) {
                             val tab = TopLevelDestination.ACTIVITIES
@@ -448,6 +473,7 @@ fun Shell(
                                 }
                             }
                             composable<ActivitiesImportRoute> { Screen { rideImport(navigator) } }
+                            composable<ActivitiesPowerCurveRoute> { Screen { powerCurve(navigator) } }
                         }
                         navigation<CalendarGraph>(startDestination = CalendarRoute) {
                             val tab = TopLevelDestination.CALENDAR

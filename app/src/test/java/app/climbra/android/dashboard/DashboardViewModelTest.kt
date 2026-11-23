@@ -118,7 +118,9 @@ class DashboardViewModelTest {
         assertEquals("7", analyses.queryParameter("limit"))
         // The coach card's conversations (spec 006); nothing else: no history of rides, no list of all rides
         assertEquals(1, backend.requests("GET /api/riders/5/coach/conversations").size)
-        assertEquals(4, backend.requests.size)
+        // Spec 026 AC6: the power curve card's 90 days
+        assertEquals("90", backend.requests("GET /api/riders/5/power-curve").single().url.queryParameter("days"))
+        assertEquals(5, backend.requests.size)
 
         assertFalse(state.failed)
         assertEquals("2026-11-11", state.load!!.today)
