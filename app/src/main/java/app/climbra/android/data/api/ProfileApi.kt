@@ -55,6 +55,10 @@ interface ProfileApi {
     @DELETE("api/riders/{id}/intervals")
     suspend fun disconnectIntervals(@Path("id") riderId: Long)
 
+    /** The backend's automatic sync of the connection on or off (spec 025, cyclingapp spec 060); `409` without one. */
+    @PUT("api/riders/{id}/intervals/auto-sync")
+    suspend fun setIntervalsAutoSync(@Path("id") riderId: Long, @Body request: AutoSyncRequest): IntervalsConnection
+
     /** Starts a sync as a background import job, followed with [importJob]. */
     @POST("api/riders/{id}/intervals/sync")
     suspend fun syncIntervals(@Path("id") riderId: Long): ImportJob
@@ -158,7 +162,19 @@ data class IntervalsConnection(
     val keyHint: String? = null,
     val connectedAt: String? = null,
     val lastSyncAt: String? = null,
-)
+    /** Whether the backend syncs the connection every 30 minutes (cyclingapp spec 060). */
+    val autoSync: Boolean = false,
+    /** Why the automatic sync stopped by itself: [AUTO_SYNC_KEY_REJECTED], or `null`. */
+    val autoSyncStopped: String? = null,
+) {
+    companion object {
+        const val AUTO_SYNC_KEY_REJECTED = "KEY_REJECTED"
+    }
+}
+
+/** Mirrors `intervals.AutoSyncRequest`. */
+@Serializable
+data class AutoSyncRequest(val enabled: Boolean)
 
 @Serializable
 data class IntervalsConnectRequest(val athleteId: String? = null, val apiKey: String)

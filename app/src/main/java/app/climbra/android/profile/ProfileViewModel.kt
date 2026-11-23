@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.climbra.android.R
 import app.climbra.android.data.api.AccountResponse
+import app.climbra.android.data.api.AutoSyncRequest
 import app.climbra.android.coach.CoachQuotaRepository
 import app.climbra.android.data.api.CoachQuota
 import app.climbra.android.data.api.GarminConnection
@@ -90,6 +91,8 @@ data class ProfileUiState(
     val intervalsError: UiText? = null,
     /** An intervals.icu sync is followed. */
     val syncing: Boolean = false,
+    /** The automatic sync's switch is being sent (spec 025). */
+    val autoSyncBusy: Boolean = false,
     /** A disconnect or delete is running. */
     val busy: Boolean = false,
     val passwordForm: PasswordForm = PasswordForm(),
@@ -503,6 +506,28 @@ class ProfileViewModel @Inject constructor(
         422 -> UiText(R.string.intervals_rejected)
         503 -> UiText(R.string.intervals_not_configured)
         else -> error.toUiText()
+    }
+
+    /**
+     * The backend's automatic sync on or off (spec 025): the switch shows the stored state, so a failure leaves it as
+     * it was and tells why in the snackbar.
+     */
+    fun setAutoSync(enabled: Boolean) {
+        val current = state.value
+        val riderId = current.rider?.id ?: return
+        if (current.autoSyncBusy || current.intervals.value?.connected != true) return
+        mutableState.update { it.copy(autoSyncBusy = true) }
+        viewModelScope.launch {
+            when (val result = call { api.setIntervalsAutoSync(riderId, AutoSyncRequest(enabled)) }) {
+                is ApiResult.Failure -> {
+                    mutableState.update { it.copy(autoSyncBusy = false) }
+                    message(result.error.toUiText())
+                }
+                is ApiResult.Success -> mutableState.update {
+                    it.copy(autoSyncBusy = false, intervals = Section(value = result.value))
+                }
+            }
+        }
     }
 
     fun askDisconnectIntervals() = mutableState.update { it.copy(confirmation = Confirmation.DisconnectIntervals) }

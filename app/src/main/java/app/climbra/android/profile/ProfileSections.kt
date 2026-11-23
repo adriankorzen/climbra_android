@@ -22,6 +22,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -30,6 +32,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -54,6 +57,7 @@ import app.climbra.android.activities.ZoneKind
 import app.climbra.android.activities.zoneName
 import app.climbra.android.data.api.CoachQuota
 import app.climbra.android.data.api.GarminStatus
+import app.climbra.android.data.api.IntervalsConnection
 import app.climbra.android.data.api.IntervalsThresholds
 import app.climbra.android.data.api.ThresholdEntry
 import app.climbra.android.data.api.TrainingZone
@@ -454,12 +458,44 @@ internal fun IntervalsCard(state: ProfileUiState, fmt: Fmt, actions: ProfileActi
                         Text(stringResource(R.string.intervals_disconnect), modifier = Modifier.padding(start = 8.dp))
                     }
                 }
+                AutoSyncRow(connection, state.autoSyncBusy, actions)
                 Faint(stringResource(R.string.intervals_sources_note))
                 HorizontalDivider()
                 IntervalsProposal(state, fmt, actions)
             }
         }
     }
+}
+
+/** The backend's automatic sync every 30 minutes (spec 025), as the web's box; the stored state, sent on a toggle. */
+@Composable
+private fun AutoSyncRow(connection: IntervalsConnection, busy: Boolean, actions: ProfileActions) {
+    val offline = LocalOffline.current
+    val keyRejected = connection.autoSyncStopped == IntervalsConnection.AUTO_SYNC_KEY_REJECTED
+    ListItem(
+        headlineContent = { Text(stringResource(R.string.intervals_auto_sync)) },
+        supportingContent = if (keyRejected) {
+            {
+                Text(
+                    stringResource(R.string.intervals_auto_sync_key_rejected),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.testTag("intervals-auto-sync-stopped"),
+                )
+            }
+        } else {
+            null
+        },
+        trailingContent = {
+            Switch(
+                checked = connection.autoSync,
+                onCheckedChange = actions::setAutoSync,
+                enabled = !busy && !offline,
+                modifier = Modifier.testTag("intervals-auto-sync"),
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable

@@ -8,6 +8,8 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasAnyAncestor
@@ -116,6 +118,7 @@ class ProfileScreenTest {
         override fun confirm() { calls += "confirm" }
         override fun connectIntervals() { calls += "connectIntervals" }
         override fun syncIntervals() { calls += "syncIntervals" }
+        override fun setAutoSync(enabled: Boolean) { calls += "autoSync:$enabled" }
         override fun askDisconnectIntervals() { calls += "askDisconnectIntervals" }
         override fun proposeThresholds(proposal: IntervalsThresholds) { calls += "propose:${proposal.ftpWatts}" }
         override fun askDisconnectGarmin() { calls += "askDisconnectGarmin" }
@@ -380,6 +383,54 @@ class ProfileScreenTest {
         scrolled("intervals-sync").performClick()
         scrolled("intervals-disconnect").performClick()
         assertEquals(listOf("syncIntervals", "askDisconnectIntervals"), actions.calls)
+    }
+
+    // Spec 025 AC1: the switch shows the stored state, is disabled while sent, and asks for the other state
+    @Test
+    fun theAutomaticSyncSwitch() {
+        var state by mutableStateOf(
+            ready.copy(intervals = Section(value = connected.copy(autoSync = true)), intervalsThresholds = Section(value = IntervalsThresholds())),
+        )
+        compose.setContent { ClimbraTheme(darkTheme = false) { ProfileScreen(state, polish, today, actions) } }
+
+        scrolled("intervals-auto-sync").assertIsOn().assertIsEnabled().performClick()
+        assertEquals(listOf("autoSync:false"), actions.calls)
+        tag("intervals-auto-sync-stopped").assertDoesNotExist()
+
+        state = state.copy(autoSyncBusy = true)
+        scrolled("intervals-auto-sync").assertIsNotEnabled()
+    }
+
+    // Spec 025 AC2: a rejected key says so, the switch off
+    @Test
+    fun aRejectedKeyIsShownAtTheSwitch() {
+        show(
+            ready.copy(
+                intervals = Section(value = connected.copy(autoSync = false, autoSyncStopped = IntervalsConnection.AUTO_SYNC_KEY_REJECTED)),
+                intervalsThresholds = Section(value = IntervalsThresholds()),
+            ),
+        )
+
+        scrolled("intervals-auto-sync").assertIsOff()
+        tag("intervals-auto-sync-stopped", unmerged = true)
+            .assertTextContains("intervals.icu rejected the key. Connect again to sync automatically.")
+    }
+
+    // Spec 025 AC3
+    @Test
+    fun offlineTheAutomaticSyncCannotBeSwitched() {
+        compose.setContent {
+            CompositionLocalProvider(LocalOffline provides true) {
+                ClimbraTheme(darkTheme = false) {
+                    ProfileScreen(
+                        ready.copy(intervals = Section(value = connected.copy(autoSync = true)), intervalsThresholds = Section(value = IntervalsThresholds())),
+                        polish, today, actions,
+                    )
+                }
+            }
+        }
+
+        scrolled("intervals-auto-sync").assertIsNotEnabled()
     }
 
     // AC7

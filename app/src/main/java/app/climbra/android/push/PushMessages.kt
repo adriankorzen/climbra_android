@@ -11,6 +11,12 @@ sealed interface PushMessage {
 
     data class Import(val jobId: Long, val finished: Boolean) : PushMessage
 
+    /** The backend's automatic sync imported one ride (spec 025, cyclingapp spec 060). */
+    data class RideSynced(val activityId: Long) : PushMessage
+
+    /** The backend's automatic sync imported several rides. */
+    data class RidesSynced(val jobId: Long) : PushMessage
+
     companion object {
         /** The message and the account it is for; `null` for an unknown type (a newer backend) or missing ids. */
         fun parse(data: Map<String, String>): Pair<Long, PushMessage>? {
@@ -20,6 +26,8 @@ sealed interface PushMessage {
                 "COACH_FAILED" -> data["conversationId"]?.toLongOrNull()?.let { Coach(it, answered = false) }
                 "IMPORT_FINISHED" -> data["jobId"]?.toLongOrNull()?.let { Import(it, finished = true) }
                 "IMPORT_FAILED" -> data["jobId"]?.toLongOrNull()?.let { Import(it, finished = false) }
+                "RIDE_SYNCED" -> data["activityId"]?.toLongOrNull()?.let { RideSynced(it) }
+                "RIDES_SYNCED" -> data["jobId"]?.toLongOrNull()?.let { RidesSynced(it) }
                 else -> null
             } ?: return null
             return userId to message
@@ -52,7 +60,7 @@ class PushMessages(
         if (foreground.value) {
             when (message) {
                 is PushMessage.Coach -> coachChanged()
-                is PushMessage.Import -> ridesChanged()
+                is PushMessage.Import, is PushMessage.RideSynced, is PushMessage.RidesSynced -> ridesChanged()
             }
             return
         }
@@ -65,6 +73,9 @@ sealed interface PushTarget {
     data class Conversation(val id: Long) : PushTarget
 
     data object TrainingLog : PushTarget
+
+    /** A ride on the training log's tab (spec 025). */
+    data class Ride(val id: Long) : PushTarget
 }
 
 /** The target of a tapped notification, until the shell opens it; logged out it is dropped. */

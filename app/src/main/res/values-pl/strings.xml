@@ -367,6 +367,8 @@
     <string name="intervals_disconnect">Rozłącz</string>
     <string name="intervals_confirm_disconnect">Rozłączyć intervals.icu? Zaimportowane jazdy zostaną.</string>
     <string name="intervals_disconnected">Rozłączono intervals.icu</string>
+    <string name="intervals_auto_sync">Synchronizuj automatycznie (co 30 minut)</string>
+    <string name="intervals_auto_sync_key_rejected">intervals.icu odrzuciło klucz. Połącz ponownie, aby synchronizować automatycznie.</string>
     <string name="intervals_sources_note">Jazd pochodzących ze Stravy nie da się zaimportować (intervals.icu nie udostępnia ich przez API), a jazdy z Garmin Connect mogą wkrótce stać się niedostępne.</string>
     <string name="intervals_thresholds_title">Progi w intervals.icu</string>
     <string name="intervals_current_values">Aktualne</string>
@@ -837,6 +839,11 @@
     <string name="push_import_finished_text">Import się zakończył. Jazdy znajdziesz w dzienniku treningów.</string>
     <string name="push_import_failed_title">Import się nie udał</string>
     <string name="push_import_failed_text">Otwórz aplikację, aby zobaczyć, co poszło nie tak.</string>
+    <string name="push_channel_rides">Nowe jazdy</string>
+    <string name="push_ride_synced_title">Zsynchronizowano nową jazdę</string>
+    <string name="push_ride_synced_text">Dotknij, aby zobaczyć jej analizę.</string>
+    <string name="push_rides_synced_title">Zsynchronizowano nowe jazdy</string>
+    <string name="push_rides_synced_text">Dotknij, aby zobaczyć je w dzienniku treningów.</string>
     <string name="push_profile_title">Powiadomienia</string>
     <string name="push_profile_on">Włączone: aplikacja powie Ci, gdy trener odpowie albo import się zakończy.</string>
     <string name="push_profile_off">Wyłączone: włącz je w ustawieniach systemu, aby wiedzieć, kiedy trener odpowie.</string>
@@ -962,4 +969,25 @@
         <item quantity="many">+%1$d więcej</item>
         <item quantity="other">+%1$d więcej</item>
     </plurals>
+    <!-- Power curve (spec 026; web: powerCurve.*) -->
+    <string name="power_curve_title">Krzywa mocy</string>
+    <string name="power_curve_subtitle">Twoja najlepsza moc w różnych czasach, na tle poprzedniego okresu</string>
+    <string name="power_curve_period_28">28 dni</string>
+    <string name="power_curve_period_90">90 dni</string>
+    <string name="power_curve_period_365">1 rok</string>
+    <string name="power_curve_period_all">Wszystko</string>
+    <string name="power_curve_compared">Porównanie z %1$s – %2$s</string>
+    <string name="power_curve_current">Ten okres</string>
+    <string name="power_curve_previous">Poprzedni okres</string>
+    <string name="power_curve_picked_before">wcześniej %1$s W</string>
+    <string name="power_curve_chart">Wykres krzywej mocy</string>
+    <string name="power_curve_empty">Brak jazd z pomiarem mocy w tym okresie.</string>
+    <plurals name="power_curve_pending">
+        <item quantity="one">%1$d jazda jest jeszcze analizowana pod krzywą mocy. Krzywa uzupełni się, gdy się skończy.</item>
+        <item quantity="few">%1$d jazdy są jeszcze analizowane pod krzywą mocy. Krzywa uzupełni się, gdy się skończą.</item>
+        <item quantity="many">%1$d jazd jest jeszcze analizowanych pod krzywą mocy. Krzywa uzupełni się, gdy się skończą.</item>
+        <item quantity="other">%1$d jazdy jest jeszcze analizowanych pod krzywą mocy. Krzywa uzupełni się, gdy się skończą.</item>
+    </plurals>
+    <string name="power_curve_card_hint">Najlepsze z ostatnich 90 dni</string>
+    <string name="power_curve_show">Pokaż</string>
 </resources>

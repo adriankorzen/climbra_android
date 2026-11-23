@@ -71,6 +71,7 @@ interface ProfileActions {
     fun connectIntervals() {}
     fun askDisconnectIntervals() {}
     fun syncIntervals() {}
+    fun setAutoSync(enabled: Boolean) {}
     fun proposeThresholds(proposal: IntervalsThresholds) {}
     fun askDisconnectGarmin() {}
     fun connectGarmin() {}
@@ -126,6 +127,7 @@ fun ProfileRoute(
             override fun connectIntervals() = viewModel.connectIntervals()
             override fun askDisconnectIntervals() = viewModel.askDisconnectIntervals()
             override fun syncIntervals() = viewModel.syncIntervals()
+            override fun setAutoSync(enabled: Boolean) = viewModel.setAutoSync(enabled)
             override fun proposeThresholds(proposal: IntervalsThresholds) = viewModel.proposeThresholds(proposal)
             override fun askDisconnectGarmin() = viewModel.askDisconnectGarmin()
             override fun connectGarmin() = viewModel.connectGarmin()

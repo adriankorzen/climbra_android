@@ -57,6 +57,7 @@ import app.climbra.android.coach.rememberNow
 import app.climbra.android.data.api.AnalysisSummary
 import app.climbra.android.data.api.CoachConversationSummary
 import app.climbra.android.data.api.FormRange
+import app.climbra.android.data.api.PowerCurvePoint
 import app.climbra.android.intervals.SyncProgress
 import app.climbra.android.intervals.SyncState
 import app.climbra.android.ui.common.ErrorBanner
@@ -76,6 +77,7 @@ fun DashboardRoute(
     onOpenCoach: () -> Unit = {},
     onImport: () -> Unit = {},
     onCreateProfile: () -> Unit = {},
+    onOpenPowerCurve: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -96,6 +98,7 @@ fun DashboardRoute(
         onOpenCoach = onOpenCoach,
         now = rememberNow(60_000L),
         onImport = onImport,
+        onOpenPowerCurve = onOpenPowerCurve,
     )
 }
 
@@ -114,6 +117,7 @@ fun DashboardScreen(
     now: Instant = Instant.now(),
     sync: SyncState = SyncState(),
     onImport: () -> Unit = {},
+    onOpenPowerCurve: () -> Unit = {},
 ) {
     PullToRefreshBox(isRefreshing = state.refreshing, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
         Column(
@@ -147,6 +151,7 @@ fun DashboardScreen(
                 state.noRider -> NoRiderCard(onCreateProfile, "dashboard-no-rider")
                 state.rider != null || state.failed -> {
                     Content(state, fmt, onSelectRange, onImport, onOpenRide, syncConnected = sync.connected == true)
+                    state.powerCurve?.current?.points?.takeIf { it.isNotEmpty() }?.let { PowerCurveCard(it, fmt, onOpenPowerCurve) }
                     state.conversations?.let { CoachCard(it, fmt, now, coach, onOpenCoach) }
                 }
             }
@@ -376,6 +381,47 @@ private fun WeeklyCard(state: DashboardUiState, fmt: Fmt, modifier: Modifier = M
         }
     }
 }
+
+/** The power curve's card (spec 026): the 90 days' 5 s, 1, 5 and 20 min bests of the backend, and "Show". */
+@Composable
+private fun PowerCurveCard(points: List<PowerCurvePoint>, fmt: Fmt, onOpen: () -> Unit) {
+    OutlinedCard(modifier = Modifier.fillMaxWidth().testTag("dashboard-power-curve")) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    CardTitle(stringResource(R.string.power_curve_title))
+                    Text(
+                        stringResource(R.string.power_curve_card_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                TextButton(onClick = onOpen, modifier = Modifier.testTag("dashboard-power-curve-show")) {
+                    Text(stringResource(R.string.power_curve_show))
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                CARD_DURATIONS.forEach { duration ->
+                    val point = points.firstOrNull { it.durationSeconds == duration }
+                    Column(Modifier.weight(1f).testTag("dashboard-power-$duration")) {
+                        Text(
+                            fmt.shortDuration(duration),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            point?.let { "${fmt.num(it.watts)} W" } ?: Fmt.DASH,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontFamily = MonoFamily,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private val CARD_DURATIONS = listOf(5, 60, 300, 1200)
 
 @Composable
 private fun RecentRides(state: DashboardUiState, fmt: Fmt, onOpenRide: (Long) -> Unit) {

@@ -501,6 +501,33 @@ class ProfileViewModelTest {
         assertEquals(280, state.intervalsThresholds.value?.ftpWatts)
     }
 
+    // Spec 025 AC1: the switch sends the request, stays as stored on a failure and tells why
+    @Test
+    fun theAutomaticSyncSwitchIsSent() = runTest(dispatcher) {
+        loggedIn()
+        withProfile(intervals = connected.replace("}", ""","autoSync":true}"""))
+        backend.on(
+            "PUT /api/riders/5/intervals/auto-sync",
+            problem(500, null),
+            json(connected.replace("}", ""","autoSync":false}""")),
+        )
+        val viewModel = viewModel()
+        viewModel.settled()
+        assertTrue(viewModel.state.value.intervals.value!!.autoSync)
+
+        viewModel.setAutoSync(false)
+        assertTrue(viewModel.state.value.autoSyncBusy)
+        val failed = viewModel.state.first { it.message != null && !it.autoSyncBusy }
+        assertTrue(failed.intervals.value!!.autoSync)
+        viewModel.messageShown()
+
+        viewModel.setAutoSync(false)
+        eventually { assertFalse(viewModel.state.value.intervals.value!!.autoSync) }
+        assertFalse(viewModel.state.value.autoSyncBusy)
+        assertEquals("""{"enabled":false}""", body("PUT /api/riders/5/intervals/auto-sync"))
+        assertEquals(2, count("PUT /api/riders/5/intervals/auto-sync"))
+    }
+
     // AC7; spec 007 AC3: "Sync now" runs the app's one sync, whose messages go to the shell (IntervalsSyncTest)
     @Test
     fun aSyncIsFollowedUntilItsJobEnds() = runTest(dispatcher) {

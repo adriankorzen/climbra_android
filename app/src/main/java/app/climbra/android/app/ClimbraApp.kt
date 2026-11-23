@@ -59,6 +59,7 @@ import app.climbra.android.garmin.GarminConnectHost
 import app.climbra.android.garmin.GarminSync
 import app.climbra.android.intervals.IntervalsSync
 import app.climbra.android.profile.FeedbackRoute
+import app.climbra.android.powercurve.PowerCurveRoute
 import app.climbra.android.profile.ProfileRoute
 import app.climbra.android.push.AskForNotificationsAfterCoach
 import app.climbra.android.push.PushPermissionAsked
@@ -160,9 +161,18 @@ private fun ShellContent(viewModel: AppViewModel) {
             AskForNotificationsAfterCoach(config.pushEnabled, viewModel.coachActivity.accepted, viewModel.pushPermissionAsked)
             Shell(
                 dashboard = { nav ->
-                    DashboardRoute(config = config, onOpenRide = nav::openRide, coach = coachNavigation(nav), onOpenCoach = nav::openCoach, onImport = nav::openImport, onCreateProfile = nav::openProfile)
+                    DashboardRoute(
+                        config = config, onOpenRide = nav::openRide, coach = coachNavigation(nav), onOpenCoach = nav::openCoach,
+                        onImport = nav::openImport, onCreateProfile = nav::openProfile, onOpenPowerCurve = nav::openPowerCurve,
+                    )
                 },
-                activities = { nav -> ActivitiesRoute(config = config, onOpenRide = nav::openRide, onImport = nav::openImport, onCreateProfile = nav::openProfile) },
+                activities = { nav ->
+                    ActivitiesRoute(
+                        config = config, onOpenRide = nav::openRide, onImport = nav::openImport, onCreateProfile = nav::openProfile,
+                        onPowerCurve = nav::openPowerCurve,
+                    )
+                },
+                powerCurve = { nav -> PowerCurveRoute(onBack = nav::back, onOpenRide = nav::openRide) },
                 rideImport = { nav ->
                     ImportRoute(
                         config = config,

@@ -24,6 +24,7 @@ class AndroidPushNotifier(private val context: Context) : PushNotifier {
             listOf(
                 NotificationChannel(CHANNEL_COACH, context.getString(R.string.push_channel_coach), NotificationManager.IMPORTANCE_DEFAULT),
                 NotificationChannel(CHANNEL_IMPORTS, context.getString(R.string.push_channel_imports), NotificationManager.IMPORTANCE_DEFAULT),
+                NotificationChannel(CHANNEL_RIDES, context.getString(R.string.push_channel_rides), NotificationManager.IMPORTANCE_DEFAULT),
             ),
         )
     }
@@ -55,11 +56,16 @@ class AndroidPushNotifier(private val context: Context) : PushNotifier {
     companion object {
         const val CHANNEL_COACH = "coach"
         const val CHANNEL_IMPORTS = "imports"
+        /** New rides of the backend's automatic sync (spec 025): a channel of their own to turn off. */
+        const val CHANNEL_RIDES = "rides"
         const val TAG_COACH = "coach"
         const val TAG_IMPORT = "import"
+        const val TAG_RIDE = "ride"
+        const val TAG_RIDES = "rides"
         const val ACTION_OPEN = "app.climbra.android.action.OPEN_PUSH"
         private const val EXTRA_CONVERSATION = "push_conversation"
         private const val EXTRA_TRAINING_LOG = "push_training_log"
+        private const val EXTRA_RIDE = "push_ride"
 
         fun content(message: PushMessage): Content = when (message) {
             is PushMessage.Coach -> Content(
@@ -80,6 +86,24 @@ class AndroidPushNotifier(private val context: Context) : PushNotifier {
                 icon = R.drawable.ic_upload_file,
                 target = PushTarget.TrainingLog,
             )
+            is PushMessage.RideSynced -> Content(
+                channel = CHANNEL_RIDES,
+                tag = TAG_RIDE,
+                id = message.activityId.toInt(),
+                title = R.string.push_ride_synced_title,
+                text = R.string.push_ride_synced_text,
+                icon = R.drawable.ic_directions_bike,
+                target = PushTarget.Ride(message.activityId),
+            )
+            is PushMessage.RidesSynced -> Content(
+                channel = CHANNEL_RIDES,
+                tag = TAG_RIDES,
+                id = message.jobId.toInt(),
+                title = R.string.push_rides_synced_title,
+                text = R.string.push_rides_synced_text,
+                icon = R.drawable.ic_directions_bike,
+                target = PushTarget.TrainingLog,
+            )
         }
 
         fun PushTarget.intent(context: Context): Intent = Intent(context, MainActivity::class.java)
@@ -89,6 +113,7 @@ class AndroidPushNotifier(private val context: Context) : PushNotifier {
                 when (this@intent) {
                     is PushTarget.Conversation -> putExtra(EXTRA_CONVERSATION, id)
                     PushTarget.TrainingLog -> putExtra(EXTRA_TRAINING_LOG, true)
+                    is PushTarget.Ride -> putExtra(EXTRA_RIDE, id)
                 }
             }
 
@@ -97,6 +122,7 @@ class AndroidPushNotifier(private val context: Context) : PushNotifier {
             if (this?.action != ACTION_OPEN) return null
             return when {
                 hasExtra(EXTRA_CONVERSATION) -> PushTarget.Conversation(getLongExtra(EXTRA_CONVERSATION, 0))
+                hasExtra(EXTRA_RIDE) -> PushTarget.Ride(getLongExtra(EXTRA_RIDE, 0))
                 getBooleanExtra(EXTRA_TRAINING_LOG, false) -> PushTarget.TrainingLog
                 else -> null
             }

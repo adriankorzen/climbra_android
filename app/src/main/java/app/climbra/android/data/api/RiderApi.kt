@@ -26,6 +26,10 @@ interface RiderApi {
         @Query("weeks") weeks: Int,
     ): TrainingLoadResponse
 
+    /** cyclingapp spec 061: [days] `28`, `90`, `365` or `all`; every figure is the backend's. */
+    @GET("api/riders/{id}/power-curve")
+    suspend fun powerCurve(@Path("id") riderId: Long, @Query("days") days: String): PowerCurveResponse
+
     /** cyclingapp spec 051: the latest analysed rides, oldest first. */
     @GET("api/riders/{id}/analyses")
     suspend fun latestAnalyses(@Path("id") riderId: Long, @Query("limit") limit: Int): List<AnalysisSummary>

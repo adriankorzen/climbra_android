@@ -119,7 +119,19 @@ class ActivitiesScreensTest {
             onSort = { sorts += it },
             onSport = { sports += it },
             sync = sync(),
+            onPowerCurve = { powerCurves++ },
         )
+    }
+
+    private var powerCurves = 0
+
+    // Spec 026 AC7: the top bar's action opens the power curve
+    @Test
+    fun theLogOpensThePowerCurve() {
+        showLog { log }
+
+        compose.onNodeWithTag("activities-power-curve").performClick()
+        assertEquals(1, powerCurves)
     }
 
     // Spec 022 AC1, AC2: no rider profile: the card opens the profile tab

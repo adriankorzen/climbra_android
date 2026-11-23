@@ -91,8 +91,37 @@ class DashboardScreenTest {
                 onCreateProfile = { profileOpened++ },
                 onImport = { imports++ },
                 sync = sync(),
+                onOpenPowerCurve = { powerCurves++ },
             )
         }
+    }
+
+    private var powerCurves = 0
+
+    // Spec 026 AC6: the card shows the four bests and opens the screen; without rides with power it is left out
+    @Test
+    fun thePowerCurveCard() {
+        val points = listOf(
+            app.climbra.android.data.api.PowerCurvePoint(5, 1012, 16.87, 7, "2026-10-04"),
+            app.climbra.android.data.api.PowerCurvePoint(60, 520, 8.67, 7, "2026-10-04"),
+            app.climbra.android.data.api.PowerCurvePoint(1200, 280, 4.67, 8, "2026-10-12"),
+        )
+        var state by mutableStateOf(
+            ready.copy(powerCurve = app.climbra.android.data.api.PowerCurveResponse(current = app.climbra.android.data.api.PowerCurvePeriod(points = points))),
+        )
+        show({ state })
+
+        compose.onNodeWithTag("dashboard-power-curve").performScrollTo().assertIsDisplayed()
+        tile("dashboard-power-5", "1,012 W").assertExists()
+        tile("dashboard-power-1200", "280 W").assertExists()
+        tile("dashboard-power-300", "–").assertExists()
+        compose.onNodeWithTag("dashboard-power-curve-show").performClick()
+        assertEquals(1, powerCurves)
+
+        state = ready.copy(powerCurve = app.climbra.android.data.api.PowerCurveResponse())
+        compose.onNodeWithTag("dashboard-power-curve").assertDoesNotExist()
+        state = ready.copy(powerCurve = null)
+        compose.onNodeWithTag("dashboard-power-curve").assertDoesNotExist()
     }
 
     private fun tile(tag: String, text: String) =

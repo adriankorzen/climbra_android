@@ -89,6 +89,24 @@ class Fmt(val locale: Locale) {
         return if (h > 0) "%d:%02d:%02d".format(Locale.ROOT, h, m, s) else "%d:%02d".format(Locale.ROOT, m, s)
     }
 
+    /**
+     * A power curve duration as its largest units (spec 026, the web's `formatShortDuration`): `5 s`, `1 min 30 s`,
+     * `20 min`, `1 h 30 min`; the symbols are the same in Polish and English.
+     */
+    fun shortDuration(totalSeconds: Number?): String {
+        val value = totalSeconds?.toDouble()
+        if (value == null || value.isNaN()) return DASH
+        val seconds = value.roundToLong()
+        val h = seconds / 3600
+        val m = seconds % 3600 / 60
+        val s = seconds % 60
+        return when {
+            h > 0 -> if (m > 0) "$h h $m min" else "$h h"
+            m > 0 -> if (s > 0) "$m min $s s" else "$m min"
+            else -> "$s s"
+        }
+    }
+
     /** `h:mm`, for totals where seconds do not matter. */
     fun hm(totalSeconds: Number?): String {
         val value = totalSeconds?.toDouble()
