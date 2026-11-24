@@ -59,6 +59,7 @@ import app.climbra.android.garmin.GarminConnectHost
 import app.climbra.android.garmin.GarminSync
 import app.climbra.android.intervals.IntervalsSync
 import app.climbra.android.profile.FeedbackRoute
+import app.climbra.android.share.SharedLinksRoute
 import app.climbra.android.powercurve.PowerCurveRoute
 import app.climbra.android.profile.ProfileRoute
 import app.climbra.android.push.AskForNotificationsAfterCoach
@@ -185,7 +186,13 @@ private fun ShellContent(viewModel: AppViewModel) {
                         onOpenProfile = nav::openProfile,
                     )
                 },
-                profile = { nav -> ProfileRoute(config = config, onOpenFeedback = nav::openFeedback, onForgotPassword = nav::openForgotPassword) },
+                profile = { nav ->
+                    ProfileRoute(
+                        config = config, onOpenFeedback = nav::openFeedback, onForgotPassword = nav::openForgotPassword,
+                        onOpenSharedLinks = nav::openSharedLinks,
+                    )
+                },
+                sharedLinks = { nav -> SharedLinksRoute(onBack = nav::back) },
                 forgotPassword = { nav ->
                     val forgot: ForgotPasswordViewModel = hiltViewModel()
                     forgot.prefill(viewModel.accountEmail())

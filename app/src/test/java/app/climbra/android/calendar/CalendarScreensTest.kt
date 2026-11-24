@@ -54,6 +54,7 @@ import app.climbra.android.ui.theme.ClimbraTheme
 import java.time.LocalDate
 import java.util.Locale
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -157,6 +158,35 @@ class CalendarScreensTest {
         compose.waitForIdle()
 
         assertEquals(listOf("previous", "next", "today", "week 2026-11-16"), calls)
+    }
+
+    // Spec 028 AC1: the week view shares its week, the month view offers no share
+    @Test
+    fun onlyTheWeekViewSharesItsWeek() {
+        var shared = 0
+        content { CalendarScreen(week(), fmt, CalendarActions(onShareWeek = { shared++ })) }
+
+        compose.onNodeWithTag("calendar-share-week").performClick()
+        assertEquals(1, shared)
+    }
+
+    @Test
+    fun theMonthViewOffersNoShare() {
+        month()
+
+        compose.onNodeWithTag("calendar-share-week").assertDoesNotExist()
+    }
+
+    // Spec 028 AC4: the week image takes the backend's week figures and only the rides of the week shown
+    @Test
+    fun theWeekCardHasTheFiguresAndRidesOfTheWeek() {
+        val state = week()
+        val card = state.weekCard
+
+        assertEquals(monday, card.monday)
+        assertEquals(state.figures, card.figures)
+        assertTrue(card.rides.isNotEmpty())
+        assertTrue(card.rides.all { LocalDate.parse(it.date) in monday..monday.plusDays(6) })
     }
 
     // AC2: the period opens the date picker

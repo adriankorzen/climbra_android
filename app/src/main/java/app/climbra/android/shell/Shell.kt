@@ -154,6 +154,10 @@ data object ProfileRoute
 @Serializable
 data object ProfileFeedbackRoute
 
+/** The rider's active share links (spec 028). */
+@Serializable
+data object ProfileSharedLinksRoute
+
 /** The password reset of an account without a password (spec 013). */
 @Serializable
 data object ProfileForgotPasswordRoute
@@ -243,6 +247,11 @@ class ShellNavigator internal constructor(
     /** The password reset on the profile's stack (spec 013). */
     fun openForgotPassword() {
         nav.navigate(ProfileForgotPasswordRoute) { launchSingleTop = true }
+    }
+
+    /** The active share links on the profile's stack (spec 028). */
+    fun openSharedLinks() {
+        nav.navigate(ProfileSharedLinksRoute) { launchSingleTop = true }
     }
 
     /** The feedback form on the profile's stack (spec 010). */
@@ -364,6 +373,7 @@ fun Shell(
     rideImport: @Composable (ShellNavigator) -> Unit = {},
     powerCurve: @Composable (ShellNavigator) -> Unit = {},
     feedback: @Composable (ShellNavigator) -> Unit = {},
+    sharedLinks: @Composable (ShellNavigator) -> Unit = {},
     forgotPassword: @Composable (ShellNavigator) -> Unit = {},
     coachEvents: Flow<CoachFinished> = emptyFlow(),
     notices: Flow<UiText> = emptyFlow(),
@@ -535,6 +545,7 @@ fun Shell(
                         navigation<ProfileGraph>(startDestination = ProfileRoute) {
                             composable<ProfileRoute> { Screen { profile(navigator) } }
                             composable<ProfileFeedbackRoute> { Screen { feedback(navigator) } }
+                            composable<ProfileSharedLinksRoute> { Screen { sharedLinks(navigator) } }
                             composable<ProfileForgotPasswordRoute> { Screen { forgotPassword(navigator) } }
                         }
                     }

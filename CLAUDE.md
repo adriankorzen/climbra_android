@@ -111,6 +111,11 @@ them under "Backend dependencies" by number.
   button, `TodayRefreshWorker` from `TodayWidgetSchedule`: hourly and after midnight while one is placed). Glance
   stores nothing; the widget, its receiver and worker get their objects through `TodayWidgetEntryPoint`. Its taps are
   `PushTarget`s.
+- Sharing (spec 028): `share.ShareViewModel` (a second ViewModel of the ride detail and calendar routes) holds the
+  sheet and creates the public link (`ShareApi`, cyclingapp spec 062); the image is the screen's own data drawn by
+  `RideShareCard` / `WeekShareCard` inside `share.CardCapture` (1080 × 1350 px, light theme) and written by
+  `share.ShareFiles` to `cache/shares` (the `FileProvider` `${applicationId}.files`, emptied at start). The cards only
+  draw the backend's figures. Profile → `share.SharedLinksScreen` revokes links.
 - Packages by feature (`auth`, `profile`, `shell`, `dashboard`, `activities`, `calendar`, `coach`, …) plus `data/` (network, DTOs),
   `session/` and `ui/` (theme, shared components).
 - Theme (`ui.theme`): Material 3 colors from the web tokens in `../cyclingapp/frontend/src/styles.scss` (light + dark),

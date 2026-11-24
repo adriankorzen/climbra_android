@@ -1,5 +1,6 @@
 package app.climbra.android.calendar
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -97,6 +98,14 @@ import app.climbra.android.ui.format.Fmt
 import app.climbra.android.ui.format.rememberFmt
 import app.climbra.android.ui.theme.MonoFamily
 import app.climbra.android.ui.theme.extendedColors
+import app.climbra.android.share.ShareActions
+import app.climbra.android.share.ShareEffects
+import app.climbra.android.share.ShareSheet
+import app.climbra.android.share.ShareTarget
+import app.climbra.android.share.ShareUiState
+import app.climbra.android.share.ShareViewModel
+import app.climbra.android.share.WeekShareCard
+import app.climbra.android.share.rememberImageSharer
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -116,16 +125,36 @@ fun CalendarRoute(
     onOpenProposal: (Long) -> Unit = {},
     onCreateProfile: () -> Unit = {},
     viewModel: CalendarViewModel = hiltViewModel(),
+    shareViewModel: ShareViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val share by shareViewModel.state.collectAsStateWithLifecycle()
+    ShareEffects(share, shareViewModel::linkHandedOver)
+    val shareImage = rememberImageSharer(share) {
+        Toast.makeText(context, R.string.share_image_failed, Toast.LENGTH_SHORT).show()
+    }
+    val fmt = rememberFmt()
+    val weekTitle = stringResource(
+        R.string.share_card_week_title,
+        fmt.date(state.week.toString(), DateStyle.DAY_MONTH),
+        fmt.date(state.week.plusDays(6).toString(), DateStyle.DAY_MONTH),
+    )
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onShown() }
     // A ride or workout changed in the detail pane beside the list (spec 019)
     val dataVersion by viewModel.dataVersion.collectAsStateWithLifecycle()
     LaunchedEffect(dataVersion) { viewModel.onShown() }
     CalendarScreen(
         state = state,
-        fmt = rememberFmt(),
+        fmt = fmt,
+        share = share,
+        shareActions = ShareActions(
+            onHidePower = shareViewModel::setHidePower,
+            onHideHeartRate = shareViewModel::setHideHeartRate,
+            onShareLink = shareViewModel::createLink,
+            onImage = shareImage,
+            onDismiss = shareViewModel::close,
+        ),
         actions = CalendarActions(
             onPrevious = viewModel::previous,
             onNext = viewModel::next,
@@ -153,6 +182,7 @@ fun CalendarRoute(
             onDefaultMode = viewModel::defaultMode,
             onShowMonth = viewModel::showMonth,
             onOpenWeekOf = viewModel::openWeekOf,
+            onShareWeek = { shareViewModel.open(ShareTarget.week(state.week.toString(), weekTitle)) },
         ),
     )
 }
@@ -192,12 +222,20 @@ data class CalendarActions(
     val onShowMonth: (YearMonth) -> Unit = {},
     /** A day of the month view opens its week. */
     val onOpenWeekOf: (LocalDate) -> Unit = {},
+    /** Spec 028: the share sheet of the week shown. */
+    val onShareWeek: () -> Unit = {},
 )
 
 /** The web calendar's phone layout (spec 005): one week as a list of days, swiped or stepped through. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarScreen(state: CalendarUiState, fmt: Fmt, actions: CalendarActions) {
+fun CalendarScreen(
+    state: CalendarUiState,
+    fmt: Fmt,
+    actions: CalendarActions,
+    share: ShareUiState = ShareUiState(),
+    shareActions: ShareActions = ShareActions(),
+) {
     val snackbar = remember { SnackbarHostState() }
     val message = state.message?.let { messageText(it, fmt) }
     LaunchedEffect(state.message) {
@@ -261,6 +299,9 @@ fun CalendarScreen(state: CalendarUiState, fmt: Fmt, actions: CalendarActions) {
             },
         )
     }
+    if (share.target != null) {
+        ShareSheet(share, fmt, shareActions) { _, _ -> WeekShareCard(state.weekCard, fmt) }
+    }
     state.connectingGarmin?.let { status ->
         GarminConnectDialog(status, onConnect = actions.onConnectGarmin, onDismiss = actions.onCloseGarminDialog)
     }
@@ -297,6 +338,11 @@ private fun Header(state: CalendarUiState, fmt: Fmt, actions: CalendarActions, o
         Spacer(Modifier.weight(1f))
         TextButton(onClick = actions.onToday, modifier = Modifier.testTag("calendar-today")) {
             Text(stringResource(R.string.calendar_today))
+        }
+        if (!month && state.data != null) {
+            IconButton(onClick = actions.onShareWeek, modifier = Modifier.testTag("calendar-share-week")) {
+                Icon(painterResource(R.drawable.ic_share), stringResource(R.string.share_week_action))
+            }
         }
         if (state.showGarminImport) {
             IconButton(onClick = actions.onImportGarmin, enabled = !state.sendingPlan && !LocalOffline.current, modifier = Modifier.testTag("garmin-import")) {

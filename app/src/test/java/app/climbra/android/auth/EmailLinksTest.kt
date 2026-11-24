@@ -59,6 +59,8 @@ class EmailLinksTest {
         listOf(
             "https://climbra.app/terms",
             "https://climbra.app/activities/3",
+            // Spec 028 AC8: a shared ride or week opens in the browser, the rider's too
+            "https://climbra.app/s/abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG",
             "https://climbra.app/",
             "http://climbra.app/login",
             "https://example.com/login",

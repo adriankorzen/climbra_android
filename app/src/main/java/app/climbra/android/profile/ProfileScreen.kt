@@ -89,6 +89,7 @@ interface ProfileActions {
     fun logout() {}
     fun messageShown() {}
     fun openFeedback() {}
+    fun openSharedLinks() {}
     fun syncGarmin() {}
     fun openNotificationSettings() {}
 }
@@ -98,6 +99,7 @@ fun ProfileRoute(
     config: AppConfig,
     onOpenFeedback: () -> Unit = {},
     onForgotPassword: () -> Unit = {},
+    onOpenSharedLinks: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -108,7 +110,7 @@ fun ProfileRoute(
         viewModel.onResumed()
         notificationsOn = notificationsEnabled(context)
     }
-    val actions = remember(viewModel, config, context, onOpenFeedback, onForgotPassword) {
+    val actions = remember(viewModel, config, context, onOpenFeedback, onForgotPassword, onOpenSharedLinks) {
         object : ProfileActions {
             override fun refresh() = viewModel.refresh()
             override fun retry(section: ProfileSection) = viewModel.retry(section)
@@ -145,6 +147,7 @@ fun ProfileRoute(
             override fun logout() = viewModel.logout()
             override fun messageShown() = viewModel.messageShown()
             override fun openFeedback() = onOpenFeedback()
+            override fun openSharedLinks() = onOpenSharedLinks()
             override fun syncGarmin() = viewModel.syncGarmin()
             override fun openNotificationSettings() = openAppNotificationSettings(context)
         }

@@ -13,6 +13,7 @@ import app.climbra.android.data.api.GarminApi
 import app.climbra.android.data.api.ImportApi
 import app.climbra.android.data.api.ProfileApi
 import app.climbra.android.data.api.RiderApi
+import app.climbra.android.data.api.ShareApi
 import app.climbra.android.data.net.ByteCipher
 import app.climbra.android.data.net.Connectivity
 import app.climbra.android.data.net.CookieStore
@@ -75,6 +76,7 @@ class TestBackend(
     val garminApi: GarminApi = retrofit.create(GarminApi::class.java)
     val feedbackApi: FeedbackApi = retrofit.create(FeedbackApi::class.java)
     val pushApi: PushApi = retrofit.create(PushApi::class.java)
+    val shareApi: ShareApi = retrofit.create(ShareApi::class.java)
     val locales = FakeAppLocales()
 
     /** Requests in the order they arrived. */
