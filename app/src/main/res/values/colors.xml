@@ -3,4 +3,9 @@
     <!-- Window colors before Compose draws; the Compose theme is in ui/theme -->
     <color name="climbra_accent">#E2531F</color>
     <color name="window_background">#F4F5F7</color>
+    <!-- The widget picker's preview (spec 027): surface, onSurface, onSurfaceVariant and primary of ui/theme -->
+    <color name="widget_preview_background">#FFFFFF</color>
+    <color name="widget_preview_text">#161B22</color>
+    <color name="widget_preview_faint">#5B6573</color>
+    <color name="widget_preview_primary">#E2531F</color>
 </resources>

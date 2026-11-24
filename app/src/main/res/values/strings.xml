@@ -975,4 +975,26 @@
     </plurals>
     <string name="power_curve_card_hint">Best of the last 90 days</string>
     <string name="power_curve_show">Show</string>
+
+    <!-- Home screen widget (spec 027) -->
+    <string name="widget_name">Climbra – today</string>
+    <string name="widget_description">Today\'s planned workout and your form</string>
+    <string name="widget_no_workout">No workout planned</string>
+    <string name="widget_rest_day">Rest day</string>
+    <plurals name="widget_more">
+        <item quantity="one">+ %1$d more</item>
+        <item quantity="other">+ %1$d more</item>
+    </plurals>
+    <string name="widget_tss">TSS %1$s</string>
+    <string name="widget_fitness">CTL %1$s</string>
+    <string name="widget_form">TSB %1$s · %2$s</string>
+    <string name="widget_loading">Loading…</string>
+    <string name="widget_logged_out">Log in to Climbra to see today\'s workout</string>
+    <string name="widget_terms">Open Climbra to accept the terms</string>
+    <string name="widget_no_rider">Create your rider profile in Climbra</string>
+    <string name="widget_failed">Cannot load today\'s training</string>
+    <string name="widget_refresh">Refresh</string>
+    <string name="widget_preview_workout">Sweet spot 3 × 12 min</string>
+    <string name="widget_preview_details">1:15 · TSS 82</string>
+    <string name="widget_preview_form">CTL 64   TSB −8 · Productive</string>
 </resources>

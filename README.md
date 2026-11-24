@@ -34,6 +34,7 @@ Built spec first: see [`specs/`](specs) and [`CLAUDE.md`](CLAUDE.md).
 | [024](specs/024-rider-form-edit-mode.md) | The profile's rider data is shown as text with "Edit"; editing opens the fields with "Cancel" (also the system back) and "Save", a reload keeps the typed values, offline editing is disabled (web: cyclingapp spec 058) |
 | [025](specs/025-automatic-sync-notifications.md) | The backend syncs intervals.icu every 30 minutes (cyclingapp spec 060): a switch in the profile's intervals.icu section (on by default, the text when intervals.icu rejected the key), and a notification in the channel "New rides" when it brought rides: one opens the ride on the training log's tab, several the training log; in the foreground the screens reload instead |
 | [026](specs/026-power-curve.md) | Power curve (cyclingapp spec 061): the best power over durations (1 s – 5 h, logarithmic axis) of 28 days, 90 days, 1 year or all rides against the period before, a tap on the chart shows a duration's figures; the key durations (5 s, 1, 5, 20, 60 min) with W/kg, the backend's change and the ride. Opened from a dashboard card (the 90 days' bests) and the training log's top bar; read offline |
+| [027](specs/027-home-screen-widget.md) | Home screen widget "Climbra – today" (Glance, from 2 × 1 cells): today's planned workout (title, duration, TSS, status; rest day or none) and the form (CTL, TSB with its range and color), all the backend's figures. A tap on the workout opens it in the calendar, elsewhere the dashboard. Refreshes every hour, after midnight, when the app goes to the background, after a change of the rides, a login or logout, and with its refresh button; saved answers offline; nothing of the account after a logout |
 
 Registration and the password reset request are the app's screens (spec 013, Turnstile in a WebView); the links in their emails open the app (spec 021) once `climbra.app` lists the app's signing certificate, else the web pages.
 
@@ -113,7 +114,7 @@ R8 can remove what is only reached by reflection or serialization, which no unit
 the release APK (`adb install app-release.apk`; uninstall a debug build first, its key differs) and go through, against
 the production backend: log in (email and Google), the dashboard with its charts, the training log and a ride (map,
 charts, intervals), the calendar's week and month, the coach (a question and its answer), the profile (thresholds, FTP
-trend, sync), an import of a `.fit` file, log out. Read a crash's stack trace with `retrace` and the build's
+trend, sync), an import of a `.fit` file, the home screen widget (placed, today's workout and form), log out. Read a crash's stack trace with `retrace` and the build's
 `mapping.txt`.
 
 ## Licenses

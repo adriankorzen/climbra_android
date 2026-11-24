@@ -220,6 +220,8 @@ class ShellNavigator internal constructor(
     /** The week the caller told the calendar, not a workout or ride left open on its stack (spec 005). */
     fun openCalendar() = nav.openTab(TopLevelDestination.CALENDAR)
 
+    fun openDashboard() = nav.openTab(TopLevelDestination.DASHBOARD)
+
     fun openActivities() = nav.openTab(TopLevelDestination.ACTIVITIES)
 
     /** The power curve on the stack of the tab shown now, the dashboard's or the training log's (spec 026). */
@@ -408,6 +410,8 @@ fun Shell(
             is PushTarget.Conversation -> navigator.openConversation(target.id)
             PushTarget.TrainingLog -> navigator.openActivities()
             is PushTarget.Ride -> navigator.openRideOnTrainingLog(target.id)
+            is PushTarget.Workout -> navigator.openWorkout(target.id, target.date)
+            PushTarget.Dashboard -> navigator.openDashboard()
         }
         onPushTargetTaken(target)
     }

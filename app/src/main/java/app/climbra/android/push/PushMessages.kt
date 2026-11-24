@@ -76,6 +76,12 @@ sealed interface PushTarget {
 
     /** A ride on the training log's tab (spec 025). */
     data class Ride(val id: Long) : PushTarget
+
+    /** A planned workout on the calendar's tab, from the home screen widget (spec 027). */
+    data class Workout(val id: Long, val date: String) : PushTarget
+
+    /** The dashboard, from the home screen widget (spec 027). */
+    data object Dashboard : PushTarget
 }
 
 /** The target of a tapped notification, until the shell opens it; logged out it is dropped. */

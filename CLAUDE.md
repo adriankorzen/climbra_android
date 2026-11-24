@@ -106,6 +106,11 @@ them under "Backend dependencies" by number.
   reloads in the foreground (`app.AppForeground`), else `PushNotifier` shows one; a tap goes through `push.PushTargets`
   to the shell. Email links (spec 021): App Links of `climbra.app` → `auth.EmailLinks` → the logged-out screens or
   `auth.SignedInEmailLinks` above the shell.
+- Home screen widget (spec 027): `widget.TodayWidget` (Glance) loads through `widget.TodayRepository` in each session
+  and again when `widget.TodayWidgetUpdates.version` grows (app-scoped: background, `DataChanges`, session, refresh
+  button, `TodayRefreshWorker` from `TodayWidgetSchedule`: hourly and after midnight while one is placed). Glance
+  stores nothing; the widget, its receiver and worker get their objects through `TodayWidgetEntryPoint`. Its taps are
+  `PushTarget`s.
 - Packages by feature (`auth`, `profile`, `shell`, `dashboard`, `activities`, `calendar`, `coach`, …) plus `data/` (network, DTOs),
   `session/` and `ui/` (theme, shared components).
 - Theme (`ui.theme`): Material 3 colors from the web tokens in `../cyclingapp/frontend/src/styles.scss` (light + dark),
