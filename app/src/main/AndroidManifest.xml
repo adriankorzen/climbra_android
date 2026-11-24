@@ -112,6 +112,20 @@
             </intent-filter>
         </service>
 
+        <!-- Spec 027: the home screen widget with today's workout and the form -->
+        <receiver
+            android:name=".widget.TodayWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/today_widget_info" />
+        </receiver>
+
         <!-- Firebase is set up in ClimbraApplication from the build's settings, not from google-services.json -->
         <provider
             android:name="com.google.firebase.provider.FirebaseInitProvider"

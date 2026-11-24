@@ -158,6 +158,9 @@ dependencies {
     implementation(libs.markdown.renderer.m3)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
+    implementation(libs.androidx.work.runtime)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
@@ -167,6 +170,8 @@ dependencies {
     testImplementation(libs.androidx.test.junit)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.glance.appwidget.testing)
+    testImplementation(libs.androidx.work.testing)
 
     robolectricAndroidAll(libs.robolectric.android.all)
 

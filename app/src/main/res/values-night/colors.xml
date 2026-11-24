@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="window_background">#0F1318</color>
+    <color name="widget_preview_background">#171C23</color>
+    <color name="widget_preview_text">#E7EBF0</color>
+    <color name="widget_preview_faint">#9AA5B2</color>
+    <color name="widget_preview_primary">#F26A35</color>
 </resources>

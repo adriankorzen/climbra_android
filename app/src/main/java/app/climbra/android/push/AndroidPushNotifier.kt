@@ -66,6 +66,9 @@ class AndroidPushNotifier(private val context: Context) : PushNotifier {
         private const val EXTRA_CONVERSATION = "push_conversation"
         private const val EXTRA_TRAINING_LOG = "push_training_log"
         private const val EXTRA_RIDE = "push_ride"
+        private const val EXTRA_WORKOUT = "push_workout"
+        private const val EXTRA_WORKOUT_DATE = "push_workout_date"
+        private const val EXTRA_DASHBOARD = "push_dashboard"
 
         fun content(message: PushMessage): Content = when (message) {
             is PushMessage.Coach -> Content(
@@ -109,11 +112,15 @@ class AndroidPushNotifier(private val context: Context) : PushNotifier {
         fun PushTarget.intent(context: Context): Intent = Intent(context, MainActivity::class.java)
             .setAction(ACTION_OPEN)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            // Extras do not tell pending intents apart: the widget's taps (spec 027) would all open one target
+            .setIdentifier(this@intent.toString())
             .apply {
                 when (this@intent) {
                     is PushTarget.Conversation -> putExtra(EXTRA_CONVERSATION, id)
                     PushTarget.TrainingLog -> putExtra(EXTRA_TRAINING_LOG, true)
                     is PushTarget.Ride -> putExtra(EXTRA_RIDE, id)
+                    is PushTarget.Workout -> putExtra(EXTRA_WORKOUT, id).putExtra(EXTRA_WORKOUT_DATE, date)
+                    PushTarget.Dashboard -> putExtra(EXTRA_DASHBOARD, true)
                 }
             }
 
@@ -123,6 +130,8 @@ class AndroidPushNotifier(private val context: Context) : PushNotifier {
             return when {
                 hasExtra(EXTRA_CONVERSATION) -> PushTarget.Conversation(getLongExtra(EXTRA_CONVERSATION, 0))
                 hasExtra(EXTRA_RIDE) -> PushTarget.Ride(getLongExtra(EXTRA_RIDE, 0))
+                hasExtra(EXTRA_WORKOUT) -> PushTarget.Workout(getLongExtra(EXTRA_WORKOUT, 0), getStringExtra(EXTRA_WORKOUT_DATE).orEmpty())
+                getBooleanExtra(EXTRA_DASHBOARD, false) -> PushTarget.Dashboard
                 getBooleanExtra(EXTRA_TRAINING_LOG, false) -> PushTarget.TrainingLog
                 else -> null
             }

@@ -2,6 +2,7 @@ package app.climbra.android
 
 import android.app.Application
 import app.climbra.android.push.PushTokens
+import app.climbra.android.widget.TodayWidgetUpdates
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import dagger.hilt.android.HiltAndroidApp
@@ -13,6 +14,10 @@ class ClimbraApplication : Application() {
     /** Created at start, so the push token follows the session from the first login (spec 020). */
     @Inject
     lateinit var pushTokens: PushTokens
+
+    /** Created at start, so the home screen widget follows the session and the rides (spec 027). */
+    @Inject
+    lateinit var todayWidgetUpdates: TodayWidgetUpdates
 
     override fun onCreate() {
         // Firebase from the build's settings instead of google-services.json (spec 020); none without them

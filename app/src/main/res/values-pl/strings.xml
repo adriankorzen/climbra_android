@@ -990,4 +990,28 @@
     </plurals>
     <string name="power_curve_card_hint">Najlepsze z ostatnich 90 dni</string>
     <string name="power_curve_show">Pokaż</string>
+
+    <!-- Home screen widget (spec 027) -->
+    <string name="widget_name">Climbra – dziś</string>
+    <string name="widget_description">Dzisiejszy trening z planu i Twoja forma</string>
+    <string name="widget_no_workout">Brak treningu w planie</string>
+    <string name="widget_rest_day">Dzień odpoczynku</string>
+    <plurals name="widget_more">
+        <item quantity="one">+ %1$d więcej</item>
+        <item quantity="few">+ %1$d więcej</item>
+        <item quantity="many">+ %1$d więcej</item>
+        <item quantity="other">+ %1$d więcej</item>
+    </plurals>
+    <string name="widget_tss">TSS %1$s</string>
+    <string name="widget_fitness">CTL %1$s</string>
+    <string name="widget_form">TSB %1$s · %2$s</string>
+    <string name="widget_loading">Ładowanie…</string>
+    <string name="widget_logged_out">Zaloguj się w Climbra, aby zobaczyć dzisiejszy trening</string>
+    <string name="widget_terms">Otwórz Climbra, aby zaakceptować regulamin</string>
+    <string name="widget_no_rider">Utwórz profil kolarza w Climbra</string>
+    <string name="widget_failed">Nie można wczytać dzisiejszego treningu</string>
+    <string name="widget_refresh">Odśwież</string>
+    <string name="widget_preview_workout">Sweet spot 3 × 12 min</string>
+    <string name="widget_preview_details">1:15 · TSS 82</string>
+    <string name="widget_preview_form">CTL 64   TSB −8 · Produktywnie</string>
 </resources>

@@ -18,6 +18,11 @@ spec in `../cyclingapp/specs/` first). Updated on 2026-11-21.
   asked after the first coach request, a coach answer's notification opening the conversation, the profile's row.
   The App Links are verified (`climbra.app: verified` on the emulator with the release APK, Google's checker lists the
   key, `/verify-email` opens the app); left: the four links logged in.
+- **Manual test of spec 027** on the emulator against the local backend: place the widget "Climbra – today" (the
+  picker's preview), both sizes (2 × 1 and 3 × 2 and larger), a day with a workout, a completed one, a rest day and
+  none, the taps (the workout opens it on the calendar, elsewhere the dashboard), the refresh button, a change in the
+  app reaching the widget after going home, logout (the login text), the dark theme, Polish. The launcher is not
+  covered by the automated tests.
 - **Manual test of spec 016** against a backend with cyclingapp spec 055 deployed and `GARMIN_CONNECT_*` set (the
   production one, or a local one with the Developer Portal app): Connect from the profile and from a send in the
   calendar, Garmin's consent in the Custom Tab, the return to the app and its snackbar; refusing in Garmin; closing the
