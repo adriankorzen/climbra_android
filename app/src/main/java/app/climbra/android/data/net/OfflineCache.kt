@@ -125,7 +125,7 @@ class OfflineCache(
         private val SAVED = listOf(
             Regex("/api/auth/me"),
             Regex("/api/riders"),
-            Regex("/api/riders/\\d+/(training-load|analyses|activities|rides|calendar|power-curve)"),
+            Regex("/api/riders/\\d+/(training-load|analyses|activities|rides|calendar|power-curve|shares)"),
             Regex("/api/activities/\\d+(/analysis|/recording)?"),
         )
 

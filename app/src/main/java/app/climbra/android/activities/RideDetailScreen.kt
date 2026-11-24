@@ -1,5 +1,6 @@
 package app.climbra.android.activities
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -58,6 +60,15 @@ import app.climbra.android.ui.common.DetailBackButton
 import app.climbra.android.ui.common.ErrorBanner
 import app.climbra.android.ui.common.LocalOffline
 import app.climbra.android.ui.common.OfflineNote
+import app.climbra.android.share.RideCard
+import app.climbra.android.share.RideShareCard
+import app.climbra.android.share.ShareActions
+import app.climbra.android.share.ShareEffects
+import app.climbra.android.share.ShareSheet
+import app.climbra.android.share.ShareTarget
+import app.climbra.android.share.ShareUiState
+import app.climbra.android.share.ShareViewModel
+import app.climbra.android.share.rememberImageSharer
 import app.climbra.android.ui.common.toUiText
 import app.climbra.android.ui.format.DateStyle
 import app.climbra.android.ui.format.Fmt
@@ -74,8 +85,15 @@ fun RideDetailRoute(
     onOpenTerms: () -> Unit = {},
     viewModel: RideDetailViewModel = hiltViewModel(),
     coachViewModel: AskCoachViewModel = hiltViewModel(),
+    shareViewModel: ShareViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val share by shareViewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    ShareEffects(share, shareViewModel::linkHandedOver)
+    val shareImage = rememberImageSharer(share) {
+        Toast.makeText(context, R.string.share_image_failed, Toast.LENGTH_SHORT).show()
+    }
     val coach by coachViewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(coach.open) {
         coach.open?.let {
@@ -110,6 +128,15 @@ fun RideDetailRoute(
             onOpenConversation = onOpenConversation,
             onOpenTerms = onOpenTerms,
         ),
+        share = share,
+        onShare = shareViewModel::open,
+        shareActions = ShareActions(
+            onHidePower = shareViewModel::setHidePower,
+            onHideHeartRate = shareViewModel::setHideHeartRate,
+            onShareLink = shareViewModel::createLink,
+            onImage = shareImage,
+            onDismiss = shareViewModel::close,
+        ),
     )
 }
 
@@ -134,6 +161,10 @@ fun RideDetailScreen(
     onOpenCalendar: (String) -> Unit = {},
     coach: AskCoachState = AskCoachState(),
     coachActions: RideCoachActions = RideCoachActions(),
+    /** Spec 028: the share sheet. */
+    share: ShareUiState = ShareUiState(),
+    onShare: (ShareTarget) -> Unit = {},
+    shareActions: ShareActions = ShareActions(),
 ) {
     var menu by remember { mutableStateOf(false) }
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
@@ -160,6 +191,15 @@ fun RideDetailScreen(
                 title = { Text(if (activity != null) title else "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = { DetailBackButton(onBack, "ride-back") },
                 actions = {
+                    if (activity != null && (state.analysis != null || state.analysisFailed)) {
+                        val card = RideCard.of(activity, state.analysis, state.recording?.samples)
+                        IconButton(
+                            onClick = { onShare(ShareTarget.ride(activity.id, title, card.hasPower, card.hasHeartRate)) },
+                            modifier = Modifier.testTag("ride-share"),
+                        ) {
+                            Icon(painterResource(R.drawable.ic_share), stringResource(R.string.share_action))
+                        }
+                    }
                     if (activity != null) {
                         IconButton(onClick = { menu = true }, modifier = Modifier.testTag("ride-menu")) {
                             Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.more_actions))
@@ -227,6 +267,11 @@ fun RideDetailScreen(
                     Spacer(Modifier.height(24.dp))
                 }
             }
+        }
+    }
+    if (share.target != null && activity != null) {
+        ShareSheet(share, fmt, shareActions) { hidePower, hideHeartRate ->
+            RideShareCard(RideCard.of(activity, state.analysis, state.recording?.samples), fmt, hidePower, hideHeartRate)
         }
     }
     if (coach.sheetOpen && activity != null) {

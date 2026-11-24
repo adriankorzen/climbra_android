@@ -26,6 +26,7 @@ import app.climbra.android.data.api.GarminApi
 import app.climbra.android.data.api.ImportApi
 import app.climbra.android.data.api.ProfileApi
 import app.climbra.android.data.api.RiderApi
+import app.climbra.android.data.api.ShareApi
 import app.climbra.android.data.net.Connectivity
 import app.climbra.android.data.net.EncryptedFileCookieStore
 import app.climbra.android.data.net.KeystoreCipher
@@ -145,6 +146,10 @@ object AppModule {
     @Provides
     @Singleton
     fun riderApi(retrofit: Retrofit): RiderApi = retrofit.create(RiderApi::class.java)
+
+    @Provides
+    @Singleton
+    fun shareApi(retrofit: Retrofit): ShareApi = retrofit.create(ShareApi::class.java)
 
     @Provides
     @Singleton

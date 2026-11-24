@@ -15,6 +15,7 @@ import app.climbra.android.data.net.ApiResult
 import app.climbra.android.data.net.Network
 import app.climbra.android.data.net.apiCall
 import app.climbra.android.garmin.GarminConnectFlow
+import app.climbra.android.share.WeekCard
 import app.climbra.android.rider.DataChanges
 import app.climbra.android.rider.RiderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -69,6 +70,12 @@ data class CalendarUiState(
 
     /** The week's totals and plan week (cyclingapp spec 054). */
     val figures: CalendarWeek? get() = data?.weeks?.firstOrNull { it.start == week.toString() }
+
+    /** The share image of [week] (spec 028): its figures and the rides of its days, as the backend answered them. */
+    val weekCard: WeekCard get() {
+        val days = (0L..6L).map { week.plusDays(it).toString() }.toSet()
+        return WeekCard(week, figures, data?.activities.orEmpty().filter { it.date in days })
+    }
 
     /** The month view's weeks (spec 015): days outside [month] are marked by the screen. */
     val monthWeeks: List<List<CalendarDay>>

@@ -2,6 +2,7 @@ package app.climbra.android
 
 import android.app.Application
 import app.climbra.android.push.PushTokens
+import app.climbra.android.share.ShareFiles
 import app.climbra.android.widget.TodayWidgetUpdates
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
@@ -33,5 +34,7 @@ class ClimbraApplication : Application() {
             )
         }
         super.onCreate()
+        // The share images of the last run went to other apps already (spec 028)
+        Thread { ShareFiles.clear(this) }.start()
     }
 }

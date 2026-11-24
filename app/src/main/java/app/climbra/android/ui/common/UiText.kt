@@ -47,6 +47,7 @@ val TRANSLATED_ERROR_CODES: Map<String, Int> = mapOf(
     "UNAUTHENTICATED" to R.string.api_error_unauthenticated,
     "GOOGLE_FAILED" to R.string.login_google_failed,
     "ACTIVITY_BUSY" to R.string.api_error_activity_busy,
+    "SHARE_LIMIT_REACHED" to R.string.api_error_share_limit_reached,
     "FILE_STORAGE_UNAVAILABLE" to R.string.api_error_file_storage_unavailable,
     "FILE_PROCESSING_BUSY" to R.string.api_error_file_processing_busy,
     "WORKOUT_COMPLETED" to R.string.api_error_workout_completed,

@@ -1014,4 +1014,43 @@
     <string name="widget_preview_workout">Sweet spot 3 × 12 min</string>
     <string name="widget_preview_details">1:15 · TSS 82</string>
     <string name="widget_preview_form">CTL 64   TSB −8 · Produktywnie</string>
+
+    <!-- Sharing a ride or a week (spec 028; web: share.*) -->
+    <string name="share_action">Udostępnij</string>
+    <string name="share_week_action">Udostępnij tydzień</string>
+    <string name="share_ride_title">Udostępnij jazdę</string>
+    <string name="share_week_title">Udostępnij tydzień</string>
+    <string name="share_hide_power">Ukryj moc w watach</string>
+    <string name="share_hide_heart_rate">Ukryj tętno</string>
+    <string name="share_image">Udostępnij obrazek</string>
+    <string name="share_link">Udostępnij link</string>
+    <string name="share_valid_until">Link jest ważny do %1$s</string>
+    <string name="share_hint">Każdy, kto ma link, przez 15 dni zobaczy podsumowanie bez konta; Twoje imię nie jest pokazywane. Linki wyłączysz w Profil → Udostępnione linki.</string>
+    <string name="share_image_failed">Nie udało się przygotować obrazka.</string>
+    <string name="share_card_week_title">Tydzień %1$s – %2$s</string>
+    <plurals name="share_card_rides">
+        <item quantity="one">%d jazda</item>
+        <item quantity="few">%d jazdy</item>
+        <item quantity="many">%d jazd</item>
+        <item quantity="other">%d jazdy</item>
+    </plurals>
+    <plurals name="share_card_more">
+        <item quantity="one">+ %d więcej</item>
+        <item quantity="few">+ %d więcej</item>
+        <item quantity="many">+ %d więcej</item>
+        <item quantity="other">+ %d więcej</item>
+    </plurals>
+    <string name="api_error_share_limit_reached">Masz 50 aktywnych linków. Wyłącz któryś w Profil → Udostępnione linki.</string>
+    <string name="shared_links_title">Udostępnione linki</string>
+    <string name="shared_links_open">Udostępnione linki</string>
+    <string name="shared_links_intro">Linki do Twoich jazd i tygodni, które jeszcze działają.</string>
+    <string name="shared_links_empty">Brak aktywnych linków</string>
+    <string name="shared_links_week">Tydzień %1$s – %2$s</string>
+    <string name="shared_links_expires">Wygasa %1$s</string>
+    <string name="shared_links_power_hidden">Moc ukryta</string>
+    <string name="shared_links_hr_hidden">Tętno ukryte</string>
+    <string name="shared_links_revoke">Wyłącz</string>
+    <string name="shared_links_revoke_title">Wyłączyć link?</string>
+    <string name="shared_links_revoke_confirm">Link do: %1$s przestanie działać dla wszystkich, którzy go mają.</string>
+    <string name="shared_links_revoked">Link wyłączony</string>
 </resources>

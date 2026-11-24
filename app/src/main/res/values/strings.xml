@@ -997,4 +997,42 @@
     <string name="widget_preview_workout">Sweet spot 3 × 12 min</string>
     <string name="widget_preview_details">1:15 · TSS 82</string>
     <string name="widget_preview_form">CTL 64   TSB −8 · Productive</string>
+
+    <!-- Sharing a ride or a week (spec 028; web: share.*) -->
+    <string name="share_action">Share</string>
+    <string name="share_week_action">Share week</string>
+    <string name="share_ride_title">Share ride</string>
+    <string name="share_week_title">Share week</string>
+    <string name="share_hide_power">Hide power in watts</string>
+    <string name="share_hide_heart_rate">Hide heart rate</string>
+    <string name="share_image">Share image</string>
+    <string name="share_link">Share link</string>
+    <string name="share_valid_until">The link is valid until %1$s</string>
+    <string name="share_hint">Anyone with the link sees the summary without an account for 15 days; your name is not shown. Revoke links in Profile → Shared links.</string>
+    <string name="share_image_failed">The image could not be made.</string>
+    <string name="share_card_site" translatable="false">climbra.app</string>
+    <string name="share_card_hr_tss" translatable="false">hrTSS</string>
+    <string name="share_card_if" translatable="false">IF</string>
+    <string name="share_card_week_title">Week %1$s – %2$s</string>
+    <plurals name="share_card_rides">
+        <item quantity="one">%d ride</item>
+        <item quantity="other">%d rides</item>
+    </plurals>
+    <plurals name="share_card_more">
+        <item quantity="one">+ %d more</item>
+        <item quantity="other">+ %d more</item>
+    </plurals>
+    <string name="api_error_share_limit_reached">You have 50 active links. Revoke one in Profile → Shared links.</string>
+    <string name="shared_links_title">Shared links</string>
+    <string name="shared_links_open">Shared links</string>
+    <string name="shared_links_intro">Links to your rides and weeks that still work.</string>
+    <string name="shared_links_empty">No active links</string>
+    <string name="shared_links_week">Week %1$s – %2$s</string>
+    <string name="shared_links_expires">Expires %1$s</string>
+    <string name="shared_links_power_hidden">Power hidden</string>
+    <string name="shared_links_hr_hidden">HR hidden</string>
+    <string name="shared_links_revoke">Revoke</string>
+    <string name="shared_links_revoke_title">Revoke the link?</string>
+    <string name="shared_links_revoke_confirm">The link of %1$s stops working for everyone who has it.</string>
+    <string name="shared_links_revoked">Link revoked</string>
 </resources>

@@ -687,6 +687,13 @@ internal fun AccountCard(state: ProfileUiState, fmt: Fmt, actions: ProfileAction
             }
         }
 
+        // Spec 028
+        Text(stringResource(R.string.shared_links_title), style = MaterialTheme.typography.titleSmall)
+        OutlinedButton(onClick = actions::openSharedLinks, modifier = Modifier.testTag("account-shared-links")) {
+            Icon(painterResource(R.drawable.ic_link), contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(stringResource(R.string.shared_links_open), modifier = Modifier.padding(start = 8.dp))
+        }
+
         // Spec 010
         Text(stringResource(R.string.feedback_title), style = MaterialTheme.typography.titleSmall)
         OutlinedButton(onClick = actions::openFeedback, modifier = Modifier.testTag("account-feedback")) {
